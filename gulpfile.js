@@ -16,9 +16,9 @@ import process from "node:process";
 
 import pkg from "./package.json" assert { type: "json" };
 import fs from "fs";
-import { createRequire } from "node:module";
+// import { createRequire } from "node:module";
 let { name, version } = pkg;
-const require = createRequire(import.meta.url);
+// const require = createRequire(import.meta.url);
 
 if (name.includes("/")) name = name.split("/")[1]; // for scoped packages
 const VERSION_STRING = "##VERSION##";

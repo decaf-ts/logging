@@ -20,22 +20,23 @@ class DefaultLogger implements Logger {
 
     const { context, app } = data || {};
 
+    // eslint-disable-next-line max-len
     const msg = `${profile ? `[${profile}]` : ""}${app ? `[${app}]` : ""}${context ? `[${context}]` : ""}${this.clazz ? `[${this.clazz}]` : ""}${this.method ? `[${this.method}]` : ""} ${message}`;
     switch (level) {
-      case LogLevel.Fatal:
-      case LogLevel.Error:
-        return console.error(msg);
-      case LogLevel.Warn:
-        return console.warn(msg);
-      case LogLevel.Info:
-        return console.info(msg);
-      case LogLevel.Http:
-      case LogLevel.Verbose:
-      case LogLevel.Debug:
-      case LogLevel.Silly:
-        return console.debug(msg);
-      default:
-        throw new Error(`Invalid log level: ${level}`);
+    case LogLevel.Fatal:
+    case LogLevel.Error:
+      return console.error(msg);
+    case LogLevel.Warn:
+      return console.warn(msg);
+    case LogLevel.Info:
+      return console.info(msg);
+    case LogLevel.Http:
+    case LogLevel.Verbose:
+    case LogLevel.Debug:
+    case LogLevel.Silly:
+      return console.debug(msg);
+    default:
+      throw new Error(`Invalid log level: ${level}`);
     }
   }
   silly(
