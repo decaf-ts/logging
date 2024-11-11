@@ -1,17 +1,21 @@
+export * from "./constants";
+export * from "./default";
+export * from "./Factory";
+export * from "./interfaces";
+export * from "./logging";
 export * from "./utils";
-export * from "./namespace";
 
 /**
  * @summary Module summary
  * @description Module description
- * @module ts-workspace
+ * @module Logging
  */
 
 /**
- * @summary Namespace summary
+ * @summary Logging
  * @description Namespace description
- * @namespace Namespace
- * @memberOf module:ts-workspace
+ * @namespace Logging
+ * @memberOf module:Logging
  */
 
 /**
