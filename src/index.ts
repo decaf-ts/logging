@@ -1,5 +1,4 @@
 export * from "./constants";
-export * from "./default";
 export * from "./Factory";
 export * from "./interfaces";
 export * from "./logging";
