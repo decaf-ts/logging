@@ -25,7 +25,7 @@ export class Logging {
   }
 
   protected static get instance(): LoggerFactory {
-    if (!this._instance) this._instance = new this._factory(this.level);
+    if (!this._instance) this._instance = new this._factory(Logging.level);
     return this._instance;
   }
 
@@ -36,7 +36,7 @@ export class Logging {
   static forClass(clazz: { new (...args: any[]): any }) {
     const name = clazz.name;
     if (!(name in this.cacheByClass))
-      this.cacheByClass[name] = this.instance.forClass(clazz);
+      this.cacheByClass[name] = Logging.instance.forClass(clazz);
     return this.cacheByClass[name];
   }
 
@@ -48,7 +48,7 @@ export class Logging {
     if (!(name in this.cacheByClassMethod)) this.cacheByClassMethod[name] = {};
     const methodName = typeof method === "string" ? method : method.name;
     if (!(methodName in this.cacheByClassMethod[name]))
-      this.cacheByClassMethod[name][methodName] = this.instance.forMethod(
+      this.cacheByClassMethod[name][methodName] = Logging.instance.forMethod(
         clazz,
         method
       );
@@ -56,7 +56,7 @@ export class Logging {
   }
 
   static get(): Logger {
-    if (!this.global) this.global = this.instance.get();
+    if (!this.global) this.global = Logging.instance.get();
     return this.global;
   }
 }
