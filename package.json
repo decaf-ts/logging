@@ -1,6 +1,6 @@
 {
   "name": "@decaf-ts/logging",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "simple winston inspired wrapper for cross lib logging",
   "type": "module",
   "exports": {
