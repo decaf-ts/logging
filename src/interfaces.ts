@@ -18,6 +18,7 @@ export interface Logger {
     profile?: string
   ): void;
   silly(message: string, data?: LogData, profile?: string): void;
+  verbose(message: string, data?: LogData, profile?: string): void;
   debug(message: string, data?: LogData, profile?: string): void;
   info(message: string, data?: LogData, profile?: string): void;
   warn(message: string | Error, data?: LogData, profile?: string): void;
