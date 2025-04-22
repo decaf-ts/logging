@@ -32,14 +32,18 @@
       "useLongnameInNav": false
     },
     "better-docs": {
-      "name": "Logging",
-      "title": "Small Logging library",
+      "name": "logging",
+      "title": "logging for decaf",
       "hideGenerator": true,
       "useLongnameInNav": false,
       "navLinks": [
         {
+          "label": "Test Results",
+          "href": "workdocs/reports/html/test-report.html"
+        },
+        {
           "label": "Test Coverage",
-          "href": "workdocs/coverage"
+          "href": "workdocs/reports/coverage"
         },
         {
           "label": "Github Repository",

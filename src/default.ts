@@ -20,7 +20,7 @@ class DefaultLogger implements Logger {
 
     const { context, app } = data || {};
 
-    // eslint-disable-next-line max-len
+     
     const msg = `${profile ? `[${profile}]` : ""}${app ? `[${app}]` : ""}${context ? `[${context}]` : ""}${this.clazz ? `[${this.clazz}]` : ""}${this.method ? `[${this.method}]` : ""} ${message}`;
     switch (level) {
     case LogLevel.Fatal:
