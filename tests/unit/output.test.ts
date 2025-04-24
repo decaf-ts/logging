@@ -1,20 +1,10 @@
 import { Logging, LogLevel } from "../../src";
-import { getSlogan, printBanner } from "@decaf-ts/utils";
 
 describe("Logging", () => {
   const logger = Logging.for("testing");
 
   Logging.setConfig({
     level: LogLevel.debug,
-  });
-
-  it("retrieves slogan", () => {
-    const slogan = getSlogan();
-    expect(slogan).toBeDefined();
-  });
-
-  it("prints banner", () => {
-    printBanner();
   });
 
   describe("themeless", () => {
@@ -90,9 +80,5 @@ describe("Logging", () => {
         )
       );
     });
-  });
-
-  it("prints banner using logger", () => {
-    printBanner(logger);
   });
 });

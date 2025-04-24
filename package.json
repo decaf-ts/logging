@@ -64,7 +64,7 @@
   },
   "homepage": "https://github.com/decaf-ts/logging#readme",
   "devDependencies": {
-    "@decaf-ts/utils": "latest",
+    "@decaf-ts/utils": "^0.2.6",
     "@eslint/js": "^9.25.1",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-json": "^6.1.0",
