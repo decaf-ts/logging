@@ -1,9 +1,6 @@
 export * from "./constants";
-export * from "./default";
-export * from "./Factory";
-export * from "./interfaces";
 export * from "./logging";
-export * from "./utils";
+export * from "./types";
 
 /**
  * @summary Module summary

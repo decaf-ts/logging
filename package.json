@@ -27,7 +27,7 @@
     "test": "jest --runInBand --coverage --detectOpenHandles",
     "test:unit": "jest --testPathPattern=\"/tests/unit\" --passWithNoTests --detectOpenHandles",
     "test:integration": "jest --testPathPattern=\"/tests/(integration)\" --passWithNoTests --detectOpenHandles",
-    "test:all": "jest --testPathPattern=\"/tests\" --passWithNoTests --detectOpenHandles",
+    "test:all": "jest --testPathPattern=\"/tests\" --passWithNoTests",
     "test:circular": "dpdm -T --no-warning --no-tree ./src/index.ts",
     "coverage": "rimraf ./workdocs/reports/data/*.json && npm run test:all -- --coverage --config=./workdocs/reports/jest.coverage.config.ts",
     "lint": "eslint .",
@@ -96,5 +96,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0",
     "winston": "^3.17.0"
+  },
+  "dependencies": {
+    "styled-string-builder": "^1.4.11"
   }
 }
