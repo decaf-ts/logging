@@ -1,7 +1,7 @@
 import { LogLevel } from "./constants";
 import { Logging } from "./logging";
 
-export function logAs(
+export function log(
   level: LogLevel = LogLevel.info,
   benchmark: boolean = false,
   verbosity = 0
@@ -38,23 +38,28 @@ export function logAs(
       if (result instanceof Promise) {
         return result.then(finish).catch((e) => finish(undefined, e));
       }
-      return finish(result);
+      if (benchmark) {
+        end = Date.now();
+        if (benchmark) method(`completed in ${end - start}ms`, verbosity);
+      }
+
+      return result;
     };
   };
 }
 
-export function logAsDebug(benchmark: boolean = false) {
-  return logAs(LogLevel.debug, benchmark);
+export function debug(benchmark: boolean = false) {
+  return log(LogLevel.debug, benchmark);
 }
 
-export function logAsInfo(benchmark: boolean = false) {
-  return logAs(LogLevel.info, benchmark);
+export function info(benchmark: boolean = false) {
+  return log(LogLevel.info, benchmark);
 }
 
-export function logAsVerbose(verbosity = 0, benchmark: boolean = false) {
-  return logAs(LogLevel.verbose, benchmark, verbosity);
+export function silly(benchmark: boolean = false) {
+  return log(LogLevel.silly, benchmark);
 }
 
-export function logAsSilly(benchmark: boolean = false) {
-  return logAs(LogLevel.silly, benchmark);
+export function verbose(verbosity = 0, benchmark: boolean = false) {
+  return log(LogLevel.verbose, benchmark, verbosity);
 }
