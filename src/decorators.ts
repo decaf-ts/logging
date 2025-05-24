@@ -46,6 +46,10 @@ export function info(benchmark: boolean = false) {
   return log(LogLevel.info, benchmark);
 }
 
+export function silly(benchmark: boolean = false) {
+  return log(LogLevel.silly, benchmark);
+}
+
 export function verbose(verbosity = 0, benchmark: boolean = false) {
   return log(LogLevel.verbose, benchmark, verbosity);
 }

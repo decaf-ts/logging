@@ -47,7 +47,11 @@ export class WinstonLogger extends MiniLogger implements Logger {
     this.winston = winston.createLogger(winstonConfig);
   }
 
-  protected log(level: LogLevel, msg: StringLike | Error, stack?: string) {
+  protected override log(
+    level: LogLevel,
+    msg: StringLike | Error,
+    stack?: string
+  ) {
     const logData: LogEntry = {
       level: level,
       message: this.createLog(level, msg, stack),
