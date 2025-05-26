@@ -72,12 +72,13 @@ export type LoggingConfig = {
   timestampFormat?: string;
   context?: boolean;
   theme?: Theme;
+  correlationId?: string | number;
 };
 
 export type LoggerFactory<L extends Logger = Logger> = (
   object: string,
   config?: Partial<LoggingConfig>,
-  id?: string
+  ...args: any[]
 ) => L;
 
 /**

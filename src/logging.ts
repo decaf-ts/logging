@@ -34,8 +34,7 @@ export class MiniLogger implements Logger {
    */
   constructor(
     protected context: string,
-    protected conf?: Partial<LoggingConfig>,
-    protected id?: string
+    protected conf?: Partial<LoggingConfig>
   ) {}
 
   protected config(
@@ -47,7 +46,8 @@ export class MiniLogger implements Logger {
 
   for(
     method?: string | ((...args: any[]) => any),
-    config?: Partial<LoggingConfig>
+    config?: Partial<LoggingConfig>,
+    ...args: any[]
   ): Logger {
     method = method
       ? typeof method === "string"
@@ -55,7 +55,7 @@ export class MiniLogger implements Logger {
         : method.name
       : undefined;
 
-    return Logging.for([this.context, method].join("."), this.id, config);
+    return Logging.for([this.context, method].join("."), config, ...args);
   }
 
   /**
@@ -94,11 +94,11 @@ export class MiniLogger implements Logger {
       log.push(context);
     }
 
-    if (this.id) {
+    if (this.config("correlationId")) {
       {
         const id: string = style
-          ? Logging.theme(this.id, "id", level)
-          : this.id;
+          ? Logging.theme(this.config("correlationId")!.toString(), "id", level)
+          : this.config("correlationId")!.toString();
         log.push(id);
       }
     }
@@ -244,10 +244,9 @@ export class Logging {
    */
   private static _factory: LoggerFactory = (
     object: string,
-    config?: Partial<LoggingConfig>,
-    id?: string
+    config?: Partial<LoggingConfig>
   ) => {
-    return new MiniLogger(object, config, id);
+    return new MiniLogger(object, config);
   };
   /**
    * @description Configuration for the logging system.
@@ -261,7 +260,7 @@ export class Logging {
    */
   private constructor() {}
 
-  setFactory(factory: LoggerFactory) {
+  static setFactory(factory: LoggerFactory) {
     Logging._factory = factory;
   }
 
@@ -343,13 +342,16 @@ export class Logging {
 
   static for(
     object: LoggingContext,
-    id?: string | Partial<LoggingConfig>,
-    config?: Partial<LoggingConfig>
+    config?: Partial<LoggingConfig>,
+    ...args: any[]
   ): Logger {
-    object = typeof object === "string" ? object : object.name;
-    id = typeof id === "string" ? id : undefined;
-    config = typeof id === "object" ? (id as Partial<LoggingConfig>) : config;
-    return this._factory(object, config, id);
+    object =
+      typeof object === "string"
+        ? object
+        : object.constructor
+          ? object.constructor.name
+          : object.name;
+    return this._factory(object, config, ...args);
   }
 
   /**

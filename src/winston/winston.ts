@@ -10,10 +10,9 @@ export class WinstonLogger extends MiniLogger implements Logger {
   constructor(
     cont: string,
     conf?: Partial<LoggingConfig>,
-    id?: string,
     protected transports?: Transport[] | Transport
   ) {
-    super(cont, conf, id);
+    super(cont, conf);
     const config: LoggingConfig = Object.assign(
       {},
       this.conf || {},
@@ -56,7 +55,8 @@ export class WinstonLogger extends MiniLogger implements Logger {
       level: level,
       message: this.createLog(level, msg, stack),
     };
-    if (this.id) logData["correlationId"] = this.id;
+    if (this.config("correlationId"))
+      logData["correlationId"] = this.config("correlationId");
     this.winston.log(logData);
   }
 }
@@ -64,5 +64,5 @@ export class WinstonLogger extends MiniLogger implements Logger {
 export const WinstonFactory: LoggerFactory = (
   context: string,
   conf?: Partial<LoggingConfig>,
-  id?: string
-) => new WinstonLogger(context, conf, id);
+  ...args: any[]
+) => new WinstonLogger(context, conf, ...args);
