@@ -4,22 +4,22 @@ export * from "./logging";
 export * from "./types";
 
 /**
- * @summary Module summary
- * @description Module description
+ * @description A logging module for TypeScript applications
+ * @summary This module provides a comprehensive logging solution for TypeScript applications. It exports constants, decorators, logging utilities, and type definitions to facilitate structured logging.
  * @module Logging
  */
 
 /**
- * @summary Logging
- * @description Namespace description
+ * @description Main logging namespace
+ * @summary Contains all logging functionality and utilities for the application
  * @namespace Logging
  * @memberOf module:Logging
  */
 
 /**
- * @summary stores the current package version
- * @description this is how you should document a constant
+ * @description Current package version string
+ * @summary Stores the current package version, used for version tracking and compatibility checks
  * @const VERSION
- * @memberOf module:ts-workspace
+ * @memberOf module:Logging
  */
 export const VERSION = "##VERSION##";

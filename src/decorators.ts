@@ -1,6 +1,38 @@
 import { LogLevel } from "./constants";
 import { Logging } from "./logging";
 
+/**
+ * @description Method decorator for logging function calls
+ * @summary Creates a decorator that logs method calls with specified level, benchmarking, and verbosity
+ * @param {LogLevel} level - The log level to use (default: LogLevel.info)
+ * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
+ * @param {number} [verbosity=0] - The verbosity level for the log messages (default: 0)
+ * @return {Function} A method decorator that wraps the original method with logging
+ * @function log
+ * @category Decorators
+ * @memberOf module:Logging
+ * @mermaid
+ * sequenceDiagram
+ *   participant Client
+ *   participant Decorator as log decorator
+ *   participant Method as Original Method
+ *   participant Logger as Logging instance
+ *
+ *   Client->>Decorator: call decorated method
+ *   Decorator->>Logger: log method call
+ *   Decorator->>Method: call original method
+ *   alt result is Promise
+ *     Method-->>Decorator: return Promise
+ *     Decorator->>Decorator: attach then handler
+ *     Note over Decorator: Promise resolves
+ *     Decorator->>Logger: log benchmark (if enabled)
+ *     Decorator-->>Client: return result
+ *   else result is not Promise
+ *     Method-->>Decorator: return result
+ *     Decorator->>Logger: log benchmark (if enabled)
+ *     Decorator-->>Client: return result
+ *   end
+ */
 export function log(
   level: LogLevel = LogLevel.info,
   benchmark: boolean = false,
@@ -38,18 +70,54 @@ export function log(
   };
 }
 
+/**
+ * @description Method decorator for logging function calls with debug level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.debug
+ * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
+ * @return {Function} A method decorator that wraps the original method with debug logging
+ * @function debug
+ * @category Decorators
+ * @memberOf module:Logging
+ */
 export function debug(benchmark: boolean = false) {
   return log(LogLevel.debug, benchmark);
 }
 
+/**
+ * @description Method decorator for logging function calls with info level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.info
+ * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
+ * @return {Function} A method decorator that wraps the original method with info logging
+ * @function info
+ * @memberOf module:Logging
+ */
 export function info(benchmark: boolean = false) {
   return log(LogLevel.info, benchmark);
 }
 
+/**
+ * @description Method decorator for logging function calls with silly level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.silly
+ * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
+ * @return {Function} A method decorator that wraps the original method with silly logging
+ * @function silly
+ * @category Decorators
+ * @memberOf module:Logging
+ */
 export function silly(benchmark: boolean = false) {
   return log(LogLevel.silly, benchmark);
 }
 
+/**
+ * @description Method decorator for logging function calls with verbose level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
+ * @param {number} verbosity - The verbosity level for the log messages (default: 0)
+ * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
+ * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @function verbose
+ * @category Decorators
+ * @memberOf module:Logging
+ */
 export function verbose(verbosity = 0, benchmark: boolean = false) {
   return log(LogLevel.verbose, benchmark, verbosity);
 }

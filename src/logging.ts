@@ -18,19 +18,61 @@ import {
 
 /**
  * @description A minimal logger implementation.
- * @summary MiniLogger is a lightweight logging class that implements the VerbosityLogger interface.
- * It provides basic logging functionality with support for different log levels and verbosity.
- *
- * @class
+ * @summary MiniLogger is a lightweight logging class that implements the Logger interface.
+ * It provides basic logging functionality with support for different log levels, verbosity,
+ * context-aware logging, and customizable formatting.
+ * @param {string} context - The context (typically class name) this logger is associated with
+ * @param {Partial<LoggingConfig>} conf - Optional configuration to override global settings
+ * @class MiniLogger
+ * @example
+ * // Create a new logger for a class
+ * const logger = new MiniLogger('MyClass');
+ * 
+ * // Log messages at different levels
+ * logger.info('This is an info message');
+ * logger.debug('This is a debug message');
+ * logger.error('Something went wrong');
+ * 
+ * // Create a child logger for a specific method
+ * const methodLogger = logger.for('myMethod');
+ * methodLogger.verbose('Detailed information', 2);
+ * 
+ * // Log with custom configuration
+ * logger.for('specialMethod', { style: true }).info('Styled message');
+ * @mermaid
+ * classDiagram
+ *   class Logger {
+ *     <<interface>>
+ *     +for(method, config, ...args)
+ *     +silly(msg, verbosity)
+ *     +verbose(msg, verbosity)
+ *     +info(msg)
+ *     +debug(msg)
+ *     +error(msg)
+ *     +setConfig(config)
+ *   }
+ *   
+ *   class MiniLogger {
+ *     -context: string
+ *     -conf?: Partial~LoggingConfig~
+ *     +constructor(context, conf?)
+ *     #config(key)
+ *     +for(method?, config?, ...args)
+ *     #createLog(level, message, stack?)
+ *     +log(level, msg, stack?)
+ *     +silly(msg, verbosity)
+ *     +verbose(msg, verbosity)
+ *     +info(msg)
+ *     +debug(msg)
+ *     +error(msg)
+ *     +setConfig(config)
+ *   }
+ *   
+ *   Logger <|-- MiniLogger : implements
  */
 export class MiniLogger implements Logger {
   /**
-   * @description Creates a new MiniLogger instance.
-   * @summary Initializes a MiniLogger with the given class name, optional configuration, and method name.
-   *
-   * @param context - The name of the class using this logger.
-   * @param [conf] - Optional logging configuration. Defaults to Info level and verbosity 0.
-   * @param [id] - Optional unique identifier for the logger instance.
+   * Creates a new MiniLogger instance.
    */
   constructor(
     protected context: string,
@@ -44,6 +86,14 @@ export class MiniLogger implements Logger {
     return Logging.getConfig()[key];
   }
 
+  /**
+   * @description Creates a child logger for a specific method or context
+   * @summary Returns a new logger instance with the current context extended by the specified method name
+   * @param {string | Function} method - The method name or function to create a logger for
+   * @param {Partial<LoggingConfig>} config - Optional configuration to override settings
+   * @param {...any} args - Additional arguments to pass to the logger factory
+   * @return {Logger} A new logger instance for the specified method
+   */
   for(
     method?: string | ((...args: any[]) => any),
     config?: Partial<LoggingConfig>,
@@ -59,13 +109,12 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Creates a formatted log string.
-   * @summary Generates a log string with timestamp, colored log level, and message.
-   *
-   * @param level - The log level as a string.
-   * @param message
-   * @param stack
-   * @return A formatted log string.
+   * @description Creates a formatted log string
+   * @summary Generates a log string with timestamp, colored log level, context, and message
+   * @param {LogLevel} level - The log level for this message
+   * @param {StringLike | Error} message - The message to log or an Error object
+   * @param {string} [stack] - Optional stack trace to include in the log
+   * @return {string} A formatted log string with all components
    */
   protected createLog(
     level: LogLevel,
@@ -128,13 +177,13 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message with the specified log level.
+   * @description Logs a message with the specified log level
    * @summary Checks if the message should be logged based on the current log level,
-   * then uses the appropriate console method to output the log.
-   *
-   * @param level - The log level of the message.
-   * @param msg - The message to be logged.
-   * @param stack
+   * then uses the appropriate console method to output the formatted log
+   * @param {LogLevel} level - The log level of the message
+   * @param {StringLike | Error} msg - The message to be logged or an Error object
+   * @param {string} [stack] - Optional stack trace to include in the log
+   * @return {void}
    */
   protected log(
     level: LogLevel,
@@ -165,11 +214,11 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description LLogs a `way too verbose` or a silly message.
-   * @summary Logs a message at the Silly level if the current verbosity allows it.
-   *
-   * @param msg - The message to be logged.
-   * @param verbosity - The verbosity level of the message (default: 0).
+   * @description Logs a message at the silly level
+   * @summary Logs a message at the silly level if the current verbosity setting allows it
+   * @param {StringLike} msg - The message to be logged
+   * @param {number} [verbosity=0] - The verbosity level of the message
+   * @return {void}
    */
   silly(msg: StringLike, verbosity: number = 0): void {
     if ((this.config("verbose") as number) >= verbosity)
@@ -177,11 +226,11 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a verbose message.
-   * @summary Logs a message at the Verbose level if the current verbosity allows it.
-   *
-   * @param msg - The message to be logged.
-   * @param verbosity - The verbosity level of the message (default: 0).
+   * @description Logs a message at the verbose level
+   * @summary Logs a message at the verbose level if the current verbosity setting allows it
+   * @param {StringLike} msg - The message to be logged
+   * @param {number} [verbosity=0] - The verbosity level of the message
+   * @return {void}
    */
   verbose(msg: StringLike, verbosity: number = 0): void {
     if ((this.config("verbose") as number) >= verbosity)
@@ -189,58 +238,121 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs an info message.
-   * @summary Logs a message at the Info level.
-   *
-   * @param msg - The message to be logged.
+   * @description Logs a message at the info level
+   * @summary Logs a message at the info level for general application information
+   * @param {StringLike} msg - The message to be logged
+   * @return {void}
    */
   info(msg: StringLike): void {
     this.log(LogLevel.info, msg);
   }
 
   /**
-   * @description Logs a debug message.
-   * @summary Logs a message at the Debug level.
-   *
-   * @param msg - The message to be logged.
+   * @description Logs a message at the debug level
+   * @summary Logs a message at the debug level for detailed troubleshooting information
+   * @param {StringLike} msg - The message to be logged
+   * @return {void}
    */
   debug(msg: StringLike): void {
     this.log(LogLevel.debug, msg);
   }
 
   /**
-   * @description Logs an error message.
-   * @summary Logs a message at the Error level.
-   *
-   * @param msg - The message to be logged.
+   * @description Logs a message at the error level
+   * @summary Logs a message at the error level for errors and exceptions
+   * @param {StringLike | Error} msg - The message to be logged or an Error object
+   * @return {void}
    */
   error(msg: StringLike | Error): void {
     this.log(LogLevel.error, msg);
   }
 
+  /**
+   * @description Updates the logger configuration
+   * @summary Merges the provided configuration with the existing configuration
+   * @param {Partial<LoggingConfig>} config - The configuration options to apply
+   * @return {void}
+   */
   setConfig(config: Partial<LoggingConfig>) {
     this.conf = { ...(this.conf || {}), ...config };
   }
 }
 
 /**
- * @description A static class for managing logging operations.
+ * @description A static class for managing logging operations
  * @summary The Logging class provides a centralized logging mechanism with support for
- * different log levels and verbosity. It uses a singleton pattern to maintain a global
+ * different log levels, verbosity, and styling. It uses a singleton pattern to maintain a global
  * logger instance and allows creating specific loggers for different classes and methods.
- *
- * @class
+ * @class Logging
+ * @example
+ * // Set global configuration
+ * Logging.setConfig({ level: LogLevel.debug, style: true });
+ * 
+ * // Get a logger for a specific class
+ * const logger = Logging.for('MyClass');
+ * 
+ * // Log messages at different levels
+ * logger.info('Application started');
+ * logger.debug('Processing data...');
+ * 
+ * // Log with context
+ * const methodLogger = Logging.for('MyClass.myMethod');
+ * methodLogger.verbose('Detailed operation information', 1);
+ * 
+ * // Log errors
+ * try {
+ *   // some operation
+ * } catch (error) {
+ *   logger.error(error);
+ * }
+ * @mermaid
+ * classDiagram
+ *   class Logger {
+ *     <<interface>>
+ *     +for(method, config, ...args)
+ *     +silly(msg, verbosity)
+ *     +verbose(msg, verbosity)
+ *     +info(msg)
+ *     +debug(msg)
+ *     +error(msg)
+ *     +setConfig(config)
+ *   }
+ *   
+ *   class Logging {
+ *     -global: Logger
+ *     -_factory: LoggerFactory
+ *     -_config: LoggingConfig
+ *     +setFactory(factory)
+ *     +setConfig(config)
+ *     +getConfig()
+ *     +get()
+ *     +verbose(msg, verbosity)
+ *     +info(msg)
+ *     +debug(msg)
+ *     +silly(msg)
+ *     +error(msg)
+ *     +for(object, config, ...args)
+ *     +because(reason, id)
+ *     +theme(text, type, loggerLevel, template)
+ *   }
+ *   
+ *   class MiniLogger {
+ *     +constructor(context, conf?)
+ *   }
+ *   
+ *   Logging ..> Logger : creates
+ *   Logging ..> MiniLogger : creates by default
  */
 export class Logging {
   /**
-   * @description The global logger instance.
-   * @summary A singleton instance of VerbosityLogger used for global logging.
+   * @description The global logger instance
+   * @summary A singleton instance of Logger used for global logging
    */
   private static global?: Logger;
 
   /**
-   * @description Factory function for creating logger instances.
-   * @summary A function that creates new VerbosityLogger instances. By default, it creates a MiniLogger.
+   * @description Factory function for creating logger instances
+   * @summary A function that creates new Logger instances. By default, it creates a MiniLogger.
    */
   private static _factory: LoggerFactory = (
     object: string,
@@ -249,31 +361,41 @@ export class Logging {
     return new MiniLogger(object, config);
   };
   /**
-   * @description Configuration for the logging system.
-   * @summary Stores the global verbosity level and log level settings.
+   * @description Configuration for the logging system
+   * @summary Stores the global logging configuration including verbosity, log level, styling, and formatting settings
    */
   private static _config: LoggingConfig = DefaultLoggingConfig;
 
   /**
-   * @description Private constructor to prevent instantiation.
-   * @summary Ensures that the Logging class cannot be instantiated as it's designed to be used statically.
+   * Private constructor to prevent instantiation
    */
   private constructor() {}
 
+  /**
+   * @description Sets the factory function for creating logger instances
+   * @summary Allows customizing how logger instances are created
+   * @param {LoggerFactory} factory - The factory function to use for creating loggers
+   * @return {void}
+   */
   static setFactory(factory: LoggerFactory) {
     Logging._factory = factory;
   }
 
   /**
-   * @description Setter for the logging configuration.
-   * @summary Allows updating the global logging configuration.
-   *
-   * @param config - An object containing verbosity and log level settings.
+   * @description Updates the global logging configuration
+   * @summary Allows updating the global logging configuration with new settings
+   * @param {Partial<LoggingConfig>} config - The configuration options to apply
+   * @return {void}
    */
   static setConfig(config: Partial<LoggingConfig>) {
     Object.assign(this._config, config);
   }
 
+  /**
+   * @description Gets a copy of the current global logging configuration
+   * @summary Returns a copy of the current global logging configuration
+   * @return {LoggingConfig} A copy of the current configuration
+   */
   static getConfig(): LoggingConfig {
     return Object.assign({}, this._config);
   }
