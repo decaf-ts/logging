@@ -462,6 +462,14 @@ export class Logging {
     return this.get().error(msg);
   }
 
+  /**
+   * @description Creates a logger for a specific object or context
+   * @summary Creates a new logger instance for the given object or context using the factory function
+   * @param {LoggingContext} object - The object, class, or context to create a logger for
+   * @param {Partial<LoggingConfig>} [config] - Optional configuration to override global settings
+   * @param {...any} args - Additional arguments to pass to the logger factory
+   * @return {Logger} A new logger instance for the specified object or context
+   */
   static for(
     object: LoggingContext,
     config?: Partial<LoggingConfig>,
@@ -490,6 +498,39 @@ export class Logging {
     return this._factory(reason, this._config, id);
   }
 
+  /**
+   * @description Applies theme styling to text
+   * @summary Applies styling (colors, formatting) to text based on the theme configuration
+   * @param {string} text - The text to style
+   * @param {keyof Theme | keyof LogLevel} type - The type of element to style (e.g., "class", "message", "logLevel")
+   * @param {LogLevel} loggerLevel - The log level to use for styling
+   * @param {Theme} [template=DefaultTheme] - The theme to use for styling
+   * @return {string} The styled text
+   * @mermaid
+   * sequenceDiagram
+   *   participant Caller
+   *   participant Theme as Logging.theme
+   *   participant Apply as apply function
+   *   participant Style as styled-string-builder
+   *
+   *   Caller->>Theme: theme(text, type, loggerLevel)
+   *   Theme->>Theme: Check if styling is enabled
+   *   alt styling disabled
+   *     Theme-->>Caller: return original text
+   *   else styling enabled
+   *     Theme->>Theme: Get theme for type
+   *     alt theme not found
+   *       Theme-->>Caller: return original text
+   *     else theme found
+   *       Theme->>Theme: Determine actual theme based on log level
+   *       Theme->>Apply: Apply each style property
+   *       Apply->>Style: Apply colors and formatting
+   *       Style-->>Apply: Return styled text
+   *       Apply-->>Theme: Return styled text
+   *       Theme-->>Caller: Return final styled text
+   *     end
+   *   end
+   */
   static theme(
     text: string,
     type: keyof Theme | keyof LogLevel,
