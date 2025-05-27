@@ -10,13 +10,6 @@ export * from "./types";
  */
 
 /**
- * @description Main logging namespace
- * @summary Contains all logging functionality and utilities for the application
- * @namespace Logging
- * @memberOf module:Logging
- */
-
-/**
  * @description Current package version string
  * @summary Stores the current package version, used for version tracking and compatibility checks
  * @const VERSION

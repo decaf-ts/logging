@@ -27,53 +27,20 @@ import {
  * @example
  * // Create a new logger for a class
  * const logger = new MiniLogger('MyClass');
- * 
+ *
  * // Log messages at different levels
  * logger.info('This is an info message');
  * logger.debug('This is a debug message');
  * logger.error('Something went wrong');
- * 
+ *
  * // Create a child logger for a specific method
  * const methodLogger = logger.for('myMethod');
  * methodLogger.verbose('Detailed information', 2);
- * 
+ *
  * // Log with custom configuration
  * logger.for('specialMethod', { style: true }).info('Styled message');
- * @mermaid
- * classDiagram
- *   class Logger {
- *     <<interface>>
- *     +for(method, config, ...args)
- *     +silly(msg, verbosity)
- *     +verbose(msg, verbosity)
- *     +info(msg)
- *     +debug(msg)
- *     +error(msg)
- *     +setConfig(config)
- *   }
- *   
- *   class MiniLogger {
- *     -context: string
- *     -conf?: Partial~LoggingConfig~
- *     +constructor(context, conf?)
- *     #config(key)
- *     +for(method?, config?, ...args)
- *     #createLog(level, message, stack?)
- *     +log(level, msg, stack?)
- *     +silly(msg, verbosity)
- *     +verbose(msg, verbosity)
- *     +info(msg)
- *     +debug(msg)
- *     +error(msg)
- *     +setConfig(config)
- *   }
- *   
- *   Logger <|-- MiniLogger : implements
  */
 export class MiniLogger implements Logger {
-  /**
-   * Creates a new MiniLogger instance.
-   */
   constructor(
     protected context: string,
     protected conf?: Partial<LoggingConfig>
@@ -287,18 +254,18 @@ export class MiniLogger implements Logger {
  * @example
  * // Set global configuration
  * Logging.setConfig({ level: LogLevel.debug, style: true });
- * 
+ *
  * // Get a logger for a specific class
  * const logger = Logging.for('MyClass');
- * 
+ *
  * // Log messages at different levels
  * logger.info('Application started');
  * logger.debug('Processing data...');
- * 
+ *
  * // Log with context
  * const methodLogger = Logging.for('MyClass.myMethod');
  * methodLogger.verbose('Detailed operation information', 1);
- * 
+ *
  * // Log errors
  * try {
  *   // some operation
@@ -317,7 +284,7 @@ export class MiniLogger implements Logger {
  *     +error(msg)
  *     +setConfig(config)
  *   }
- *   
+ *
  *   class Logging {
  *     -global: Logger
  *     -_factory: LoggerFactory
@@ -335,11 +302,11 @@ export class MiniLogger implements Logger {
  *     +because(reason, id)
  *     +theme(text, type, loggerLevel, template)
  *   }
- *   
+ *
  *   class MiniLogger {
  *     +constructor(context, conf?)
  *   }
- *   
+ *
  *   Logging ..> Logger : creates
  *   Logging ..> MiniLogger : creates by default
  */
@@ -366,9 +333,6 @@ export class Logging {
    */
   private static _config: LoggingConfig = DefaultLoggingConfig;
 
-  /**
-   * Private constructor to prevent instantiation
-   */
   private constructor() {}
 
   /**
@@ -502,7 +466,7 @@ export class Logging {
    * @description Applies theme styling to text
    * @summary Applies styling (colors, formatting) to text based on the theme configuration
    * @param {string} text - The text to style
-   * @param {keyof Theme | keyof LogLevel} type - The type of element to style (e.g., "class", "message", "logLevel")
+   * @param {string} type - The type of element to style (e.g., "class", "message", "logLevel")
    * @param {LogLevel} loggerLevel - The log level to use for styling
    * @param {Theme} [template=DefaultTheme] - The theme to use for styling
    * @return {string} The styled text

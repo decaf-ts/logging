@@ -9,6 +9,8 @@ import { LoggingMode, LogLevel } from "./constants";
  */
 export type StringLike = string | { toString: () => string };
 
+export type AnyFunction = (...args: any[]) => any;
+
 /**
  * @description A type representing logging context
  * @summary Represents a context for logging, which can be a string, a class constructor, or a function
@@ -18,7 +20,7 @@ export type StringLike = string | { toString: () => string };
 export type LoggingContext =
   | string
   | { new (...args: any[]): any }
-  | ((...args: any[]) => any);
+  | AnyFunction;
 
 /**
  * @description Interface for a logger with verbosity levels.

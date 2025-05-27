@@ -15,34 +15,14 @@ import { LogLevel } from "../constants";
  * @example
  * // Create a Winston logger for a class
  * const logger = new WinstonLogger('MyClass');
- * 
+ *
  * // Log messages at different levels
  * logger.info('Application started');
  * logger.error(new Error('Something went wrong'));
- * 
+ *
  * // Create a child logger for a specific method
  * const methodLogger = logger.for('myMethod');
  * methodLogger.debug('Processing data...');
- * @mermaid
- * classDiagram
- *   class Logger {
- *     <<interface>>
- *   }
- *   
- *   class MiniLogger {
- *     #context: string
- *     #conf?: Partial~LoggingConfig~
- *   }
- *   
- *   class WinstonLogger {
- *     #winston: winston.Logger
- *     #transports?: Transport[]|Transport
- *     +constructor(cont, conf?, transports?)
- *     #log(level, msg, stack?)
- *   }
- *   
- *   Logger <|-- MiniLogger : implements
- *   MiniLogger <|-- WinstonLogger : extends
  */
 export class WinstonLogger extends MiniLogger implements Logger {
   protected winston: winston.Logger;

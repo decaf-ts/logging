@@ -10,7 +10,6 @@ import { Logging } from "./logging";
  * @return {Function} A method decorator that wraps the original method with logging
  * @function log
  * @category Decorators
- * @memberOf module:Logging
  * @mermaid
  * sequenceDiagram
  *   participant Client
@@ -77,7 +76,6 @@ export function log(
  * @return {Function} A method decorator that wraps the original method with debug logging
  * @function debug
  * @category Decorators
- * @memberOf module:Logging
  */
 export function debug(benchmark: boolean = false) {
   return log(LogLevel.debug, benchmark);
@@ -89,7 +87,7 @@ export function debug(benchmark: boolean = false) {
  * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
  * @return {Function} A method decorator that wraps the original method with info logging
  * @function info
- * @memberOf module:Logging
+ * @category Decorators
  */
 export function info(benchmark: boolean = false) {
   return log(LogLevel.info, benchmark);
@@ -102,7 +100,6 @@ export function info(benchmark: boolean = false) {
  * @return {Function} A method decorator that wraps the original method with silly logging
  * @function silly
  * @category Decorators
- * @memberOf module:Logging
  */
 export function silly(benchmark: boolean = false) {
   return log(LogLevel.silly, benchmark);
@@ -116,7 +113,6 @@ export function silly(benchmark: boolean = false) {
  * @return {Function} A method decorator that wraps the original method with verbose logging
  * @function verbose
  * @category Decorators
- * @memberOf module:Logging
  */
 export function verbose(verbosity = 0, benchmark: boolean = false) {
   return log(LogLevel.verbose, benchmark, verbosity);
