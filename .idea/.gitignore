@@ -9,3 +9,5 @@
 /aws/
 vcs.xml
 misc.xml
+/logging.iml
+/modules.xml
