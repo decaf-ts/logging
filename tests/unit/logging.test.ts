@@ -72,7 +72,9 @@ describe("MiniLogger", () => {
     });
 
     it("should create a new MiniLogger instance with an ID", () => {
-      const idLogger = new MiniLogger("IdContext", undefined, "test-id");
+      const idLogger = new MiniLogger("IdContext", {
+        correlationId: "test-id",
+      });
       expect(idLogger).toBeInstanceOf(MiniLogger);
     });
   });
@@ -382,7 +384,7 @@ describe("Logging", () => {
     });
 
     it("should create a new logger with an ID", () => {
-      const logger = Logging.for("TestContext", "test-id");
+      const logger = Logging.for("TestContext", { correlationId: "test-id" });
       expect(logger).toBeInstanceOf(MiniLogger);
     });
 
@@ -394,7 +396,10 @@ describe("Logging", () => {
 
     it("should create a new logger with an ID and custom config", () => {
       const config: Partial<LoggingConfig> = { level: LogLevel.debug };
-      const logger = Logging.for("TestContext", "test-id", config);
+      const logger = Logging.for(
+        "TestContext",
+        Object.assign({ correlationId: "test-id" }, config)
+      );
       expect(logger).toBeInstanceOf(MiniLogger);
     });
   });

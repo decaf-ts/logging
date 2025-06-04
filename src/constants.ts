@@ -127,6 +127,7 @@ export const DefaultLoggingConfig: LoggingConfig = {
   logLevel: true,
   mode: LoggingMode.RAW,
   style: false,
+  contextSeparator: ".",
   separator: " - ",
   timestamp: true,
   timestampFormat: "HH:mm:ss.SSS",

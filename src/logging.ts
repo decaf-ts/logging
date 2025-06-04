@@ -63,8 +63,7 @@ export class MiniLogger implements Logger {
    */
   for(
     method?: string | ((...args: any[]) => any),
-    config?: Partial<LoggingConfig>,
-    ...args: any[]
+    config?: Partial<LoggingConfig>
   ): Logger {
     method = method
       ? typeof method === "string"
@@ -72,7 +71,24 @@ export class MiniLogger implements Logger {
         : method.name
       : undefined;
 
-    return Logging.for([this.context, method].join("."), config, ...args);
+    return new Proxy(this, {
+      get: (target: typeof this, p: string | symbol, receiver: any) => {
+        const result = Reflect.get(target, p, receiver);
+        if (p === "config") {
+          return new Proxy(this.config, {
+            get: (target: typeof this.config, p: string | symbol) => {
+              if (config && p in config)
+                return config[p as keyof LoggingConfig];
+              return Reflect.get(target, p, receiver);
+            },
+          });
+        }
+        if (p === "context") {
+          return [result, method].join(".");
+        }
+        return result;
+      },
+    });
   }
 
   /**
@@ -240,7 +256,7 @@ export class MiniLogger implements Logger {
    * @param {Partial<LoggingConfig>} config - The configuration options to apply
    * @return {void}
    */
-  setConfig(config: Partial<LoggingConfig>) {
+  setConfig(config: Partial<LoggingConfig>): void {
     this.conf = { ...(this.conf || {}), ...config };
   }
 }

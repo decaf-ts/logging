@@ -87,6 +87,7 @@ export interface Logger {
  * @property {boolean} [logLevel] - Whether to display log level in output.
  * @property {number} verbose - The verbosity level.
  * @property {LoggingMode} [mode] - Output format mode.
+ * @property {string} contextSeparator - Separator between context entries.
  * @property {string} separator - Separator between log components.
  * @property {boolean} [style] - Whether to apply styling to log output.
  * @property {boolean} [timestamp] - Whether to include timestamps in log messages.
@@ -101,6 +102,7 @@ export type LoggingConfig = {
   logLevel?: boolean;
   verbose: number;
   mode?: LoggingMode;
+  contextSeparator: string;
   separator: string;
   style?: boolean;
   timestamp?: boolean;
