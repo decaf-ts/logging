@@ -11,16 +11,17 @@ export type StringLike = string | { toString: () => string };
 
 export type AnyFunction = (...args: any[]) => any;
 
+export type Class<T> = {
+  new (...args: any[]): T;
+};
+
 /**
  * @description A type representing logging context
  * @summary Represents a context for logging, which can be a string, a class constructor, or a function
  * @typedef {(string|Function|Object)} LoggingContext
  * @memberOf module:Logging
  */
-export type LoggingContext =
-  | string
-  | { new (...args: any[]): any }
-  | AnyFunction;
+export type LoggingContext = string | Class<any> | AnyFunction;
 
 /**
  * @description Interface for a logger with verbosity levels.
