@@ -98,6 +98,6 @@
     "winston": "^3.17.0"
   },
   "dependencies": {
-    "styled-string-builder": "^1.4.11"
+    "styled-string-builder": "^1.4.12"
   }
 }
