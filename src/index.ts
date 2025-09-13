@@ -1,5 +1,6 @@
 export * from "./constants";
 export * from "./decorators";
+export * from "./LoggedClass";
 export * from "./logging";
 export * from "./types";
 
