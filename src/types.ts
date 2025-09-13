@@ -23,7 +23,7 @@ export type AnyFunction = (...args: any[]) => any;
  * @summary Describes a class constructor that produces instances of type T. Useful when
  * passing class references around (e.g., for context or dependency injection).
  * @template T
- * @typedef {new (...args: any[]) => T} Class
+ * @typedef {function(any[]): T} Class
  * @memberOf module:Logging
  */
 export type Class<T> = {
