@@ -53,23 +53,32 @@ export class MiniLogger implements Logger {
     return Logging.getConfig()[key];
   }
 
+  for(method: string | ((...args: any[]) => any)): Logger;
+  for(config: Partial<LoggingConfig>): Logger;
   /**
    * @description Creates a child logger for a specific method or context
    * @summary Returns a new logger instance with the current context extended by the specified method name
    * @param {string | Function} method - The method name or function to create a logger for
    * @param {Partial<LoggingConfig>} config - Optional configuration to override settings
-   * @param {...any} args - Additional arguments to pass to the logger factory
+   * @param {...any[]} args - Additional arguments to pass to the logger factory
    * @return {Logger} A new logger instance for the specified method
    */
   for(
-    method?: string | ((...args: any[]) => any),
-    config?: Partial<LoggingConfig>
+    method?: string | ((...args: any[]) => any) | Partial<LoggingConfig>,
+    config?: Partial<LoggingConfig>,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ...args: any[]
   ): Logger {
-    method = method
-      ? typeof method === "string"
-        ? method
-        : method.name
-      : undefined;
+    if (!config && typeof method === "object") {
+      config = method;
+      method = undefined;
+    } else {
+      method = method
+        ? typeof method === "string"
+          ? method
+          : (method as any).name
+        : undefined;
+    }
 
     return new Proxy(this, {
       get: (target: typeof this, p: string | symbol, receiver: any) => {
@@ -83,7 +92,7 @@ export class MiniLogger implements Logger {
             },
           });
         }
-        if (p === "context") {
+        if (p === "context" && method) {
           return [result, method].join(".");
         }
         return result;
@@ -465,14 +474,12 @@ export class Logging {
   }
 
   /**
-   * @description Creates a logger for a specific reason or context.
-   *
-   * @summary This static method creates a new logger instance using the factory function,
-   * based on a given reason or context.
-   *
-   * @param reason - A string describing the reason or context for creating this logger.
-   * @param id
-   * @returns A new VerbosityLogger or ClassLogger instance.
+   * @description Creates a logger for a specific reason or correlation context
+   * @summary Utility to quickly create a logger labeled with a free-form reason and optional identifier
+   * so that ad-hoc operations can be traced without tying the logger to a class or method name.
+   * @param {string} reason - A textual reason or context label for this logger instance
+   * @param {string} [id] - Optional identifier to help correlate related log entries
+   * @return {Logger} A new logger instance labeled with the provided reason and id
    */
   static because(reason: string, id?: string): Logger {
     return this._factory(reason, this._config, id);

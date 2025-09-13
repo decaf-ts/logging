@@ -9,7 +9,6 @@ import { Logging } from "./logging";
  * @param {number} [verbosity=0] - The verbosity level for the log messages (default: 0)
  * @return {Function} A method decorator that wraps the original method with logging
  * @function log
- * @category Decorators
  * @mermaid
  * sequenceDiagram
  *   participant Client
@@ -31,6 +30,7 @@ import { Logging } from "./logging";
  *     Decorator->>Logger: log benchmark (if enabled)
  *     Decorator-->>Client: return result
  *   end
+ * @category Method Decorators
  */
 export function log(
   level: LogLevel = LogLevel.info,
@@ -75,7 +75,7 @@ export function log(
  * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
  * @return {Function} A method decorator that wraps the original method with debug logging
  * @function debug
- * @category Decorators
+ * @category Method Decorators
  */
 export function debug(benchmark: boolean = false) {
   return log(LogLevel.debug, benchmark);
@@ -87,7 +87,7 @@ export function debug(benchmark: boolean = false) {
  * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
  * @return {Function} A method decorator that wraps the original method with info logging
  * @function info
- * @category Decorators
+ * @category Method Decorators
  */
 export function info(benchmark: boolean = false) {
   return log(LogLevel.info, benchmark);
@@ -99,7 +99,7 @@ export function info(benchmark: boolean = false) {
  * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
  * @return {Function} A method decorator that wraps the original method with silly logging
  * @function silly
- * @category Decorators
+ * @category Method Decorators
  */
 export function silly(benchmark: boolean = false) {
   return log(LogLevel.silly, benchmark);
@@ -108,12 +108,33 @@ export function silly(benchmark: boolean = false) {
 /**
  * @description Method decorator for logging function calls with verbose level
  * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
+ * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @function verbose
+ */
+export function verbose(): void;
+
+/**
+ * @description Method decorator for logging function calls with verbose level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
+ * @param {boolean} benchmark - Whether to log execution time
+ * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @function verbose
+ */
+export function verbose(benchmark: boolean): void;
+
+/**
+ * @description Method decorator for logging function calls with verbose level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
  * @param {number} verbosity - The verbosity level for the log messages (default: 0)
  * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
  * @return {Function} A method decorator that wraps the original method with verbose logging
  * @function verbose
- * @category Decorators
+ * @category Method Decorators
  */
-export function verbose(verbosity = 0, benchmark: boolean = false) {
+export function verbose(verbosity: number | boolean = 0, benchmark?: boolean) {
+  if (typeof verbosity === "boolean") {
+    benchmark = verbosity;
+    verbosity = 0;
+  }
   return log(LogLevel.verbose, benchmark, verbosity);
 }

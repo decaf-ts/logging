@@ -9,8 +9,23 @@ import { LoggingMode, LogLevel } from "./constants";
  */
 export type StringLike = string | { toString: () => string };
 
+/**
+ * @description A generic function type with any arguments and return
+ * @summary Represents any callable signature, useful for annotating higher-order utilities
+ * and dynamic method references where argument and return types are not constrained.
+ * @typedef {Function} AnyFunction
+ * @memberOf module:Logging
+ */
 export type AnyFunction = (...args: any[]) => any;
 
+/**
+ * @description A constructable class type
+ * @summary Describes a class constructor that produces instances of type T. Useful when
+ * passing class references around (e.g., for context or dependency injection).
+ * @template T
+ * @typedef {new (...args: any[]) => T} Class
+ * @memberOf module:Logging
+ */
 export type Class<T> = {
   new (...args: any[]): T;
 };

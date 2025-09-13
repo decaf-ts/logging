@@ -1,79 +1,73 @@
-### Description
+# Logging Library — Detailed Description
 
-Decaf's Logging is a powerful TypeScript logging library designed to provide flexible, context-aware logging capabilities for applications of any size. The library is built with a focus on type safety, configurability, and ease of use.
+The logging package is a lightweight, extensible logging solution for TypeScript projects. It centers on two main constructs:
+- MiniLogger — a minimal, context-aware logger used by default.
+- Logging — a static facade that manages global configuration, creates loggers for classes/functions/strings, and applies optional theming.
 
-#### Core Architecture
+It also offers:
+- A concise set of decorators (log, debug, info, verbose, silly) to instrument methods with consistent logging and optional benchmarking.
+- Pluggable factories so that alternate implementations (e.g., WinstonLogger) can be used without changing call sites.
+- Strong typing for configuration and theming primitives.
 
-The library follows a modular architecture with several key components:
+Core files and their roles
+- src/types.ts: Type definitions and contracts
+  - Logger: the runtime contract with methods silly, verbose, info, debug, error, for, setConfig.
+  - LoggingConfig: runtime configuration for filtering, formatting, and styling.
+  - LoggerFactory: factory signature returning a Logger for a given context and optional config.
+  - Theme/ThemeOption/ThemeOptionByLogLevel: shape of color and style configuration, optionally varying by LogLevel.
+  - Additional helpers: StringLike, AnyFunction, Class, LoggingContext.
 
-1. **Logging System**:
-   - `Logging`: A static class that serves as the central entry point for the logging system. It manages global configuration, provides factory methods for creating loggers, and offers static logging methods.
-   - `MiniLogger`: A lightweight logger implementation that provides the core logging functionality with support for different log levels, context-aware logging, and customizable formatting.
-   - `Logger` interface: Defines the standard methods that all logger implementations must provide, ensuring consistency across different logger types.
+- src/constants.ts: Defaults and enums
+  - LogLevel: error | info | verbose | debug | silly (string values), plus NumericLogLevels for filtering.
+  - LoggingMode: RAW | JSON (current implementation focuses on RAW; JSON is available for adapters like Winston).
+  - DefaultTheme: sensible default colors/styles per component and per log level.
+  - DefaultLoggingConfig: default global configuration (info level, no styling, timestamp on, etc.).
 
-2. **Configuration System**:
-   - `LoggingConfig`: Defines configuration options for the logging system, including log level, verbosity, styling, timestamp format, and more.
-   - `DefaultLoggingConfig`: Provides sensible default settings that can be overridden as needed.
+- src/logging.ts: Implementations and static facade
+  - MiniLogger: A small, dependency-light logger that:
+    - Generates formatted log strings (timestamp, log level, context, correlation id, message, stack) according to config.
+    - Supports child loggers via .for(method|config) with a Proxy to overlay per-child config and extend the context (class.method).
+    - Emits to console.log/console.debug/console.error based on level. Verbosity controls .silly output (gated by config.verbose).
+  - Logging: The static entry point that:
+    - Holds global configuration (Logging.getConfig(), Logging.setConfig()).
+    - Creates loggers for arbitrary contexts (Logging.for(object|class|function|string, config?)).
+    - Provides convenience static logging methods (info, debug, error, verbose, silly) delegating to a global logger instance.
+    - Supports theming (Logging.theme) by applying Theme options through styled-string-builder when style=true.
+    - Allows replacing the logger factory (Logging.setFactory) to integrate with other backends (e.g., Winston).
 
-3. **Log Levels**:
-   - `LogLevel` enum: Defines standard log levels (error, info, verbose, debug, silly) for categorizing log messages.
-   - `NumericLogLevels`: Maps log levels to numeric values for comparison and filtering.
+- src/decorators.ts: Method decorators
+  - log(level=info, benchmark=false, verbosity=0): wraps a method to emit a call log and optionally a completion time; supports Promise-returning methods.
+  - debug/info/silly/verbose: concise wrappers around log() for common patterns.
 
-4. **Styling System**:
-   - `Theme` interface: Defines a comprehensive theming system for styling log output with colors and formatting.
-   - `DefaultTheme`: Provides a default color scheme for log output.
-   - `LoggingMode` enum: Supports different output formats (RAW, JSON) for log messages.
+- src/LoggedClass.ts: Base convenience class
+  - LoggedClass exposes a protected this.log getter returning a context-aware Logger built via Logging.for(this), simplifying logging inside class methods.
 
-5. **Decorator System**:
-   - Method decorators (`@log`, `@debug`, `@info`, `@verbose`, `@silly`): Allow for easy integration of logging into class methods with options for benchmarking and verbosity control.
+- src/winston/winston.ts: Optional Winston adapter
+  - WinstonLogger: extends MiniLogger but delegates emission to a configured Winston instance.
+  - WinstonFactory: a LoggerFactory you can install with Logging.setFactory(WinstonFactory) to globally route logs through Winston.
 
-6. **Winston Integration**:
-   - `WinstonLogger`: Extends the core logging functionality to leverage the Winston logging library.
-   - `WinstonFactory`: A factory function for creating Winston-based loggers.
+Design principles
+- Minimal by default: Console output with small surface area and no heavy dependencies (except styled-string-builder when style is enabled).
+- Config-driven: Behavior (level thresholds, verbosity, timestamps, separators, theming) is controlled via LoggingConfig.
+- Context-first: Log context is explicit ("MyClass" or "MyClass.method"), aiding filtering and debugging.
+- Extensible: Swap logger implementations via a factory; MiniLogger serves as a reference implementation.
+- Safe theming: Logging.theme guards against invalid theme keys and values and logs errors instead of throwing.
 
-#### Key Features
+Key behaviors
+- Level filtering: NumericLogLevels are used to compare configured level with the message level and decide emission.
+- Verbosity: .silly obeys LoggingConfig.verbose; only messages with <= configured verbosity are emitted.
+- Theming and styling: When style=true, Logging.theme applies Theme rules per component (class, message, logLevel, id, stack, timestamp). Theme can vary per LogLevel via ThemeOptionByLogLevel.
+- Correlation IDs: If correlationId is configured in a logger or child logger, it is included in output for easier traceability.
 
-1. **Hierarchical Context-Aware Logging**:
-   The library allows creating loggers for specific classes and methods, maintaining a hierarchy of contexts. This makes it easy to trace log messages back to their source and filter logs by context.
+Public API surface
+- Classes: MiniLogger, Logging, LoggedClass; WinstonLogger (optional).
+- Decorators: log, debug, info, verbose, silly.
+- Enums/Consts: LogLevel, LoggingMode, NumericLogLevels, DefaultTheme, DefaultLoggingConfig.
+- Types: Logger, LoggingConfig, LoggerFactory, Theme, ThemeOption, ThemeOptionByLogLevel, LoggingContext.
 
-2. **Configurable Styling**:
-   Extensive support for styling log output with colors and formatting, with a theme system that allows customizing the appearance of different log components.
-
-3. **Multiple Output Formats**:
-   Support for both human-readable (RAW) and machine-parseable (JSON) output formats.
-
-4. **Method Decorators**:
-   Easy-to-use decorators for adding logging to class methods, with support for benchmarking execution time.
-
-5. **Verbosity Control**:
-   Fine-grained control over log verbosity, allowing developers to adjust the detail level of logs without changing code.
-
-6. **Type Safety**:
-   Comprehensive TypeScript type definitions ensure type safety and enable IDE autocompletion.
-
-7. **Winston Integration**:
-   Seamless integration with the popular Winston logging library, providing access to its advanced features while maintaining the same interface.
-
-8. **Error Handling**:
-   Special support for logging errors with stack traces for better debugging.
-
-#### Usage Patterns
-
-The library supports several usage patterns:
-
-1. **Global Logging**:
-   Using the static `Logging` class methods for simple, application-wide logging.
-
-2. **Class-Specific Logging**:
-   Creating loggers for specific classes to provide context for log messages.
-
-3. **Method-Specific Logging**:
-   Creating child loggers for specific methods to further refine the context.
-
-4. **Decorator-Based Logging**:
-   Using method decorators to automatically log method calls and execution times.
-
-5. **Winston-Based Logging**:
-   Leveraging Winston's advanced features while maintaining the same interface.
-
-This flexible design makes the library suitable for a wide range of applications, from simple scripts to complex enterprise systems.
+Intended usage
+- Use Logging.setConfig() at application startup to set level/style/timestamps.
+- Create class- or method-scoped loggers via Logging.for(MyClass) or logger.for('method').
+- Adopt LoggedClass to remove boilerplate in classes.
+- Add decorators to methods for automatic call/benchmark logs.
+- For advanced deployments, swap to WinstonFactory.
