@@ -1,11 +1,17 @@
 export * from "./constants";
 export * from "./decorators";
+export * from "./LoggedClass";
 export * from "./logging";
 export * from "./types";
 
 /**
  * @description A logging module for TypeScript applications
- * @summary This module provides a comprehensive logging solution for TypeScript applications. It exports constants, decorators, logging utilities, and type definitions to facilitate structured logging.
+ * @summary Provides a comprehensive, flexible logging solution. This module exposes:
+ * - Core classes like {@link Logging} and {@link MiniLogger}
+ * - Decorators such as {@link log} for instrumenting methods
+ * - Configuration and constants like {@link LogLevel} and {@link DefaultLoggingConfig}
+ * - Type definitions including {@link Logger} and {@link LoggingConfig}
+ * These exports enable consistent, context-aware, and optionally themed logging across projects.
  * @module Logging
  */
 
