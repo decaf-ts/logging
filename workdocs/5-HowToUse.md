@@ -1,291 +1,210 @@
-### How to Use
+# How to Use the Logging Library
 
-- [Initial Setup](./workdocs/tutorials/For%20Developers.md#_initial-setup_)
-- [Installation](./workdocs/tutorials/For%20Developers.md#installation)
+This guide provides concise, non-redundant examples for each public API. Examples are inspired by the package’s unit tests and reflect real usage.
 
-## Basic Usage
+Note: Replace the import path with your actual package name. In this monorepo, tests import from "../../src".
 
-### Global Logging
+- import { ... } from "@your-scope/logging" // typical
+- import { ... } from "../../src" // inside this repo while developing
 
-The simplest way to use the library is through the static `Logging` class:
 
-```typescript
-import { Logging, LogLevel } from 'decaf-logging';
+Basic setup and global logging via Logging
+Description: Configure global logging and write messages through the static facade, similar to unit tests that verify console output and level filtering.
 
-// Configure global logging settings
+```ts
+import { Logging, LogLevel } from "@decaf-ts/logging";
+
+// Set global configuration
 Logging.setConfig({
-  level: LogLevel.debug,
-  style: true,
-  timestamp: true
+  level: LogLevel.debug, // allow debug and above
+  style: false,          // plain output (tests use both styled and themeless)
+  timestamp: false,      // omit timestamp for simplicity in this example
 });
 
-// Log messages at different levels
-Logging.info('Application started');
-Logging.debug('Debug information');
-Logging.error('An error occurred');
-Logging.verbose('Detailed information', 1); // With verbosity level
+// Log using the global logger
+Logging.info("Application started");
+Logging.debug("Debug details");
+Logging.error("Something went wrong");
+
+// Verbosity-controlled logs (silly delegates to verbose internally)
+Logging.setConfig({ verbose: 2 });
+Logging.silly("Extra details at verbosity 1");      // emitted when verbose >= 1
+Logging.verbose("Even more details", 2);            // only with verbose >= 2
 ```
 
-### Class-Specific Logging
 
-For more context-aware logging, create loggers for specific classes:
+Create a class-scoped logger and child method logger
+Description: Create a logger bound to a specific context (class) and derive a child logger for a method, matching patterns used in tests.
 
-```typescript
-import { Logging, Logger } from 'decaf-logging';
+```ts
+import { Logging, LogLevel } from "@decaf-ts/logging";
 
-class UserService {
-  private logger: Logger;
+Logging.setConfig({ level: LogLevel.debug });
 
-  constructor() {
-    // Create a logger for this class
-    this.logger = Logging.for(UserService);
-    // Or with string name: Logging.for('UserService');
-  }
+// A class-scoped logger
+const classLogger = Logging.for("UserService");
+classLogger.info("Fetching users");
 
-  getUser(id: string) {
-    this.logger.info(`Getting user with ID: ${id}`);
-    // ... implementation
-    this.logger.debug('User retrieved successfully');
-  }
-
-  updateUser(id: string, data: any) {
-    try {
-      this.logger.info(`Updating user with ID: ${id}`);
-      // ... implementation
-      this.logger.debug('User updated successfully');
-    } catch (error) {
-      this.logger.error(error); // Logs error with stack trace
-    }
-  }
-}
+// A child logger for a specific method with temporary config overrides
+const methodLogger = classLogger.for("list", { style: false });
+methodLogger.debug("Querying repository...");
 ```
 
-### Method-Specific Logging
 
-Create child loggers for specific methods to further refine the context:
+MiniLogger: direct use and per-instance config
+Description: Instantiate MiniLogger directly (the default implementation behind Logging.setFactory). Tests create MiniLogger with and without custom config.
 
-```typescript
-import { Logging, Logger } from 'decaf-logging';
+```ts
+import { MiniLogger, LogLevel, type LoggingConfig } from "@decaf-ts/logging";
 
-class DataProcessor {
-  private logger: Logger;
+const logger = new MiniLogger("TestContext");
+logger.info("Info from MiniLogger");
 
-  constructor() {
-    this.logger = Logging.for(DataProcessor);
-  }
+// With custom configuration
+const custom: Partial<LoggingConfig> = { level: LogLevel.debug, verbose: 2 };
+const customLogger = new MiniLogger("TestContext", custom);
+customLogger.debug("Debug with custom level");
 
-  processData(data: any[]) {
-    // Create a method-specific logger
-    const methodLogger = this.logger.for('processData');
-
-    methodLogger.info(`Processing ${data.length} items`);
-
-    // With custom configuration
-    const verboseLogger = methodLogger.for('details', { verbose: 2 });
-    verboseLogger.verbose('Starting detailed processing', 1);
-
-    // ... implementation
-  }
-}
+// Child logger with correlation id
+const traced = customLogger.for("run", { correlationId: "req-123" });
+traced.info("Tracing this operation");
 ```
 
-### Using Decorators
 
-Decorators provide an easy way to add logging to class methods:
+Decorators: log, debug, info, verbose, silly
+Description: Instrument methods to log calls and optional benchmarks. Tests validate decorator behavior for call and completion messages.
 
-```typescript
-import { debug, info, log, LogLevel, verbose } from 'decaf-logging';
+```ts
+import { log, debug, info as infoDecor, verbose as verboseDecor, silly as sillyDecor, LogLevel, Logging } from "@decaf-ts/logging";
 
-class PaymentProcessor {
-  // Basic logging with info level
-  @info()
-  processPayment(amount: number, userId: string) {
-    // Method implementation
+// Configure logging for demo
+Logging.setConfig({ level: LogLevel.debug, style: false, timestamp: false });
+
+class AccountService {
+  @log(LogLevel.info) // logs method call with args
+  create(name: string) {
+    return { id: "1", name };
+  }
+
+  @debug(true) // logs call and completion time at debug level
+  rebuildIndex() {
+    // heavy work...
     return true;
   }
 
-  // Debug level logging with benchmarking
-  @debug(true)
-  validatePayment(paymentData: any) {
-    // Method implementation
+  @info() // convenience wrapper for info level
+  enable() {
     return true;
   }
 
-  // Verbose logging with custom verbosity
-  @verbose(2)
-  recordTransaction(transactionData: any) {
-    // Method implementation
+  @verbose(1, true) // verbose with verbosity threshold and benchmark
+  syncAll() {
+    return Promise.resolve("ok");
   }
 
-  // Custom log level with benchmarking and verbosity
-  @log(LogLevel.error, true, 1)
-  handleFailure(error: Error) {
-    // Method implementation
+  @silly() // very chatty, only emitted when verbose allows
+  ping() {
+    return "pong";
   }
 }
+
+const svc = new AccountService();
+svc.create("Alice");
+svc.rebuildIndex();
+svc.enable();
+await svc.syncAll();
+svc.ping();
 ```
 
-### Winston Integration
 
-To use Winston for logging:
+LoggedClass: zero-boilerplate logging inside classes
+Description: Extend LoggedClass to gain a protected this.log with the correct context (class name). Tests use Logging.for to build similar context.
 
-```typescript
-import { Logging, LogLevel } from 'decaf-logging';
-import { WinstonFactory } from 'decaf-logging/winston';
-import winston from 'winston';
+```ts
+import { LoggedClass } from "@your-scope/logging";
 
-// Configure Winston transports
-const transports = [
-  new winston.transports.Console(),
-  new winston.transports.File({ filename: 'app.log' })
-];
+class UserRepository extends LoggedClass {
+  findById(id: string) {
+    this.log.info(`Finding ${id}`);
+    return { id };
+  }
+}
 
-// Set Winston as the logger factory
+const repo = new UserRepository();
+repo.findById("42");
+```
+
+
+Winston integration: swap the logger factory
+Description: Route all logging through WinstonLogger by installing WinstonFactory. This mirrors the optional adapter in src/winston.
+
+```ts
+import { Logging } from "@your-scope/logging";
+import { WinstonFactory } from "@your-scope/logging/winston/winston";
+
+// Install Winston as the logger factory
 Logging.setFactory(WinstonFactory);
 
-// Configure global logging
-Logging.setConfig({
-  level: LogLevel.info,
-  timestamp: true,
-  timestampFormat: 'YYYY-MM-DD HH:mm:ss'
-});
-
-// Create a Winston logger for a class
-const logger = Logging.for('MyService');
-logger.info('Service initialized');
+// Now any logger created will use Winston under the hood
+const log = Logging.for("ApiGateway");
+log.info("Gateway started");
 ```
 
-## Advanced Usage
 
-### Custom Styling
+Theming and styling with Logging.theme and config
+Description: Enable style and customize theme to colorize parts of the log (tests check styled output patterns).
 
-Configure custom styling for log output:
+```ts
+import { Logging, LogLevel, DefaultTheme, type Theme } from "@your-scope/logging";
 
-```typescript
-import { Logging, LogLevel, Theme } from 'decaf-logging';
+// Enable styling globally
+Logging.setConfig({ style: true, timestamp: true, context: false });
 
-// Define a custom theme
-const customTheme: Theme = {
-  class: {
-    fg: 35, // Magenta
-  },
-  id: {
-    fg: 36, // Cyan
-  },
-  stack: {},
-  timestamp: {
-    fg: 90, // Gray
-  },
-  message: {
-    error: {
-      fg: 31, // Red
-      style: ['bold'],
-    },
-  },
-  method: {},
+// Optionally override theme: make debug level yellow (fg:33) and error red+bold
+const theme: Theme = {
+  ...DefaultTheme,
   logLevel: {
-    error: {
-      fg: 31, // Red
-      style: ['bold'],
-    },
-    info: {
-      fg: 32, // Green
-    },
-    verbose: {
-      fg: 34, // Blue
-    },
-    debug: {
-      fg: 33, // Yellow
-    },
+    ...DefaultTheme.logLevel,
+    debug: { fg: 33 },
+    error: { fg: 31, style: ["bold"] },
   },
 };
 
-// Apply the custom theme
-Logging.setConfig({
-  style: true,
-  theme: customTheme
-});
+// Apply at runtime by passing to Logging.theme where needed (MiniLogger does this internally)
+const styled = Logging.theme("debug", "logLevel", LogLevel.debug, theme);
+
+// Regular logging picks up style=true and formats output accordingly
+Logging.debug("This is a styled debug message");
 ```
 
-### Correlation IDs
 
-Track related log messages with correlation IDs:
+Factory basics and because(reason, id)
+Description: Create ad-hoc, labeled loggers and use factory semantics.
 
-```typescript
-import { Logging } from 'decaf-logging';
+```ts
+import { Logging } from "@your-scope/logging";
 
-function processRequest(requestId: string, data: any) {
-  // Create a logger with correlation ID
-  const logger = Logging.for('RequestProcessor', { 
-    correlationId: requestId 
-  });
+// Ad-hoc logger labeled with a reason and optional id (handy for correlation)
+const jobLog = Logging.because("reindex", "job-77");
+jobLog.info("Starting reindex");
+```
 
-  logger.info('Processing request');
 
-  // All log messages from this logger will include the correlation ID
-  processRequestData(data, logger);
+Types: Logger and LoggingConfig in your code
+Description: Use the library’s types for better APIs.
 
-  logger.info('Request processing completed');
+```ts
+import type { Logger, LoggingConfig } from "@your-scope/logging";
+
+export interface ServiceDeps {
+  log: Logger;
+  config?: Partial<LoggingConfig>;
 }
 
-function processRequestData(data: any, logger: Logger) {
-  // Child loggers inherit the correlation ID
-  const dataLogger = logger.for('DataProcessor');
-  dataLogger.debug('Processing data');
-  // ...
-}
-```
-
-### JSON Output Mode
-
-For machine-readable logs:
-
-```typescript
-import { Logging, LoggingMode } from 'decaf-logging';
-
-// Configure for JSON output
-Logging.setConfig({
-  mode: LoggingMode.JSON,
-  timestamp: true
-});
-
-Logging.info('This will be output in JSON format');
-```
-
-### Custom Logger Factory
-
-Create a custom logger implementation:
-
-```typescript
-import { Logger, LoggerFactory, Logging, MiniLogger } from 'decaf-logging';
-
-// Custom logger that adds prefix to all messages
-class PrefixedLogger extends MiniLogger {
-  constructor(context: string, prefix: string, conf?: Partial<LoggingConfig>) {
-    super(context, conf);
-    this.prefix = prefix;
-  }
-
-  private prefix: string;
-
-  protected override createLog(level: LogLevel, message: StringLike | Error, stack?: string): string {
-    const msg = typeof message === 'string' ? message : message.message;
-    const prefixedMsg = `${this.prefix}: ${msg}`;
-    return super.createLog(level, prefixedMsg, stack);
+export class PaymentService {
+  constructor(private deps: ServiceDeps) {}
+  charge(amount: number) {
+    this.deps.log.info(`Charging ${amount}`);
   }
 }
-
-// Custom factory function
-const PrefixedLoggerFactory: LoggerFactory = (
-  context: string,
-  conf?: Partial<LoggingConfig>,
-  ...args: any[]
-) => new PrefixedLogger(context, args[0] || '[APP]', conf);
-
-// Set the custom factory
-Logging.setFactory(PrefixedLoggerFactory);
-
-// Create a logger with the custom factory
-const logger = Logging.for('MyClass', undefined, '[CUSTOM]');
-logger.info('Hello world'); // Outputs: "[CUSTOM]: Hello world"
 ```

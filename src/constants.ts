@@ -4,6 +4,7 @@ import { LoggingConfig, Theme } from "./types";
  * @description Enum for log levels.
  * @summary Defines different levels of logging for the application.
  * @enum {string}
+ * @readonly
  * @memberOf module:Logging
  */
 export enum LogLevel {
