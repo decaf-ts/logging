@@ -39,9 +39,11 @@ export function log(
 ) {
   return function (
     target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
+    propertyKey?: any,
+    descriptor?: PropertyDescriptor
   ) {
+    if (!descriptor)
+      throw new Error(`Logging decoration only applies to methods`);
     const log = Logging.for(target).for(target[propertyKey]);
     const method = log[level].bind(log);
     const originalMethod = descriptor.value;
@@ -118,7 +120,11 @@ export function silly(benchmark: boolean = false) {
  * @return {Function} A method decorator that wraps the original method with verbose logging
  * @function verbose
  */
-export function verbose(): void;
+export function verbose(): (
+  target: any,
+  propertyKey?: any,
+  descriptor?: any
+) => void;
 
 /**
  * @description Method decorator for logging function calls with verbose level
@@ -127,8 +133,21 @@ export function verbose(): void;
  * @return {Function} A method decorator that wraps the original method with verbose logging
  * @function verbose
  */
-export function verbose(benchmark: boolean): void;
+export function verbose(
+  benchmark: boolean
+): (target: any, propertyKey?: any, descriptor?: any) => void;
 
+/**
+ * @description Method decorator for logging function calls with verbose level
+ * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
+ * @param {number} verbosity - The verbosity level for the log messages (default: 0)
+ * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @function verbose
+ * @category Method Decorators
+ */
+export function verbose(
+  verbosity: number | boolean
+): (target: any, propertyKey?: any, descriptor?: any) => void;
 /**
  * @description Method decorator for logging function calls with verbose level
  * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity

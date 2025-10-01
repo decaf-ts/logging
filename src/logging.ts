@@ -56,6 +56,11 @@ export class MiniLogger implements Logger {
 
   for(method: string | ((...args: any[]) => any)): Logger;
   for(config: Partial<LoggingConfig>): Logger;
+  for(
+    method: string | ((...args: any[]) => any) | Partial<LoggingConfig>,
+    config: Partial<LoggingConfig>,
+    ...args: any[]
+  ): Logger;
   /**
    * @description Creates a child logger for a specific method or context
    * @summary Returns a new logger instance with the current context extended by the specified method name
