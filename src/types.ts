@@ -125,6 +125,8 @@ export type LoggingConfig = {
   timestampFormat?: string;
   context?: boolean;
   theme?: Theme;
+  format: "raw" | "json";
+  pattern: string;
   correlationId?: string | number;
 };
 

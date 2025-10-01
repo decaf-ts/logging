@@ -97,10 +97,17 @@ export const DefaultTheme: Theme = {
       fg: 31,
       style: ["bold"],
     },
-    info: {},
-    verbose: {},
+    info: {
+      fg: 34,
+      style: ["bold"],
+    },
+    verbose: {
+      fg: 34,
+      style: ["bold"],
+    },
     debug: {
       fg: 33,
+      style: ["bold"],
     },
   },
 };
@@ -133,5 +140,7 @@ export const DefaultLoggingConfig: LoggingConfig = {
   timestamp: true,
   timestampFormat: "HH:mm:ss.SSS",
   context: true,
+  format: "raw",
+  pattern: "{level} [{timestamp}] {context} - {message} {stack}",
   theme: DefaultTheme,
 };

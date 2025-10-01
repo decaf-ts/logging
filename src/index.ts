@@ -3,6 +3,7 @@ export * from "./decorators";
 export * from "./LoggedClass";
 export * from "./logging";
 export * from "./types";
+export * from "./utils";
 
 /**
  * @description A logging module for TypeScript applications
