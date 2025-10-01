@@ -45,7 +45,8 @@ export function log(
     const log = Logging.for(target).for(target[propertyKey]);
     const method = log[level].bind(log);
     const originalMethod = descriptor.value;
-    descriptor.value = function (...args: any[]) {
+
+    const func = function (this: typeof target, ...args: any[]) {
       method(`called with ${args}`, verbosity);
       const start = Date.now();
       let end: number;
@@ -65,7 +66,13 @@ export function log(
       }
 
       return result;
-    };
+    }.bind(target) as any;
+
+    Object.assign(func, "name", {
+      value: descriptor.value.name,
+    });
+
+    descriptor.value = func;
   };
 }
 
