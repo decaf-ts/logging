@@ -134,7 +134,7 @@ describe("MiniLogger", () => {
         LogLevel.info,
         "Test message"
       );
-      expect(logString).toContain("info");
+      expect(logString).toContain("INFO");
       expect(logString).toContain("Test message");
     });
 
@@ -146,7 +146,7 @@ describe("MiniLogger", () => {
         LogLevel.info,
         "Test message"
       );
-      expect(logString).toContain("info");
+      expect(logString).toContain("INFO");
       expect(logString).toContain("Test message");
     });
 
@@ -155,7 +155,7 @@ describe("MiniLogger", () => {
 
       // Access the protected createLog method using type assertion
       const logString = (logger as any).createLog(LogLevel.error, error);
-      expect(logString).toContain("error");
+      expect(logString).toContain("ERROR");
       expect(logString).toContain("Test error");
     });
 

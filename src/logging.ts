@@ -15,6 +15,7 @@ import {
   LogLevel,
   NumericLogLevels,
 } from "./constants";
+import { stringFormat } from "./utils";
 
 /**
  * @description A minimal logger implementation.
@@ -55,6 +56,11 @@ export class MiniLogger implements Logger {
 
   for(method: string | ((...args: any[]) => any)): Logger;
   for(config: Partial<LoggingConfig>): Logger;
+  for(
+    method: string | ((...args: any[]) => any) | Partial<LoggingConfig>,
+    config: Partial<LoggingConfig>,
+    ...args: any[]
+  ): Logger;
   /**
    * @description Creates a child logger for a specific method or context
    * @summary Returns a new logger instance with the current context extended by the specified method name
@@ -113,26 +119,29 @@ export class MiniLogger implements Logger {
     message: StringLike | Error,
     stack?: string
   ): string {
-    const log: string[] = [];
+    const log: Record<
+      "timestamp" | "level" | "context" | "correlationId" | "message" | "stack",
+      string
+    > = {} as any;
     const style = this.config("style");
     if (this.config("timestamp")) {
       const date = new Date().toISOString();
       const timestamp = style ? Logging.theme(date, "timestamp", level) : date;
-      log.push(timestamp);
+      log.timestamp = timestamp;
     }
 
     if (this.config("logLevel")) {
       const lvl: string = style
         ? Logging.theme(level, "logLevel", level)
         : level;
-      log.push(lvl);
+      log.level = lvl.toUpperCase();
     }
 
     if (this.config("context")) {
       const context: string = style
         ? Logging.theme(this.context, "class", level)
         : this.context;
-      log.push(context);
+      log.context = context;
     }
 
     if (this.config("correlationId")) {
@@ -140,7 +149,7 @@ export class MiniLogger implements Logger {
         const id: string = style
           ? Logging.theme(this.config("correlationId")!.toString(), "id", level)
           : this.config("correlationId")!.toString();
-        log.push(id);
+        log.correlationId = id;
       }
     }
 
@@ -153,7 +162,7 @@ export class MiniLogger implements Logger {
       : typeof message === "string"
         ? message
         : (message as Error).message;
-    log.push(msg);
+    log.message = msg;
     if (stack || message instanceof Error) {
       stack = style
         ? Logging.theme(
@@ -162,10 +171,26 @@ export class MiniLogger implements Logger {
             level
           )
         : stack;
-      log.push(`\nStack trace:\n${stack}`);
+      log.stack = `\nStack trace:\n${stack}`;
     }
 
-    return log.join(this.config("separator") as string);
+    switch (this.config("format")) {
+      case "json":
+        return JSON.stringify(log);
+      case "raw":
+        return (this.config("pattern") as string)
+          .split(" ")
+          .map((s) => {
+            if (!s.match(/\{.*?}/g)) return s;
+            const formattedS = stringFormat(s, log);
+            if (formattedS !== s) return formattedS;
+            return undefined;
+          })
+          .filter((s) => s)
+          .join(" ");
+      default:
+        throw new Error(`Unsupported logging format: ${this.config("format")}`);
+    }
   }
 
   /**
