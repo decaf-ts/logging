@@ -147,6 +147,14 @@ describe("Environment", () => {
     expect(Environment.keys()).toContain("ANOTHER_PROP");
   });
 
+  it("Expanded nested objects support ENV key composition via string coercion", () => {
+    const env = Environment.accumulate({ service: { host: "localhost" } });
+    // @ts-expect-error accessing dynamically
+    const service = (env as any).service;
+    expect(`${service}`).toBe("SERVICE");
+    expect(`${service.host}`).toBe("SERVICE__HOST");
+  });
+
   it("Environment.get returns accumulated value by key path", () => {
     Environment.accumulate({ sampleKey: "value123" });
     // @ts-expect-error accessing private in test context

@@ -1,7 +1,11 @@
 import { ObjectAccumulator } from "typed-object-accumulator";
 import { toENVFormat } from "./text";
 import { isBrowser } from "./web";
-import { BrowserEnvKey, DefaultLoggingConfig, ENV_PATH_DELIMITER } from "./constants";
+import {
+  BrowserEnvKey,
+  DefaultLoggingConfig,
+  ENV_PATH_DELIMITER,
+} from "./constants";
 
 /**
  * @description Factory type for creating Environment instances.
@@ -80,7 +84,11 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       Object.defineProperty(this, k, {
         get: () => {
           const fromEnv = this.fromEnv(k);
-          return typeof fromEnv === "undefined" ? v : fromEnv;
+          if (typeof fromEnv !== "undefined") return fromEnv;
+          if (v && typeof v === "object") {
+            return Environment.buildEnvProxy(v as any, [k]);
+          }
+          return v;
         },
         set: (val: V[keyof V]) => {
           v = val;
@@ -128,65 +136,52 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return Environment._instance.get(key);
   }
 
-  /**
-   * @static
-   * @description Creates a proxy from a model that lazily maps property access to ENV variable strings.
-   * @summary Accessing properties returns a proxy that, when stringified, yields the ENV key. Nested
-   * access composes keys using `ENV_PATH_DELIMITER` between parent and child.
-   * @example
-   * const env = Environment.fromModel({ service: { host: '', port: 0 } });
-   * String(env.service) => 'SERVICE'
-   * String(env.service.host) => 'SERVICE__HOST'
-   * @param model The shape to mirror for building ENV keys
-   */
-  static fromModel<M extends object>(model: M): M {
-    const buildKey = (path: string[]) =>
-      path.map((p) => toENVFormat(p)).join(ENV_PATH_DELIMITER);
+  static proxy<M extends object>(model: M): M {
+    return Environment.buildEnvProxy(model as any, []) as unknown as M;
+  }
 
-    const makeProxy = (current: any, path: string[]): any => {
-      const handler: ProxyHandler<any> = {
-        get(_target, prop: string | symbol) {
-          if (prop === Symbol.toPrimitive) {
-            return () => buildKey(path);
-          }
-          if (prop === "toString") {
-            return () => buildKey(path);
-          }
-          if (prop === "valueOf") {
-            return () => buildKey(path);
-          }
-          if (typeof prop === "symbol") return undefined;
+  private static buildEnvProxy(current: any, path: string[]): any {
+    const buildKey = (p: string[]) =>
+      p.map((seg) => toENVFormat(seg)).join(ENV_PATH_DELIMITER);
 
-          // Only allow traversal over keys that exist on the model shape
-          const nextModel = current && Object.prototype.hasOwnProperty.call(current, prop)
+    const handler: ProxyHandler<any> = {
+      get(_target, prop: string | symbol) {
+        if (prop === Symbol.toPrimitive) {
+          return () => buildKey(path);
+        }
+        if (prop === "toString") {
+          return () => buildKey(path);
+        }
+        if (prop === "valueOf") {
+          return () => buildKey(path);
+        }
+        if (typeof prop === "symbol") return undefined;
+
+        const nextModel =
+          current && Object.prototype.hasOwnProperty.call(current, prop)
             ? (current as any)[prop]
             : undefined;
-
-          // Advance path regardless; if key not in model, still compose path for flexibility
-          const nextPath = [...path, prop];
-
-          // If the model indicates a nested object, keep recursing; otherwise still return a proxy
-          const isNextObject = nextModel && typeof nextModel === "object";
-          return makeProxy(isNextObject ? nextModel : undefined, nextPath);
-        },
-        ownKeys() {
-          return current ? Reflect.ownKeys(current) : [];
-        },
-        getOwnPropertyDescriptor(_t, p) {
-          if (!current) return undefined as any;
-          if (Object.prototype.hasOwnProperty.call(current, p)) {
-            return { enumerable: true, configurable: true } as PropertyDescriptor;
-          }
-          return undefined as any;
-        },
-      };
-
-      // Use a plain object as target to simplify ownKeys behavior
-      const target = {} as any;
-      return new Proxy(target, handler);
+        const nextPath = [...path, prop];
+        const isNextObject = nextModel && typeof nextModel === "object";
+        return Environment.buildEnvProxy(
+          isNextObject ? nextModel : undefined,
+          nextPath
+        );
+      },
+      ownKeys() {
+        return current ? Reflect.ownKeys(current) : [];
+      },
+      getOwnPropertyDescriptor(_t, p) {
+        if (!current) return undefined as any;
+        if (Object.prototype.hasOwnProperty.call(current, p)) {
+          return { enumerable: true, configurable: true } as PropertyDescriptor;
+        }
+        return undefined as any;
+      },
     };
 
-    return makeProxy(model, []) as unknown as M;
+    const target = {} as any;
+    return new Proxy(target, handler);
   }
 
   /**
