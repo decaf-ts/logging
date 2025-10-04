@@ -1,6 +1,7 @@
 import { ObjectAccumulator } from "typed-object-accumulator";
 import { toENVFormat } from "./text";
 import { isBrowser } from "./web";
+import { BrowserEnvKey, DefaultLoggingConfig } from "./constants";
 
 /**
  * @description Factory type for creating Environment instances.
@@ -55,9 +56,11 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   protected fromEnv(k: string) {
     let env: Record<string, unknown>;
     if (isBrowser()) {
-      env = (globalThis as typeof globalThis & { ENV: Record<string, any> })[
-        "ENV"
-      ];
+      env = (
+        globalThis as typeof globalThis & {
+          [BrowserEnvKey]: Record<string, any>;
+        }
+      )[BrowserEnvKey];
     } else {
       env = globalThis.process.env;
       k = toENVFormat(k);
@@ -121,6 +124,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return instance.accumulate(value);
   }
 
+  static get(key: string) {
+    return Environment._instance.get(key);
+  }
+
   /**
    * @static
    * @description Retrieves the keys of the environment, optionally converting them to ENV format.
@@ -134,3 +141,12 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       .map((k) => (toEnv ? toENVFormat(k) : k));
   }
 }
+
+export const LoggedEnvironment = Environment.accumulate(
+  Object.assign({}, DefaultLoggingConfig, {
+    env:
+      (isBrowser() && (globalThis as any)[BrowserEnvKey]
+        ? (globalThis as any)[BrowserEnvKey]["NODE_ENV"]
+        : (globalThis as any).process.env["NODE_ENV"]) || "development",
+  })
+);

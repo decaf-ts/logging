@@ -31,6 +31,9 @@ export function padEnd(
  *
  * @param {string} input - The input string containing placeholders to be replaced.
  * @param {Record<string, number | string>} values - An object containing key-value pairs for replacement.
+ * @param prefix
+ * @param suffix
+ * @param flags
  * @return {string} The interpolated string with placeholders replaced by their corresponding values.
  *
  * @function patchPlaceholders
@@ -49,12 +52,19 @@ export function padEnd(
  */
 export function patchPlaceholders(
   input: string,
-  values: Record<string, number | string>
+  values: Record<string, number | string>,
+  prefix: string = escapeRegExp("${"),
+  suffix: string = escapeRegExp("}"),
+  flags: string = "g"
 ): string {
-  return input.replace(
-    /\$\{([a-zA-Z0-9_]+)\}/g,
-    (match, variable) => (values[variable as string] as string) || match
+  const placeholders = Object.entries(values).reduce(
+    (acc: Record<string, any>, [key, val]) => {
+      acc[`${prefix}${key}${suffix}`] = val;
+      return acc;
+    },
+    {}
   );
+  return patchString(input, placeholders, flags);
 }
 
 /**
@@ -188,3 +198,53 @@ export function toPascalCase(text: string): string {
 export function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
 }
+
+/**
+ * @summary Util function to provide string format functionality similar to C#'s string.format
+ *
+ * @param {string} string
+ * @param {Array<string | number> | Record<string, any>} [args] replacements made by order of appearance (replacement0 wil replace {0} and so on)
+ * @return {string} formatted string
+ *
+ * @function sf
+ * @memberOf module:logging
+ */
+export function sf(
+  string: string,
+  ...args: (string | number | Record<string, any>)[]
+) {
+  if (args.length > 1) {
+    if (
+      !args.every((arg) => typeof arg === "string" || typeof arg === "number")
+    )
+      throw new Error(
+        `Only string and number arguments are supported for multiple replacements.`
+      );
+  }
+
+  if (args.length === 1 && typeof args[0] === "object") {
+    const obj = args[0] as Record<string, any>;
+    return Object.entries(obj).reduce((acc, [key, val]) => {
+      return acc.replace(new RegExp(`\\{${key}\\}`, "g"), function () {
+        return val;
+      });
+    }, string);
+  }
+
+  return string.replace(/{(\d+)}/g, function (match, number) {
+    return typeof args[number] !== "undefined"
+      ? args[number].toString()
+      : "undefined";
+  });
+}
+
+/**
+ * @summary Util function to provide string format functionality similar to C#'s string.format
+ *
+ * @see sf
+ *
+ * @deprecated
+ * @function stringFormat
+ * @memberOf module:logging
+ */
+export const stringFormat = sf;

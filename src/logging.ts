@@ -9,13 +9,9 @@ import {
   Logger,
 } from "./types";
 import { ColorizeOptions, style, StyledString } from "styled-string-builder";
-import {
-  DefaultLoggingConfig,
-  DefaultTheme,
-  LogLevel,
-  NumericLogLevels,
-} from "./constants";
-import { stringFormat } from "./utils";
+import { DefaultTheme, LogLevel, NumericLogLevels } from "./constants";
+import { sf } from "./text";
+import { LoggedEnvironment } from "./environment";
 
 /**
  * @description A minimal logger implementation.
@@ -194,7 +190,7 @@ export class MiniLogger implements Logger {
           .split(" ")
           .map((s) => {
             if (!s.match(/\{.*?}/g)) return s;
-            const formattedS = stringFormat(s, log);
+            const formattedS = sf(s, log);
             if (formattedS !== s) return formattedS;
             return undefined;
           })
@@ -215,11 +211,8 @@ export class MiniLogger implements Logger {
    * @return {void}
    */
   protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
-    if (
-      NumericLogLevels[this.config("level") as LogLevel] <
-      NumericLogLevels[level]
-    )
-      return;
+    const confLvl = this.config("level") as LogLevel;
+    if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
     let method;
     switch (level) {
       case LogLevel.info:
@@ -390,7 +383,7 @@ export class Logging {
    * @description Configuration for the logging system
    * @summary Stores the global logging configuration including verbosity, log level, styling, and formatting settings
    */
-  private static _config: LoggingConfig = DefaultLoggingConfig;
+  private static _config: typeof LoggedEnvironment = LoggedEnvironment;
 
   private constructor() {}
 
@@ -411,7 +404,7 @@ export class Logging {
    * @return {void}
    */
   static setConfig(config: Partial<LoggingConfig>) {
-    Object.assign(this._config, config);
+    this._config = Object.assign(this._config, config);
   }
 
   /**
@@ -419,8 +412,8 @@ export class Logging {
    * @summary Returns a copy of the current global logging configuration
    * @return {LoggingConfig} A copy of the current configuration
    */
-  static getConfig(): LoggingConfig {
-    return Object.assign({}, this._config);
+  static getConfig(): typeof LoggedEnvironment {
+    return this._config;
   }
 
   /**

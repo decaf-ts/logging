@@ -1,5 +1,7 @@
 import { LoggingConfig, Theme } from "./types";
 
+export const BrowserEnvKey = "ENV";
+
 /**
  * @description Enum for log levels.
  * @summary Defines different levels of logging for the application.
@@ -133,6 +135,7 @@ export const DefaultTheme: Theme = {
  * @memberOf module:Logging
  */
 export const DefaultLoggingConfig: LoggingConfig = {
+  env: "development",
   verbose: 0,
   level: LogLevel.info,
   logLevel: true,

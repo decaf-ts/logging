@@ -10,20 +10,6 @@ describe("Environment", () => {
     jest.clearAllMocks();
   });
 
-  it("should create a new Environment instance when no instance exists", () => {
-    // @ts-expect-error jest crap
-    const spy = jest.spyOn(Environment, "factory");
-
-    // @ts-expect-error method is not public, but we are just testing
-    const instance = Environment.instance();
-
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(instance).toBeInstanceOf(Environment);
-    expect(Environment["_instance"]).toBe(instance);
-
-    spy.mockRestore();
-  });
-
   it("Should return the existing instance when calling instance() multiple times", () => {
     const firstInstance = Environment["instance"]();
     const secondInstance = Environment["instance"]();

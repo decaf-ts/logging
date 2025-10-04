@@ -1,6 +1,5 @@
 import { styles } from "styled-string-builder";
 import { LoggingMode, LogLevel } from "./constants";
-import { Constructor } from "@decaf-ts/decoration";
 /**
  * @description A type representing string-like values
  * @summary Represents either a string or an object with a toString method that returns a string
@@ -52,7 +51,12 @@ export interface Logger
   extends Impersonatable<
     Logger,
     [
-      string | Constructor | AnyFunction | Partial<LoggingConfig>,
+      (
+        | string
+        | { new (...args: any[]): any }
+        | AnyFunction
+        | Partial<LoggingConfig>
+      ),
       Partial<LoggingConfig>,
       ...any[],
     ]
@@ -97,7 +101,11 @@ export interface Logger
    * @return {Logger} A new logger instance
    */
   for(
-    method: string | Constructor | AnyFunction | Partial<LoggingConfig>,
+    method:
+      | string
+      | { new (...args: any[]): any }
+      | AnyFunction
+      | Partial<LoggingConfig>,
     config?: Partial<LoggingConfig>,
     ...args: any[]
   ): Logger;
@@ -134,6 +142,7 @@ export interface LoggingFilter {
  */
 export type LoggingConfig = {
   app?: string;
+  env: "development" | "production" | "test" | "staging" | string;
   level: LogLevel;
   logLevel?: boolean;
   verbose: number;
