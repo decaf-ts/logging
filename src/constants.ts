@@ -78,6 +78,9 @@ export enum LoggingMode {
  * @memberOf module:Logging
  */
 export const DefaultTheme: Theme = {
+  app: {
+    fg: 34,
+  },
   class: {
     fg: 34,
   },
