@@ -231,7 +231,7 @@ describe("MiniLogger", () => {
 
   describe("silly", () => {
     it("should log silly messages if verbosity is sufficient", () => {
-      Logging.setConfig({ verbose: 1 });
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       logger.silly("Test silly message", 1);
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
@@ -248,7 +248,7 @@ describe("MiniLogger", () => {
 
   describe("verbose", () => {
     it("should log verbose messages if verbosity is sufficient", () => {
-      Logging.setConfig({ verbose: 1 });
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       logger.verbose("Test verbose message", 1);
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
@@ -275,6 +275,7 @@ describe("MiniLogger", () => {
 
   describe("debug", () => {
     it("should log debug messages", () => {
+      Logging.setConfig({ level: LogLevel.debug });
       logger.debug("Test debug message");
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(

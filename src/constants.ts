@@ -2,6 +2,8 @@ import { LoggingConfig, Theme } from "./types";
 
 export const BrowserEnvKey = "ENV";
 
+export const DefaultPlaceholderWrappers = ["${", "}"];
+
 /**
  * @description Enum for log levels.
  * @summary Defines different levels of logging for the application.

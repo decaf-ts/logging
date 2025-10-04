@@ -1,3 +1,5 @@
+import { DefaultPlaceholderWrappers } from "./constants";
+
 /**
  * @description Pads the end of a string with a specified character.
  * @summary Extends the input string to a specified length by adding a padding character to the end.
@@ -53,8 +55,8 @@ export function padEnd(
 export function patchPlaceholders(
   input: string,
   values: Record<string, number | string>,
-  prefix: string = escapeRegExp("${"),
-  suffix: string = escapeRegExp("}"),
+  prefix: string = DefaultPlaceholderWrappers[0],
+  suffix: string = DefaultPlaceholderWrappers[1],
   flags: string = "g"
 ): string {
   const placeholders = Object.entries(values).reduce(

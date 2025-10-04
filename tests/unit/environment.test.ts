@@ -146,4 +146,11 @@ describe("Environment", () => {
     expect(Environment.keys()).toContain("LEVEL1");
     expect(Environment.keys()).toContain("ANOTHER_PROP");
   });
+
+  it("Environment.get returns accumulated value by key path", () => {
+    Environment.accumulate({ sampleKey: "value123" });
+    // @ts-expect-error accessing private in test context
+    const got = Environment.get("sampleKey");
+    expect(got).toBe("value123");
+  });
 });
