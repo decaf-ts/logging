@@ -1,6 +1,6 @@
 import { styles } from "styled-string-builder";
 import { LoggingMode, LogLevel } from "./constants";
-
+import { Constructor } from "@decaf-ts/decoration";
 /**
  * @description A type representing string-like values
  * @summary Represents either a string or an object with a toString method that returns a string
@@ -38,13 +38,25 @@ export type Class<T> = {
  */
 export type LoggingContext = string | Class<any> | AnyFunction;
 
+export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
+  for(...args: ARGS): THIS;
+}
+
 /**
  * @description Interface for a logger with verbosity levels.
  * @summary Defines methods for logging at different verbosity levels.
  * @interface Logger
  * @memberOf module:Logging
  */
-export interface Logger {
+export interface Logger
+  extends Impersonatable<
+    Logger,
+    [
+      string | Constructor | AnyFunction | Partial<LoggingConfig>,
+      Partial<LoggingConfig>,
+      ...any[],
+    ]
+  > {
   /**
    * @description Logs a `way too verbose` or a silly message.
    * @param {StringLike} msg - The message to log.
@@ -80,11 +92,13 @@ export interface Logger {
    * @summary Returns a new logger instance that includes the specified method or context in its logs
    * @param {string|Function} [method] - The method name or function to create a logger for
    * @param {Partial<LoggingConfig>} [config] - Optional configuration for the new logger
+   * @param args
    * @return {Logger} A new logger instance
    */
   for(
-    method?: string | ((...args: any[]) => any),
-    config?: Partial<LoggingConfig>
+    method: string | Constructor | AnyFunction | Partial<LoggingConfig>,
+    config?: Partial<LoggingConfig>,
+    ...args: any[]
   ): Logger;
 
   /**
