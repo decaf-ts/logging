@@ -9,7 +9,7 @@ describe("Environment.proxy", () => {
   it("maps top-level properties to ENV strings", () => {
     const env = Environment.accumulate({
       service: { host: "", port: 0 },
-      logLevel: "",
+      logLevel: undefined,
     });
 
     expect(String((env as any).service)).toBe("SERVICE");

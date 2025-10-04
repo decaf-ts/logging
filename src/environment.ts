@@ -88,6 +88,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (v && typeof v === "object") {
             return Environment.buildEnvProxy(v as any, [k]);
           }
+          // If the model provides an empty string, expose a proxy that composes ENV keys
+          if (v === "") {
+            return Environment.buildEnvProxy(undefined, [k]);
+          }
           return v;
         },
         set: (val: V[keyof V]) => {
@@ -109,9 +113,22 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @return {E} The singleton instance of the Environment class.
    */
   protected static instance<E extends Environment<any>>(...args: unknown[]): E {
-    Environment._instance = !Environment._instance
-      ? Environment.factory(...args)
-      : Environment._instance;
+    if (!Environment._instance) {
+      const base = Environment.factory(...args) as E;
+      const proxied = new Proxy(base as any, {
+        get(target, prop, receiver) {
+          const value = Reflect.get(target, prop, receiver);
+          if (typeof value !== "undefined") return value;
+          if (typeof prop === "string") {
+            // Avoid interfering with logging config lookups for optional fields like 'app'
+            if (prop === "app") return undefined;
+            return Environment.buildEnvProxy(undefined, [prop]);
+          }
+          return value;
+        },
+      });
+      Environment._instance = proxied as any;
+    }
     return Environment._instance as E;
   }
 
@@ -129,6 +146,15 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     V &
     ObjectAccumulator<typeof Environment._instance & V> {
     const instance = Environment.instance();
+    Object.keys(instance as any).forEach((key) => {
+      const desc = Object.getOwnPropertyDescriptor(instance as any, key);
+      if (desc && desc.configurable && desc.enumerable) {
+        Object.defineProperty(instance as any, key, {
+          ...desc,
+          enumerable: false,
+        });
+      }
+    });
     return instance.accumulate(value);
   }
 
