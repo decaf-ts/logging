@@ -80,9 +80,8 @@ export enum LoggingMode {
  * @memberOf module:Logging
  */
 export const DefaultTheme: Theme = {
-  app: {
-    fg: 34,
-  },
+  app: {},
+  separator: {},
   class: {
     fg: 34,
   },
@@ -139,14 +138,14 @@ export const DefaultLoggingConfig: LoggingConfig = {
   verbose: 0,
   level: LogLevel.info,
   logLevel: true,
-  mode: LoggingMode.RAW,
   style: false,
   contextSeparator: ".",
-  separator: " - ",
+  separator: "-",
   timestamp: true,
   timestampFormat: "HH:mm:ss.SSS",
   context: true,
-  format: "raw",
-  pattern: "{level} [{timestamp}] {app} {context} - {message} {stack}",
+  format: LoggingMode.RAW,
+  pattern:
+    "{level} [{timestamp}] {app} {context} {separator} {message} {stack}",
   theme: DefaultTheme,
 };

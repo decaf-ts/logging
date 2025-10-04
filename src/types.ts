@@ -146,7 +146,6 @@ export type LoggingConfig = {
   level: LogLevel;
   logLevel?: boolean;
   verbose: number;
-  mode?: LoggingMode;
   contextSeparator: string;
   separator: string;
   style?: boolean;
@@ -154,7 +153,7 @@ export type LoggingConfig = {
   timestampFormat?: string;
   context?: boolean;
   theme?: Theme;
-  format: "raw" | "json";
+  format: LoggingMode;
   pattern: string;
   correlationId?: string | number;
   filters?: string[] | LoggingFilter[];
@@ -214,6 +213,10 @@ export interface Theme {
    * @description Styling for class names in the output.
    */
   app: ThemeOption | ThemeOptionByLogLevel;
+  /**
+   * @description Styling for class names in the output.
+   */
+  separator: ThemeOption | ThemeOptionByLogLevel;
   /**
    * @description Styling for class names in the output.
    */

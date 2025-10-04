@@ -121,16 +121,23 @@ export class MiniLogger implements Logger {
       | "context"
       | "correlationId"
       | "message"
+      | "separator"
       | "stack"
       | "app",
       string
     > = {} as any;
     const style = this.config("style");
+    const separator = this.config("separator");
     const app = this.config("app");
     if (app)
       log.app = style
         ? Logging.theme(app as string, "app", level)
         : (app as string);
+
+    if (separator)
+      log.separator = style
+        ? Logging.theme(separator as string, "separator", level)
+        : (separator as string);
 
     if (this.config("timestamp")) {
       const date = new Date().toISOString();
@@ -207,7 +214,7 @@ export class MiniLogger implements Logger {
    * then uses the appropriate console method to output the formatted log
    * @param {LogLevel} level - The log level of the message
    * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param {string} [stack] - Optional stack trace to include in the log
+   * @param {string} [error] - Optional stack trace to include in the log
    * @return {void}
    */
   protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
@@ -403,8 +410,10 @@ export class Logging {
    * @param {Partial<LoggingConfig>} config - The configuration options to apply
    * @return {void}
    */
-  static setConfig(config: Partial<LoggingConfig>) {
-    this._config = Object.assign(this._config, config);
+  static setConfig(config: Partial<LoggingConfig>): void {
+    Object.entries(config).forEach(([k, v]) => {
+      (this._config as any)[k] = v as any;
+    });
   }
 
   /**

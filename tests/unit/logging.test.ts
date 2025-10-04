@@ -192,7 +192,8 @@ describe("MiniLogger", () => {
       );
     });
 
-    it("should log verbose messages with console.debug", () => {
+    it("should log verbose messages with console.log", () => {
+      Logging.setConfig({ level: LogLevel.verbose });
       // Access the protected log method using type assertion
       (logger as any).log(LogLevel.verbose, "Test verbose message");
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
