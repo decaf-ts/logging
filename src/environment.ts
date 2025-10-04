@@ -136,13 +136,22 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return Environment._instance.get(key);
   }
 
-  static proxy<M extends object>(model: M): M {
-    return Environment.buildEnvProxy(model as any, []) as unknown as M;
-  }
-
   private static buildEnvProxy(current: any, path: string[]): any {
     const buildKey = (p: string[]) =>
       p.map((seg) => toENVFormat(seg)).join(ENV_PATH_DELIMITER);
+
+    // Helper to read from the active environment given a composed key
+    const readEnv = (key: string): unknown => {
+      if (isBrowser()) {
+        const env = (
+          globalThis as typeof globalThis & {
+            [BrowserEnvKey]?: Record<string, unknown>;
+          }
+        )[BrowserEnvKey];
+        return env ? env[key] : undefined;
+      }
+      return (globalThis as any)?.process?.env?.[key];
+    };
 
     const handler: ProxyHandler<any> = {
       get(_target, prop: string | symbol) {
@@ -162,11 +171,19 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
             ? (current as any)[prop]
             : undefined;
         const nextPath = [...path, prop];
+        const composedKey = buildKey(nextPath);
+
+        // If an ENV value exists for this path, return it directly
+        const envValue = readEnv(composedKey);
+        if (typeof envValue !== "undefined") return envValue;
+
+        // Otherwise, if the model has an object at this path, keep drilling with a proxy
         const isNextObject = nextModel && typeof nextModel === "object";
-        return Environment.buildEnvProxy(
-          isNextObject ? nextModel : undefined,
-          nextPath
-        );
+        if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
+
+        // Always return a proxy for further path composition when no ENV value;
+        // do not surface primitive model defaults here (this API is for key composition).
+        return Environment.buildEnvProxy(undefined, nextPath);
       },
       ownKeys() {
         return current ? Reflect.ownKeys(current) : [];
