@@ -78,8 +78,9 @@ export interface Logger
   /**
    * @description Logs an error message.
    * @param {StringLike | Error} msg - The message to log.
+   * @param e
    */
-  error(msg: StringLike | Error): void;
+  error(msg: StringLike | Error, e?: Error): void;
 
   /**
    * @description Logs a debug message.
@@ -109,6 +110,10 @@ export interface Logger
   setConfig(config: Partial<LoggingConfig>): void;
 }
 
+export interface LoggingFilter {
+  filter(config: LoggingConfig, message: string, context: string[]): string;
+}
+
 /**
  * @description Configuration for logging.
  * @summary Defines the log level and verbosity for logging.
@@ -128,6 +133,7 @@ export interface Logger
  * @memberOf module:Logging
  */
 export type LoggingConfig = {
+  app?: string;
   level: LogLevel;
   logLevel?: boolean;
   verbose: number;
@@ -142,6 +148,7 @@ export type LoggingConfig = {
   format: "raw" | "json";
   pattern: string;
   correlationId?: string | number;
+  filters?: string[] | LoggingFilter[];
 };
 
 /**
@@ -194,6 +201,10 @@ export type ThemeOptionByLogLevel = Partial<Record<LogLevel, ThemeOption>>;
  * @memberOf module:Logging
  */
 export interface Theme {
+  /**
+   * @description Styling for class names in the output.
+   */
+  app: ThemeOption | ThemeOptionByLogLevel;
   /**
    * @description Styling for class names in the output.
    */

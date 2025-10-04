@@ -141,6 +141,6 @@ export const DefaultLoggingConfig: LoggingConfig = {
   timestampFormat: "HH:mm:ss.SSS",
   context: true,
   format: "raw",
-  pattern: "{level} [{timestamp}] {context} - {message} {stack}",
+  pattern: "{level} [{timestamp}] {app} {context} - {message} {stack}",
   theme: DefaultTheme,
 };

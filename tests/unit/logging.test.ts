@@ -166,7 +166,7 @@ describe("MiniLogger", () => {
       const logString = (logger as any).createLog(
         LogLevel.error,
         "Test error",
-        stack
+        new Error(stack)
       );
       expect(logString).toContain("Stack trace");
       expect(logString).toContain(stack);

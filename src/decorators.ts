@@ -45,7 +45,7 @@ export function log(
     if (!descriptor)
       throw new Error(`Logging decoration only applies to methods`);
     const logger = Logging.for(target).for(target[propertyKey]);
-    const method = logger[level].bind(logger);
+    const method = logger[level].bind(logger) as any;
     const originalMethod = descriptor.value;
 
     descriptor.value = new Proxy(originalMethod, {
@@ -56,11 +56,13 @@ export function log(
           const result = Reflect.apply(fn, thisArg, args);
           if (result instanceof Promise) {
             return result.then((r: any) => {
-              if (benchmark) method(`completed in ${Date.now() - start}ms`, verbosity);
+              if (benchmark)
+                method(`completed in ${Date.now() - start}ms`, verbosity);
               return r;
             });
           }
-          if (benchmark) method(`completed in ${Date.now() - start}ms`, verbosity);
+          if (benchmark)
+            method(`completed in ${Date.now() - start}ms`, verbosity);
           return result;
         } catch (err) {
           if (benchmark) method(`failed in ${Date.now() - start}ms`, verbosity);
@@ -156,4 +158,27 @@ export function verbose(verbosity: number | boolean = 0, benchmark?: boolean) {
     verbosity = 0;
   }
   return log(LogLevel.verbose, benchmark, verbosity);
+}
+
+/**
+ * @description Creates a decorator that makes a method non-configurable
+ * @summary This decorator prevents a method from being overridden by making it non-configurable.
+ * It throws an error if used on anything other than a method.
+ * @return {Function} A decorator function that can be applied to methods
+ * @function final
+ * @category Method Decorators
+ */
+export function final() {
+  return (
+    target: object,
+    propertyKey?: any,
+    descriptor?: PropertyDescriptor
+  ) => {
+    if (!descriptor)
+      throw new Error("final decorator can only be used on methods");
+    if (descriptor?.configurable) {
+      descriptor.configurable = false;
+    }
+    return descriptor;
+  };
 }

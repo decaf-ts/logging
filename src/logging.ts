@@ -111,19 +111,31 @@ export class MiniLogger implements Logger {
    * @summary Generates a log string with timestamp, colored log level, context, and message
    * @param {LogLevel} level - The log level for this message
    * @param {StringLike | Error} message - The message to log or an Error object
-   * @param {string} [stack] - Optional stack trace to include in the log
+   * @param {string} [error] - Optional error to extract stack trace to include in the log
    * @return {string} A formatted log string with all components
    */
   protected createLog(
     level: LogLevel,
     message: StringLike | Error,
-    stack?: string
+    error?: Error
   ): string {
     const log: Record<
-      "timestamp" | "level" | "context" | "correlationId" | "message" | "stack",
+      | "timestamp"
+      | "level"
+      | "context"
+      | "correlationId"
+      | "message"
+      | "stack"
+      | "app",
       string
     > = {} as any;
     const style = this.config("style");
+    const app = this.config("app");
+    if (app)
+      log.app = style
+        ? Logging.theme(app as string, "app", level)
+        : (app as string);
+
     if (this.config("timestamp")) {
       const date = new Date().toISOString();
       const timestamp = style ? Logging.theme(date, "timestamp", level) : date;
@@ -163,15 +175,15 @@ export class MiniLogger implements Logger {
         ? message
         : (message as Error).message;
     log.message = msg;
-    if (stack || message instanceof Error) {
-      stack = style
+    if (error || message instanceof Error) {
+      const stack = style
         ? Logging.theme(
-            (stack || (message as Error).stack) as string,
+            (error?.stack || (message as Error).stack) as string,
             "stack",
             level
           )
-        : stack;
-      log.stack = `\nStack trace:\n${stack}`;
+        : error?.stack || "";
+      log.stack = ` | ${(error || (message as Error)).message} - Stack trace:\n${stack}`;
     }
 
     switch (this.config("format")) {
@@ -202,11 +214,7 @@ export class MiniLogger implements Logger {
    * @param {string} [stack] - Optional stack trace to include in the log
    * @return {void}
    */
-  protected log(
-    level: LogLevel,
-    msg: StringLike | Error,
-    stack?: string
-  ): void {
+  protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
     if (
       NumericLogLevels[this.config("level") as LogLevel] <
       NumericLogLevels[level]
@@ -227,7 +235,7 @@ export class MiniLogger implements Logger {
       default:
         throw new Error("Invalid log level");
     }
-    method(this.createLog(level, msg, stack));
+    method(this.createLog(level, msg, error));
   }
 
   /**
@@ -278,10 +286,11 @@ export class MiniLogger implements Logger {
    * @description Logs a message at the error level
    * @summary Logs a message at the error level for errors and exceptions
    * @param {StringLike | Error} msg - The message to be logged or an Error object
+   * @param e
    * @return {void}
    */
-  error(msg: StringLike | Error): void {
-    this.log(LogLevel.error, msg);
+  error(msg: StringLike | Error, e?: Error): void {
+    this.log(LogLevel.error, msg, e);
   }
 
   /**
@@ -471,9 +480,10 @@ export class Logging {
    * @summary Delegates the error logging to the global logger instance.
    *
    * @param msg - The message to be logged.
+   * @param e
    */
-  static error(msg: StringLike): void {
-    return this.get().error(msg);
+  static error(msg: StringLike, e?: Error): void {
+    return this.get().error(msg, e);
   }
 
   /**
