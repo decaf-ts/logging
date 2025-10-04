@@ -324,6 +324,38 @@ export class PaymentService {
 ```
 
 
+Environment.fromModel: compose ENV names from object shape
+Description: Build ENV variable names by property access using a delimiter for nesting. Useful for centralized, type-shaped ENV key construction without hardcoding strings.
+
+```ts
+import { Environment } from "@decaf-ts/logging";
+import { ENV_PATH_DELIMITER } from "@decaf-ts/logging";
+
+// Delimiter used between parent and child segments
+console.log(ENV_PATH_DELIMITER); // "__"
+
+// Define the shape you want to address via ENV
+const EnvKeys = Environment.fromModel({
+  service: { host: "", port: 0 },
+  db: { user: "", pass: "" },
+});
+
+// Compose ENV names by accessing properties
+String((EnvKeys as any).service);        // "SERVICE"
+String((EnvKeys as any).service.host);   // "SERVICE__HOST"
+String((EnvKeys as any).db.user);        // "DB__USER"
+
+// Works in template strings and supports deep nesting
+`${(EnvKeys as any).service.port}`;      // "SERVICE__PORT"
+
+// Unknown properties still compose sensibly
+String((EnvKeys as any).feature.flag);   // "FEATURE__FLAG"
+
+// Enumerating keys reflects the provided model shape
+Object.keys(EnvKeys as any);             // ["service", "db"]
+```
+
+
 ### Related
 
 [![decaf-ts](https://github-readme-stats.vercel.app/api/pin/?username=decaf-ts&repo=decaf-ts)](https://github.com/decaf-ts/decaf-ts)

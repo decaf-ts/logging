@@ -47,4 +47,10 @@ describe("Winston adapter (integration)", () => {
     const wl = new WinstonLogger("B2", {}, transport);
     wl.info("y");
   });
+
+  it("uses default Console transport when none provided", () => {
+    Logging.setConfig({ style: false, timestamp: false });
+    const wl = new WinstonLogger("DefaultTransport");
+    wl.info("z");
+  });
 });

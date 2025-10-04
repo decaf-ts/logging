@@ -2,6 +2,12 @@ import { LoggingConfig, Theme } from "./types";
 
 export const BrowserEnvKey = "ENV";
 
+/**
+ * @description Delimiter used for composing nested environment variable names.
+ * @summary Joins parent and child keys when mapping object paths to ENV strings.
+ */
+export const ENV_PATH_DELIMITER = "__";
+
 export const DefaultPlaceholderWrappers = ["${", "}"];
 
 /**
