@@ -386,10 +386,7 @@ export class Logging {
   ) => {
     return new MiniLogger(object, config);
   };
-  /**
-   * @description Configuration for the logging system
-   * @summary Stores the global logging configuration including verbosity, log level, styling, and formatting settings
-   */
+
   private static _config: typeof LoggedEnvironment = LoggedEnvironment;
 
   private constructor() {}

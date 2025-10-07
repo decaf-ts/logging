@@ -14,7 +14,7 @@ import {
  * @template T - The type of object the Environment will accumulate.
  * @template E - The specific Environment type to be created, extending Environment<T>.
  * @typedef {function(...unknown[]): E} EnvironmentFactory
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
   ...args: unknown[]

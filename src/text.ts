@@ -13,7 +13,7 @@ import { DefaultPlaceholderWrappers } from "./constants";
  *
  * @function padEnd
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function padEnd(
   str: string,
@@ -50,7 +50,7 @@ export function padEnd(
  *   String.replace->>patchString: Return replaced string
  *   patchString-->>Caller: Return patched string
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function patchPlaceholders(
   input: string,
@@ -81,7 +81,7 @@ export function patchPlaceholders(
  *
  * @function patchString
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function patchString(
   input: string,
@@ -105,7 +105,7 @@ export function patchString(
  *
  * @function toCamelCase
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function toCamelCase(text: string): string {
   return text
@@ -125,7 +125,7 @@ export function toCamelCase(text: string): string {
  *
  * @function toENVFormat
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function toENVFormat(text: string): string {
   return toSnakeCase(text).toUpperCase();
@@ -140,7 +140,7 @@ export function toENVFormat(text: string): string {
  *
  * @function toSnakeCase
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function toSnakeCase(text: string): string {
   return text
@@ -158,7 +158,7 @@ export function toSnakeCase(text: string): string {
  *
  * @function toKebabCase
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function toKebabCase(text: string): string {
   return text
@@ -177,7 +177,7 @@ export function toKebabCase(text: string): string {
  *
  * @function toPascalCase
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function toPascalCase(text: string): string {
   return text
@@ -195,7 +195,7 @@ export function toPascalCase(text: string): string {
  *
  * @function escapeRegExp
  *
- * @memberOf module:utils
+ * @memberOf module:Logging
  */
 export function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
@@ -209,7 +209,7 @@ export function escapeRegExp(string: string) {
  * @return {string} formatted string
  *
  * @function sf
- * @memberOf module:logging
+ * @memberOf module:Logging
  */
 export function sf(
   string: string,
@@ -247,6 +247,6 @@ export function sf(
  *
  * @deprecated
  * @function stringFormat
- * @memberOf module:logging
+ * @memberOf module:Logging
  */
 export const stringFormat = sf;
