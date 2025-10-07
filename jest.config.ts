@@ -11,6 +11,7 @@ const config: Config.InitialOptions = {
   collectCoverage: false,
   collectCoverageFrom: ["src/**/*.{js,jsx,ts,tsx}", "!src/**/cli.ts"],
   reporters: ["default"],
+  watchman: false,
 };
 
 export default config;

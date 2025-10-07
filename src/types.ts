@@ -1,6 +1,5 @@
 import { styles } from "styled-string-builder";
 import { LoggingMode, LogLevel } from "./constants";
-
 /**
  * @description A type representing string-like values
  * @summary Represents either a string or an object with a toString method that returns a string
@@ -38,13 +37,30 @@ export type Class<T> = {
  */
 export type LoggingContext = string | Class<any> | AnyFunction;
 
+export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
+  for(...args: ARGS): THIS;
+}
+
 /**
  * @description Interface for a logger with verbosity levels.
  * @summary Defines methods for logging at different verbosity levels.
  * @interface Logger
  * @memberOf module:Logging
  */
-export interface Logger {
+export interface Logger
+  extends Impersonatable<
+    Logger,
+    [
+      (
+        | string
+        | { new (...args: any[]): any }
+        | AnyFunction
+        | Partial<LoggingConfig>
+      ),
+      Partial<LoggingConfig>,
+      ...any[],
+    ]
+  > {
   /**
    * @description Logs a `way too verbose` or a silly message.
    * @param {StringLike} msg - The message to log.
@@ -66,8 +82,9 @@ export interface Logger {
   /**
    * @description Logs an error message.
    * @param {StringLike | Error} msg - The message to log.
+   * @param e
    */
-  error(msg: StringLike | Error): void;
+  error(msg: StringLike | Error, e?: Error): void;
 
   /**
    * @description Logs a debug message.
@@ -80,11 +97,17 @@ export interface Logger {
    * @summary Returns a new logger instance that includes the specified method or context in its logs
    * @param {string|Function} [method] - The method name or function to create a logger for
    * @param {Partial<LoggingConfig>} [config] - Optional configuration for the new logger
+   * @param args
    * @return {Logger} A new logger instance
    */
   for(
-    method?: string | ((...args: any[]) => any),
-    config?: Partial<LoggingConfig>
+    method:
+      | string
+      | { new (...args: any[]): any }
+      | AnyFunction
+      | Partial<LoggingConfig>,
+    config?: Partial<LoggingConfig>,
+    ...args: any[]
   ): Logger;
 
   /**
@@ -93,6 +116,10 @@ export interface Logger {
    * @param {Partial<LoggingConfig>} config - The configuration options to apply
    */
   setConfig(config: Partial<LoggingConfig>): void;
+}
+
+export interface LoggingFilter {
+  filter(config: LoggingConfig, message: string, context: string[]): string;
 }
 
 /**
@@ -114,10 +141,11 @@ export interface Logger {
  * @memberOf module:Logging
  */
 export type LoggingConfig = {
+  app?: string;
+  env: "development" | "production" | "test" | "staging" | string;
   level: LogLevel;
   logLevel?: boolean;
   verbose: number;
-  mode?: LoggingMode;
   contextSeparator: string;
   separator: string;
   style?: boolean;
@@ -125,9 +153,10 @@ export type LoggingConfig = {
   timestampFormat?: string;
   context?: boolean;
   theme?: Theme;
-  format: "raw" | "json";
+  format: LoggingMode;
   pattern: string;
   correlationId?: string | number;
+  filters?: string[] | LoggingFilter[];
 };
 
 /**
@@ -180,6 +209,14 @@ export type ThemeOptionByLogLevel = Partial<Record<LogLevel, ThemeOption>>;
  * @memberOf module:Logging
  */
 export interface Theme {
+  /**
+   * @description Styling for class names in the output.
+   */
+  app: ThemeOption | ThemeOptionByLogLevel;
+  /**
+   * @description Styling for class names in the output.
+   */
+  separator: ThemeOption | ThemeOptionByLogLevel;
   /**
    * @description Styling for class names in the output.
    */

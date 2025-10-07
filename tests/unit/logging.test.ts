@@ -166,7 +166,7 @@ describe("MiniLogger", () => {
       const logString = (logger as any).createLog(
         LogLevel.error,
         "Test error",
-        stack
+        new Error(stack)
       );
       expect(logString).toContain("Stack trace");
       expect(logString).toContain(stack);
@@ -192,7 +192,8 @@ describe("MiniLogger", () => {
       );
     });
 
-    it("should log verbose messages with console.debug", () => {
+    it("should log verbose messages with console.log", () => {
+      Logging.setConfig({ level: LogLevel.verbose });
       // Access the protected log method using type assertion
       (logger as any).log(LogLevel.verbose, "Test verbose message");
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
@@ -230,7 +231,7 @@ describe("MiniLogger", () => {
 
   describe("silly", () => {
     it("should log silly messages if verbosity is sufficient", () => {
-      Logging.setConfig({ verbose: 1 });
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       logger.silly("Test silly message", 1);
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
@@ -247,7 +248,7 @@ describe("MiniLogger", () => {
 
   describe("verbose", () => {
     it("should log verbose messages if verbosity is sufficient", () => {
-      Logging.setConfig({ verbose: 1 });
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       logger.verbose("Test verbose message", 1);
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(
@@ -274,6 +275,7 @@ describe("MiniLogger", () => {
 
   describe("debug", () => {
     it("should log debug messages", () => {
+      Logging.setConfig({ level: LogLevel.debug });
       logger.debug("Test debug message");
       expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
       expect(consoleDebugSpy).toHaveBeenCalledWith(

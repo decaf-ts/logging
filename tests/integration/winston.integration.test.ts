@@ -33,4 +33,24 @@ describe("Winston adapter (integration)", () => {
     expect(logger).toBeInstanceOf(WinstonLogger);
     logger.info("hi");
   });
+
+  it("applies style branch when style=true", () => {
+    Logging.setConfig({ style: true, timestamp: false });
+    const transport = new winston.transports.Console();
+    const wl = new WinstonLogger("B1", {}, transport);
+    wl.info("x");
+  });
+
+  it("applies timestamp branch when timestamp=true", () => {
+    Logging.setConfig({ style: false, timestamp: true });
+    const transport = new winston.transports.Console();
+    const wl = new WinstonLogger("B2", {}, transport);
+    wl.info("y");
+  });
+
+  it("uses default Console transport when none provided", () => {
+    Logging.setConfig({ style: false, timestamp: false });
+    const wl = new WinstonLogger("DefaultTransport");
+    wl.info("z");
+  });
 });

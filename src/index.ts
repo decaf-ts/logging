@@ -1,9 +1,12 @@
+export * from "./filters";
 export * from "./constants";
 export * from "./decorators";
+export * from "./environment";
 export * from "./LoggedClass";
 export * from "./logging";
+export * from "./text";
 export * from "./types";
-export * from "./utils";
+export * from "./web";
 
 /**
  * @description A logging module for TypeScript applications

@@ -31,30 +31,6 @@
     "default": {
       "useLongnameInNav": false
     },
-    "better-docs": {
-      "name": "logging",
-      "title": "logging for decaf",
-      "hideGenerator": true,
-      "useLongnameInNav": false,
-      "navLinks": [
-        {
-          "label": "Test Results",
-          "href": "workdocs/reports/html/test-report.html"
-        },
-        {
-          "label": "Test Coverage",
-          "href": "workdocs/reports/coverage"
-        },
-        {
-          "label": "Github Repository",
-          "href": "https://github.com/decaf-ts/logging#readme"
-        },
-        {
-          "label": "Github Profile",
-          "href": "https://github.com/decaf-ts"
-        }
-      ]
-    },
     "cleverLinks": true,
     "monospaceLinks": true,
     "useLongnameInNav": false,

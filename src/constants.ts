@@ -1,5 +1,15 @@
 import { LoggingConfig, Theme } from "./types";
 
+export const BrowserEnvKey = "ENV";
+
+/**
+ * @description Delimiter used for composing nested environment variable names.
+ * @summary Joins parent and child keys when mapping object paths to ENV strings.
+ */
+export const ENV_PATH_DELIMITER = "__";
+
+export const DefaultPlaceholderWrappers = ["${", "}"];
+
 /**
  * @description Enum for log levels.
  * @summary Defines different levels of logging for the application.
@@ -78,6 +88,8 @@ export enum LoggingMode {
  * @memberOf module:Logging
  */
 export const DefaultTheme: Theme = {
+  app: {},
+  separator: {},
   class: {
     fg: 34,
   },
@@ -130,17 +142,18 @@ export const DefaultTheme: Theme = {
  * @memberOf module:Logging
  */
 export const DefaultLoggingConfig: LoggingConfig = {
+  env: "development",
   verbose: 0,
   level: LogLevel.info,
   logLevel: true,
-  mode: LoggingMode.RAW,
   style: false,
   contextSeparator: ".",
-  separator: " - ",
+  separator: "-",
   timestamp: true,
   timestampFormat: "HH:mm:ss.SSS",
   context: true,
-  format: "raw",
-  pattern: "{level} [{timestamp}] {context} - {message} {stack}",
+  format: LoggingMode.RAW,
+  pattern:
+    "{level} [{timestamp}] {app} {context} {separator} {message} {stack}",
   theme: DefaultTheme,
 };

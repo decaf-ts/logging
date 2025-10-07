@@ -44,37 +44,32 @@ export function log(
   ) {
     if (!descriptor)
       throw new Error(`Logging decoration only applies to methods`);
-    const log = Logging.for(target).for(target[propertyKey]);
-    const method = log[level].bind(log);
+    const logger = Logging.for(target).for(target[propertyKey]);
+    const method = logger[level].bind(logger) as any;
     const originalMethod = descriptor.value;
 
-    const func = function (this: typeof target, ...args: any[]) {
-      method(`called with ${args}`, verbosity);
-      const start = Date.now();
-      let end: number;
-      const result: any = originalMethod.apply(this, args);
-      if (result instanceof Promise) {
-        return result.then((r) => {
-          if (benchmark) {
-            end = Date.now();
-            if (benchmark) method(`completed in ${end - start}ms`, verbosity);
+    descriptor.value = new Proxy(originalMethod, {
+      apply(fn, thisArg, args: any[]) {
+        method(`called with ${args}`, verbosity);
+        const start = Date.now();
+        try {
+          const result = Reflect.apply(fn, thisArg, args);
+          if (result instanceof Promise) {
+            return result.then((r: any) => {
+              if (benchmark)
+                method(`completed in ${Date.now() - start}ms`, verbosity);
+              return r;
+            });
           }
-          return r;
-        });
-      }
-      if (benchmark) {
-        end = Date.now();
-        if (benchmark) method(`completed in ${end - start}ms`, verbosity);
-      }
-
-      return result;
-    }.bind(target) as any;
-
-    Object.assign(func, "name", {
-      value: descriptor.value.name,
+          if (benchmark)
+            method(`completed in ${Date.now() - start}ms`, verbosity);
+          return result;
+        } catch (err) {
+          if (benchmark) method(`failed in ${Date.now() - start}ms`, verbosity);
+          throw err;
+        }
+      },
     });
-
-    descriptor.value = func;
   };
 }
 
@@ -163,4 +158,27 @@ export function verbose(verbosity: number | boolean = 0, benchmark?: boolean) {
     verbosity = 0;
   }
   return log(LogLevel.verbose, benchmark, verbosity);
+}
+
+/**
+ * @description Creates a decorator that makes a method non-configurable
+ * @summary This decorator prevents a method from being overridden by making it non-configurable.
+ * It throws an error if used on anything other than a method.
+ * @return {Function} A decorator function that can be applied to methods
+ * @function final
+ * @category Method Decorators
+ */
+export function final() {
+  return (
+    target: object,
+    propertyKey?: any,
+    descriptor?: PropertyDescriptor
+  ) => {
+    if (!descriptor)
+      throw new Error("final decorator can only be used on methods");
+    if (descriptor?.configurable) {
+      descriptor.configurable = false;
+    }
+    return descriptor;
+  };
 }

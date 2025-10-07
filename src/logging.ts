@@ -9,13 +9,9 @@ import {
   Logger,
 } from "./types";
 import { ColorizeOptions, style, StyledString } from "styled-string-builder";
-import {
-  DefaultLoggingConfig,
-  DefaultTheme,
-  LogLevel,
-  NumericLogLevels,
-} from "./constants";
-import { stringFormat } from "./utils";
+import { DefaultTheme, LogLevel, NumericLogLevels } from "./constants";
+import { sf } from "./text";
+import { LoggedEnvironment } from "./environment";
 
 /**
  * @description A minimal logger implementation.
@@ -111,19 +107,38 @@ export class MiniLogger implements Logger {
    * @summary Generates a log string with timestamp, colored log level, context, and message
    * @param {LogLevel} level - The log level for this message
    * @param {StringLike | Error} message - The message to log or an Error object
-   * @param {string} [stack] - Optional stack trace to include in the log
+   * @param {string} [error] - Optional error to extract stack trace to include in the log
    * @return {string} A formatted log string with all components
    */
   protected createLog(
     level: LogLevel,
     message: StringLike | Error,
-    stack?: string
+    error?: Error
   ): string {
     const log: Record<
-      "timestamp" | "level" | "context" | "correlationId" | "message" | "stack",
+      | "timestamp"
+      | "level"
+      | "context"
+      | "correlationId"
+      | "message"
+      | "separator"
+      | "stack"
+      | "app",
       string
     > = {} as any;
     const style = this.config("style");
+    const separator = this.config("separator");
+    const app = this.config("app");
+    if (app)
+      log.app = style
+        ? Logging.theme(app as string, "app", level)
+        : (app as string);
+
+    if (separator)
+      log.separator = style
+        ? Logging.theme(separator as string, "separator", level)
+        : (separator as string);
+
     if (this.config("timestamp")) {
       const date = new Date().toISOString();
       const timestamp = style ? Logging.theme(date, "timestamp", level) : date;
@@ -163,15 +178,15 @@ export class MiniLogger implements Logger {
         ? message
         : (message as Error).message;
     log.message = msg;
-    if (stack || message instanceof Error) {
-      stack = style
+    if (error || message instanceof Error) {
+      const stack = style
         ? Logging.theme(
-            (stack || (message as Error).stack) as string,
+            (error?.stack || (message as Error).stack) as string,
             "stack",
             level
           )
-        : stack;
-      log.stack = `\nStack trace:\n${stack}`;
+        : error?.stack || "";
+      log.stack = ` | ${(error || (message as Error)).message} - Stack trace:\n${stack}`;
     }
 
     switch (this.config("format")) {
@@ -182,7 +197,7 @@ export class MiniLogger implements Logger {
           .split(" ")
           .map((s) => {
             if (!s.match(/\{.*?}/g)) return s;
-            const formattedS = stringFormat(s, log);
+            const formattedS = sf(s, log);
             if (formattedS !== s) return formattedS;
             return undefined;
           })
@@ -199,19 +214,12 @@ export class MiniLogger implements Logger {
    * then uses the appropriate console method to output the formatted log
    * @param {LogLevel} level - The log level of the message
    * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param {string} [stack] - Optional stack trace to include in the log
+   * @param {string} [error] - Optional stack trace to include in the log
    * @return {void}
    */
-  protected log(
-    level: LogLevel,
-    msg: StringLike | Error,
-    stack?: string
-  ): void {
-    if (
-      NumericLogLevels[this.config("level") as LogLevel] <
-      NumericLogLevels[level]
-    )
-      return;
+  protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
+    const confLvl = this.config("level") as LogLevel;
+    if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
     let method;
     switch (level) {
       case LogLevel.info:
@@ -227,7 +235,7 @@ export class MiniLogger implements Logger {
       default:
         throw new Error("Invalid log level");
     }
-    method(this.createLog(level, msg, stack));
+    method(this.createLog(level, msg, error));
   }
 
   /**
@@ -278,10 +286,11 @@ export class MiniLogger implements Logger {
    * @description Logs a message at the error level
    * @summary Logs a message at the error level for errors and exceptions
    * @param {StringLike | Error} msg - The message to be logged or an Error object
+   * @param e
    * @return {void}
    */
-  error(msg: StringLike | Error): void {
-    this.log(LogLevel.error, msg);
+  error(msg: StringLike | Error, e?: Error): void {
+    this.log(LogLevel.error, msg, e);
   }
 
   /**
@@ -377,11 +386,8 @@ export class Logging {
   ) => {
     return new MiniLogger(object, config);
   };
-  /**
-   * @description Configuration for the logging system
-   * @summary Stores the global logging configuration including verbosity, log level, styling, and formatting settings
-   */
-  private static _config: LoggingConfig = DefaultLoggingConfig;
+
+  private static _config: typeof LoggedEnvironment = LoggedEnvironment;
 
   private constructor() {}
 
@@ -401,8 +407,10 @@ export class Logging {
    * @param {Partial<LoggingConfig>} config - The configuration options to apply
    * @return {void}
    */
-  static setConfig(config: Partial<LoggingConfig>) {
-    Object.assign(this._config, config);
+  static setConfig(config: Partial<LoggingConfig>): void {
+    Object.entries(config).forEach(([k, v]) => {
+      (this._config as any)[k] = v as any;
+    });
   }
 
   /**
@@ -410,8 +418,8 @@ export class Logging {
    * @summary Returns a copy of the current global logging configuration
    * @return {LoggingConfig} A copy of the current configuration
    */
-  static getConfig(): LoggingConfig {
-    return Object.assign({}, this._config);
+  static getConfig(): typeof LoggedEnvironment {
+    return this._config;
   }
 
   /**
@@ -471,9 +479,10 @@ export class Logging {
    * @summary Delegates the error logging to the global logger instance.
    *
    * @param msg - The message to be logged.
+   * @param e
    */
-  static error(msg: StringLike): void {
-    return this.get().error(msg);
+  static error(msg: StringLike, e?: Error): void {
+    return this.get().error(msg, e);
   }
 
   /**

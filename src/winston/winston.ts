@@ -71,17 +71,17 @@ export class WinstonLogger extends MiniLogger implements Logger {
    * @summary Overrides the base log method to use Winston for logging
    * @param {LogLevel} level - The log level of the message
    * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param {string} [stack] - Optional stack trace to include in the log
+   * @param {Error} [error] - Optional stack trace to include in the log
    * @return {void}
    */
   protected override log(
     level: LogLevel,
     msg: StringLike | Error,
-    stack?: string
+    error?: Error
   ) {
     const logData: LogEntry = {
       level: level,
-      message: this.createLog(level, msg, stack),
+      message: this.createLog(level, msg, error),
     };
     if (this.config("correlationId"))
       logData["correlationId"] = this.config("correlationId");

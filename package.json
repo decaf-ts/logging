@@ -46,6 +46,8 @@
     "repo:tests": "codex exec \"$(cat ./.codex/prompts/bulk-tests.md)\nbase_path is ./ and coverage is 95%\" -s workspace-write",
     "repo:readme": "codex exec \"$(cat ./.codex/prompts/update-readme.md)\nbase_path is ./\"",
     "repo:pr": "npm run repo:doc && npm run repo:tests && npm run repo:readme",
+    "codex": "codex -s workspace-write",
+    "codex-run": "codex -s workspace-write exec",
     "sync-codex": "./bin/sync-codex.sh"
   },
   "repository": {

@@ -35,7 +35,7 @@ describe("Logging", () => {
     beforeAll(() => {
       Logging.setConfig({
         style: true,
-        timestamp: true,
+        timestamp: false,
         context: false,
       });
     });
