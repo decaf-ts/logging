@@ -60,11 +60,12 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   protected fromEnv(k: string) {
     let env: Record<string, unknown>;
     if (isBrowser()) {
-      env = (
-        globalThis as typeof globalThis & {
-          [BrowserEnvKey]: Record<string, any>;
-        }
-      )[BrowserEnvKey];
+      env =
+        (
+          globalThis as typeof globalThis & {
+            [BrowserEnvKey]: Record<string, any>;
+          }
+        )[BrowserEnvKey] || {};
     } else {
       env = globalThis.process.env;
       k = toENVFormat(k);
