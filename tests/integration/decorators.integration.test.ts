@@ -19,7 +19,9 @@ describe("decorators (integration)", () => {
     slowDouble(x: number) {
       // simulate small delay
       const start = Date.now();
-      while (Date.now() - start < 5) {}
+      while (Date.now() - start < 5) {
+        //do nothing
+      }
       return x * 2;
     }
 

@@ -19,6 +19,7 @@ export class PatternFilter extends LogFilter {
     return match;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   filter(config: LoggingConfig, message: string, context: string[]): string {
     const log = this.log.for(this.filter);
     const match = this.match(message);
