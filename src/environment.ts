@@ -70,7 +70,16 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       env = globalThis.process.env;
       k = toENVFormat(k);
     }
-    return env[k];
+    return this.parseEnvValue(env[k]);
+  }
+
+  protected parseEnvValue(val: unknown) {
+    if (typeof val !== "string") return val;
+    if (val === "true") return true;
+    if (val === "false") return false;
+    const result = parseFloat(val);
+    if (!isNaN(result)) return result;
+    return val;
   }
 
   /**
