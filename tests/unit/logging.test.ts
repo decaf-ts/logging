@@ -303,6 +303,15 @@ describe("MiniLogger", () => {
     });
   });
 
+  describe("benchmark", () => {
+    it("attempts to log benchmark messages", () => {
+      logger.benchmark("timing");
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("timing")
+      );
+    });
+  });
+
   describe("setConfig", () => {
     it("should update the logger's configuration", () => {
       logger.setConfig({ level: LogLevel.error });
@@ -463,6 +472,57 @@ describe("Logging", () => {
     });
   });
 
+  it("setFactory swaps the logger implementation", () => {
+    const originalFactory = (Logging as any)._factory;
+    const originalGlobal = (Logging as any).global;
+    const fakeLogger = {
+      benchmark: jest.fn(),
+      verbose: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      silly: jest.fn(),
+      error: jest.fn(),
+      setConfig: jest.fn(),
+      for: jest.fn(() => fakeLogger),
+    };
+
+    Logging.setFactory(() => fakeLogger as any);
+    (Logging as any).global = undefined;
+
+    const logger = Logging.get();
+    expect(logger).toBe(fakeLogger);
+
+    (Logging as any)._factory = originalFactory;
+    (Logging as any).global = originalGlobal;
+  });
+
+  it("benchmark delegates to the current global logger", () => {
+    const originalFactory = (Logging as any)._factory;
+    const originalGlobal = (Logging as any).global;
+    const fakeLogger = {
+      benchmark: jest.fn(() => {
+        throw new Error("benchmark not implemented");
+      }),
+      verbose: jest.fn(),
+      info: jest.fn(),
+      debug: jest.fn(),
+      silly: jest.fn(),
+      error: jest.fn(),
+      setConfig: jest.fn(),
+      for: jest.fn(() => fakeLogger),
+    };
+
+    Logging.setFactory(() => fakeLogger as any);
+    (Logging as any).global = undefined;
+
+    expect(() => Logging.benchmark("payload"))
+      .toThrow("benchmark not implemented");
+    expect(fakeLogger.benchmark).toHaveBeenCalledWith("payload");
+
+    (Logging as any)._factory = originalFactory;
+    (Logging as any).global = originalGlobal;
+  });
+
   describe("theme", () => {
     it("should return the original text if timestamp is disabled", () => {
       Logging.setConfig({ timestamp: false });
@@ -608,6 +668,22 @@ describe("Logging", () => {
 
       const result = Logging.theme("Test text", "message", LogLevel.info);
       expect(result).toBe("Test text");
+    });
+
+    it("skips falsy theme values without altering text", () => {
+      Logging.setConfig({ timestamp: true, style: true });
+      const customTheme: Theme = {
+        message: {
+          fg: undefined,
+        },
+      } as unknown as Theme;
+      const result = Logging.theme(
+        "Plain",
+        "message",
+        LogLevel.info,
+        customTheme
+      );
+      expect(result).toBe("Plain");
     });
   });
 });

@@ -116,6 +116,26 @@ it("theme applies bg color and numeric style without throwing", () => {
   expect(typeof out).toBe("string");
 });
 
+it("theme handles RGB tuples for color application", () => {
+  Logging.setConfig({ ...DefaultLoggingConfig, style: true });
+  const custom = {
+    ...DefaultTheme,
+    message: { fg: [1, 2, 3] as [number, number, number] },
+  } as any;
+  const out = Logging.theme("rgb", "message" as any, LogLevel.info, custom);
+  expect(typeof out).toBe("string");
+});
+
+it("theme ignores falsy values while preserving output", () => {
+  Logging.setConfig({ ...DefaultLoggingConfig, style: true });
+  const custom = {
+    ...DefaultTheme,
+    message: { fg: undefined },
+  } as any;
+  const out = Logging.theme("keep", "message" as any, LogLevel.info, custom);
+  expect(out).toBe("keep");
+});
+
 it("calling protected log with LogLevel.silly triggers default error branch", () => {
   const l = new MiniLogger("X", { level: LogLevel.silly });
   expect(() => (l as any).log("silly", "t")).toThrow(/Invalid log level/);

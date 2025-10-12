@@ -161,4 +161,38 @@ describe("Environment", () => {
     const got = Environment.get("sampleKey");
     expect(got).toBe("value123");
   });
+
+  it("expands blank string models into ENV key composing proxies", () => {
+    const env = Environment.accumulate({ service: "" });
+    // @ts-expect-error accessing dynamically
+    const proxy = (env as any).service;
+    expect(`${proxy}`).toBe("SERVICE");
+    expect(`${proxy.api}`).toBe("SERVICE__API");
+  });
+
+  it("buildEnvProxy exposes own keys and property descriptors", () => {
+    const target = (Environment as any).buildEnvProxy(
+      { nested: { leaf: "x" } },
+      ["cfg"]
+    );
+    expect(Object.keys(target)).toContain("nested");
+    const descriptor = Object.getOwnPropertyDescriptor(target, "nested");
+    expect(descriptor?.enumerable).toBe(true);
+  });
+
+  it("buildEnvProxy reads values from browser ENV storage", () => {
+    (isBrowser as jest.Mock).mockReturnValue(true);
+    (globalThis as any).ENV = { CFG__URL: "https://example" };
+
+    const proxy = (Environment as any).buildEnvProxy(undefined, ["cfg"]);
+    expect(proxy.url).toBe("https://example");
+
+    delete (globalThis as any).ENV;
+    (isBrowser as jest.Mock).mockReturnValue(false);
+  });
+
+  it("proxy instance returns base values for symbol lookups", () => {
+    const instance = Environment["instance"]();
+    expect((instance as any)[Symbol.toPrimitive]).toBeUndefined();
+  });
 });

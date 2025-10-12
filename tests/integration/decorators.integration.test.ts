@@ -1,5 +1,5 @@
 import { LogLevel, Logging, DefaultLoggingConfig } from "../../src";
-import { log, debug, info, silly, verbose } from "../../src/decorators";
+import { benchmark, log, debug, info, silly, verbose } from "../../src/decorators";
 
 // Integration tests: no mocks; we only execute decorated methods to cover branches.
 
@@ -71,5 +71,68 @@ describe("decorators (integration)", () => {
   it("executes async decorated method with benchmark and resolves", async () => {
     const svc = new Service();
     await expect(svc.asyncOp("z")).resolves.toBe("ok:z");
+  });
+
+  it("logs failure path and exit message when decorated method throws", () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation();
+
+    class FaultyService {
+      @log(
+        LogLevel.info,
+        true,
+        0,
+        () => "entering",
+        (err) => `leaving: ${err?.message}`
+      )
+      fail() {
+        throw new Error("boom");
+      }
+    }
+
+    const svc = new FaultyService();
+    expect(() => svc.fail()).toThrow("boom");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("leaving: boom")
+    );
+
+    errorSpy.mockRestore();
+  });
+
+  it("benchmark decorator logs completion timings", () => {
+    const logSpy = jest.spyOn(console, "log").mockImplementation();
+
+    class BenchService {
+      @benchmark()
+      run() {
+        return "done";
+      }
+    }
+
+    const svc = new BenchService();
+    expect(svc.run()).toBe("done");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("completed in")
+    );
+
+    logSpy.mockRestore();
+  });
+
+  it("benchmark decorator handles method errors while still propagating", () => {
+    const logSpy = jest.spyOn(console, "log").mockImplementation();
+
+    class BenchFailService {
+      @benchmark()
+      run() {
+        throw new Error("failure");
+      }
+    }
+
+    const svc = new BenchFailService();
+    expect(() => svc.run()).toThrow("failure");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("failed in")
+    );
+
+    logSpy.mockRestore();
   });
 });

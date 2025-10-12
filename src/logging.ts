@@ -222,6 +222,9 @@ export class MiniLogger implements Logger {
     if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
     let method;
     switch (level) {
+      case LogLevel.benchmark:
+        method = console.log;
+        break;
       case LogLevel.info:
         method = console.log;
         break;
