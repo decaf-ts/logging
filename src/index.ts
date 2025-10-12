@@ -5,6 +5,7 @@ export * from "./environment";
 export * from "./LoggedClass";
 export * from "./logging";
 export * from "./text";
+export * from "./time";
 export * from "./types";
 export * from "./web";
 

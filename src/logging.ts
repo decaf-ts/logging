@@ -239,6 +239,16 @@ export class MiniLogger implements Logger {
   }
 
   /**
+   * @description Logs a message at the benchmark level
+   * @summary Logs a message at the benchmark level if the current verbosity setting allows it
+   * @param {StringLike} msg - The message to be logged
+   * @return {void}
+   */
+  benchmark(msg: StringLike): void {
+    this.log(LogLevel.benchmark, msg);
+  }
+
+  /**
    * @description Logs a message at the silly level
    * @summary Logs a message at the silly level if the current verbosity setting allows it
    * @param {StringLike} msg - The message to be logged
@@ -462,6 +472,16 @@ export class Logging {
    */
   static debug(msg: StringLike): void {
     return this.get().debug(msg);
+  }
+
+  /**
+   * @description Logs a benchmark message.
+   * @summary Delegates the benchmark logging to the global logger instance.
+   *
+   * @param msg - The message to be logged.
+   */
+  static benchmark(msg: StringLike): void {
+    return this.get().benchmark(msg);
   }
 
   /**

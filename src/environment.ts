@@ -6,6 +6,7 @@ import {
   DefaultLoggingConfig,
   ENV_PATH_DELIMITER,
 } from "./constants";
+import { LoggingConfig } from "./types";
 
 /**
  * @description Factory type for creating Environment instances.

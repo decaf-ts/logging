@@ -19,6 +19,8 @@ export const DefaultPlaceholderWrappers = ["${", "}"];
  */
 export enum LogLevel {
   /** Error events that are likely to cause problems. */
+  benchmark = "benchmark",
+  /** Error events that are likely to cause problems. */
   error = "error",
   /** Routine information, such as ongoing status or performance. */
   info = "info",
@@ -42,6 +44,7 @@ export enum LogLevel {
  * @memberOf module:Logging
  */
 export const NumericLogLevels = {
+  benchmark: 0,
   error: 2,
   info: 4,
   verbose: 6,
@@ -105,6 +108,10 @@ export const DefaultTheme: Theme = {
   },
   method: {},
   logLevel: {
+    benchmark: {
+      fg: 32,
+      style: ["bold"],
+    },
     error: {
       fg: 31,
       style: ["bold"],

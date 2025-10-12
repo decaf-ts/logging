@@ -62,6 +62,12 @@ export interface Logger
     ]
   > {
   /**
+   * @description Logs a benchmark message.
+   * @param {StringLike} msg - The message to log.
+   */
+  benchmark(msg: StringLike): void;
+
+  /**
    * @description Logs a `way too verbose` or a silly message.
    * @param {StringLike} msg - The message to log.
    */

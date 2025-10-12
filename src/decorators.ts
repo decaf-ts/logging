@@ -1,5 +1,8 @@
 import { LogLevel } from "./constants";
 import { Logging } from "./logging";
+import { now } from "./time";
+import { LoggedClass } from "./LoggedClass";
+import { Logger } from "./types";
 
 /**
  * @description Method decorator for logging function calls
@@ -35,37 +38,83 @@ import { Logging } from "./logging";
 export function log(
   level: LogLevel = LogLevel.info,
   benchmark: boolean = false,
-  verbosity = 0
+  verbosity = 0,
+  entryMessage: (...args: any[]) => string = (...args: any[]) =>
+    `called with ${args}`,
+  exitMessage?: (e?: Error, result?: any) => string
 ) {
-  return function (
+  return function log(
     target: any,
     propertyKey?: any,
     descriptor?: PropertyDescriptor
   ) {
-    if (!descriptor)
+    if (!descriptor || typeof descriptor === "number")
       throw new Error(`Logging decoration only applies to methods`);
-    const logger = Logging.for(target).for(target[propertyKey]);
+    const isLoggedClass = target instanceof LoggedClass;
+    const logger =
+      target.log && target.log.info
+        ? target.log.for(target[propertyKey])
+        : Logging.for(target).for(target[propertyKey]);
     const method = logger[level].bind(logger) as any;
     const originalMethod = descriptor.value;
 
     descriptor.value = new Proxy(originalMethod, {
       apply(fn, thisArg, args: any[]) {
-        method(`called with ${args}`, verbosity);
-        const start = Date.now();
+        method(entryMessage(...args), verbosity);
+        const start = now();
         try {
           const result = Reflect.apply(fn, thisArg, args);
           if (result instanceof Promise) {
             return result.then((r: any) => {
               if (benchmark)
-                method(`completed in ${Date.now() - start}ms`, verbosity);
+                method(`completed in ${now() - start}ms`, verbosity);
               return r;
             });
           }
-          if (benchmark)
-            method(`completed in ${Date.now() - start}ms`, verbosity);
+          if (benchmark) method(`completed in ${now() - start}ms`, verbosity);
+          if (exitMessage) method(exitMessage(undefined, result));
           return result;
-        } catch (err) {
-          if (benchmark) method(`failed in ${Date.now() - start}ms`, verbosity);
+        } catch (err: unknown) {
+          if (benchmark)
+            logger.error(`failed in ${now() - start}ms`, verbosity);
+          if (exitMessage) logger.error(exitMessage(err as Error));
+          throw err;
+        }
+      },
+    });
+  };
+}
+
+export function benchmark() {
+  return function benchmark(
+    target: any,
+    propertyKey?: any,
+    descriptor?: PropertyDescriptor
+  ) {
+    if (!descriptor || typeof descriptor === "number")
+      throw new Error(`benchmark decoration only applies to methods`);
+    const isLoggedClass = target instanceof LoggedClass;
+    const logger: Logger =
+      target.log && target.log.info
+        ? target.log.for(target[propertyKey])
+        : Logging.for(target).for(target[propertyKey]);
+    const originalMethod = descriptor.value;
+
+    descriptor.value = new Proxy(originalMethod, {
+      apply(fn, thisArg, args: any[]) {
+        const start = now();
+        try {
+          const result = Reflect.apply(fn, thisArg, args);
+          if (result instanceof Promise) {
+            return result.then((r: any) => {
+              logger.benchmark(`completed in ${now() - start}ms`);
+              return r;
+            });
+          }
+          logger.benchmark(`completed in ${now() - start}ms`);
+          return result;
+        } catch (err: unknown) {
+          logger.benchmark(`failed in ${now() - start}ms`);
           throw err;
         }
       },
