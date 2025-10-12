@@ -5,7 +5,7 @@ import { final } from "../decorators";
 /**
  * @description Replacement callback used to transform RegExp matches.
  * @summary Receives the matched substring and additional capture arguments, returning the replacement text that will be injected into the log message.
- * @typedef {function(substring: string, ...args: any[]): string} ReplacementFunction
+ * @typedef {function(string, any[]): string} ReplacementFunction
  * @memberOf module:Logging
  */
 export type ReplacementFunction = (substring: string, ...args: any[]) => string;

@@ -11,7 +11,7 @@ export type StringLike = string | { toString: () => string };
 /**
  * @description Generic function signature for loosely typed callbacks.
  * @summary Covers variadic functions whose arguments and return types are not constrained, enabling the logging layer to accept any callable.
- * @typedef {function(...args: any[]): any} AnyFunction
+ * @typedef {function(any[]): any} AnyFunction
  * @memberOf module:Logging
  */
 export type AnyFunction = (...args: any[]) => any;
@@ -20,7 +20,7 @@ export type AnyFunction = (...args: any[]) => any;
  * @description Constructable class type.
  * @summary Describes a constructor that produces instances of type `T`, allowing APIs to accept class references for context-aware logging.
  * @template T
- * @typedef {{new (...args: any[]): T}} Class
+ * @typedef {any} Class
  * @memberOf module:Logging
  */
 export type Class<T> = {
@@ -47,7 +47,9 @@ export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
   /**
    * @description Produce a copy of the current instance with altered context.
    * @summary Called by logging utilities to derive child objects with supplemental configuration and context metadata.
-   * @param {...ARGS} args - Arguments forwarded to the impersonation strategy.
+   * @template THIS
+   * @template ARGS
+   * @param {ARGS} args - Arguments forwarded to the impersonation strategy.
    * @return {THIS} Derived instance using the provided arguments.
    */
   for(...args: ARGS): THIS;
@@ -125,7 +127,7 @@ export interface Logger
   /**
    * @description Creates a new logger for a specific method or context.
    * @summary Produces a scoped logger that formats entries using the derived context and overrides supplied configuration.
-   * @param {string|function(...args: any[]): any|{new (...args: any[]): any}|Partial<LoggingConfig>} method - Method name, callback, constructor, or partial configuration used to seed the child logger.
+   * @param {any} method - Method name, callback, constructor, or partial configuration used to seed the child logger.
    * @param {Partial<LoggingConfig>} [config] - Optional configuration overrides for the child logger.
    * @param {...any[]} args - Extra arguments forwarded to factory implementations.
    * @return {Logger} Logger instance tailored to the supplied context.
@@ -208,7 +210,7 @@ export type LoggingConfig = {
  * @description Factory signature for creating logger instances.
  * @summary Allows consumers to override logger construction with custom implementations.
  * @template L - The logger type, extending the base Logger interface
- * @typedef {function(object: string, config?: Partial<LoggingConfig>, ...args: any[]): L} LoggerFactory
+ * @typedef {function(string, Partial<LoggingConfig>, any[]): L} LoggerFactory
  * @memberOf module:Logging
  */
 export type LoggerFactory<L extends Logger = Logger> = (
@@ -224,19 +226,8 @@ export type LoggerFactory<L extends Logger = Logger> = (
  * @memberOf module:Logging
  */
 export interface ThemeOption {
-  /**
-   * @description Foreground color expressed as ANSI code or RGB tuple.
-   */
   fg?: number | [number] | [number, number, number];
-
-  /**
-   * @description Background color expressed as ANSI code or RGB tuple.
-   */
   bg?: number | [number] | [number, number, number];
-
-  /**
-   * @description Array of additional style modifiers applied to the text.
-   */
   style?: number[] | [keyof typeof styles];
 }
 

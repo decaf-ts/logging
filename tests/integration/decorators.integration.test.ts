@@ -1,5 +1,12 @@
 import { LogLevel, Logging, DefaultLoggingConfig } from "../../src";
-import { benchmark, log, debug, info, silly, verbose } from "../../src/decorators";
+import {
+  benchmark,
+  log,
+  debug,
+  info,
+  silly,
+  verbose,
+} from "../../src/decorators";
 
 // Integration tests: no mocks; we only execute decorated methods to cover branches.
 
@@ -79,7 +86,6 @@ describe("decorators (integration)", () => {
     class FaultyService {
       @log(
         LogLevel.info,
-        true,
         0,
         () => "entering",
         (err) => `leaving: ${err?.message}`
@@ -129,9 +135,7 @@ describe("decorators (integration)", () => {
 
     const svc = new BenchFailService();
     expect(() => svc.run()).toThrow("failure");
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("failed in")
-    );
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("failed in"));
 
     logSpy.mockRestore();
   });

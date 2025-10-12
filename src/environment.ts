@@ -6,14 +6,13 @@ import {
   DefaultLoggingConfig,
   ENV_PATH_DELIMITER,
 } from "./constants";
-import { LoggingConfig } from "./types";
 
 /**
  * @description Factory type for creating Environment instances.
  * @summary Describes factories that construct {@link Environment} derivatives with custom initialization.
  * @template T - The type of object the Environment will accumulate.
  * @template E - The specific Environment type to be created, extending Environment<T>.
- * @typedef {function(...args: unknown[]): E} EnvironmentFactory
+ * @typedef {function(unknown[]): E} EnvironmentFactory
  * @memberOf module:Logging
  */
 export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
@@ -171,9 +170,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @static
    * @description Accumulates the given value into the environment.
    * @summary Adds new properties, hiding raw descriptors to avoid leaking enumeration semantics.
+   * @template T
    * @template V
    * @param {V} value - Object to merge into the environment.
-   * @return {typeof Environment._instance & V & ObjectAccumulator<typeof Environment._instance & V>} Updated environment reference.
+   * @return {Environment} Updated environment reference.
    */
   static accumulate<V extends object>(
     value: V
@@ -293,7 +293,6 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
  * @description Singleton environment instance seeded with default logging configuration.
  * @summary Combines {@link DefaultLoggingConfig} with runtime environment variables to provide consistent logging defaults across platforms.
  * @const LoggedEnvironment
- * @type {ReturnType<typeof Environment.accumulate>}
  * @memberOf module:Logging
  */
 export const LoggedEnvironment = Environment.accumulate(

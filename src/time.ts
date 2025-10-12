@@ -188,11 +188,10 @@ export class StopWatch {
     this._lastLapTotalMs = total;
     return lap;
   }
-
   /**
    * @description Retrieves the recorded lap history.
    * @summary Returns the internal lap array as a read-only view to prevent external mutation.
-   * @return {readonly Lap[]} Laps captured by the stopwatch.
+   * @return {Lap[]} Laps captured by the stopwatch.
    */
   get laps(): readonly Lap[] {
     return this._laps;
