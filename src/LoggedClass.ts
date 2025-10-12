@@ -2,12 +2,8 @@ import { Logging } from "./logging";
 import { Logger } from "./types";
 
 /**
- * @description Base class that provides a ready-to-use logger instance
- * @summary LoggedClass is a convenience abstract class that injects a type-safe logger
- * into derived classes through a protected getter. Subclasses can directly access
- * this.log to emit messages without manually creating a logger. This promotes
- * consistent, context-aware logging across the codebase.
- * @param {void} [constructor] - No constructor arguments; subclasses may define their own
+ * @description Base class that provides a ready-to-use logger instance.
+ * @summary Supplies inheriting classes with a lazily created, context-aware {@link Logger} via the protected `log` getter, promoting consistent structured logging without manual wiring.
  * @class LoggedClass
  * @example
  * class UserService extends LoggedClass {
@@ -34,14 +30,16 @@ import { Logger } from "./types";
  *   Instance->>Logger: info/debug/error(...)
  */
 export abstract class LoggedClass {
+  private _log?: Logger;
+
   /**
-   * @description Lazily provides a context-aware logger for the current instance
-   * @summary Uses Logging.for(this) to create a logger whose context is the
-   * subclass name, allowing uniform and structured logs from any inheriting class.
-   * @return {Logger} A logger bound to the subclass context
+   * @description Lazily provides a context-aware logger for the current instance.
+   * @summary Calls {@link Logging.for} with the subclass instance to obtain a logger whose context matches the subclass name.
+   * @return {Logger} Logger bound to the subclass context.
    */
   protected get log(): Logger {
-    return Logging.for(this as any);
+    if (!this._log) this._log = Logging.for(this as any);
+    return this._log;
   }
 
   protected constructor() {}

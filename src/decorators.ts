@@ -5,12 +5,14 @@ import { LoggedClass } from "./LoggedClass";
 import { Logger } from "./types";
 
 /**
- * @description Method decorator for logging function calls
- * @summary Creates a decorator that logs method calls with specified level, benchmarking, and verbosity
- * @param {LogLevel} level - The log level to use (default: LogLevel.info)
- * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
- * @param {number} [verbosity=0] - The verbosity level for the log messages (default: 0)
- * @return {Function} A method decorator that wraps the original method with logging
+ * @description Method decorator for logging function calls.
+ * @summary Wraps class methods to automatically log entry, exit, timing, and optional custom messages at a configurable {@link LogLevel}.
+ * @param {LogLevel} level - Log level applied to the generated log statements (defaults to `LogLevel.info`).
+ * @param {boolean} [benchmark=false] - When true, logs execution duration as part of the decorator output.
+ * @param {number} [verbosity=0] - Verbosity threshold required for the entry log to appear.
+ * @param {function(...args: any[]): string} [entryMessage] - Formatter invoked with the original method arguments to describe the invocation.
+ * @param {function(e?: Error, result?: any): string} [exitMessage] - Optional formatter that describes the outcome or failure of the call.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Method decorator proxy that injects logging behavior.
  * @function log
  * @mermaid
  * sequenceDiagram
@@ -82,9 +84,32 @@ export function log(
         }
       },
     });
-  };
+ };
 }
 
+/**
+ * @description Method decorator that records execution time at the benchmark level.
+ * @summary Wraps the target method to emit {@link Logger.benchmark} entries capturing completion time or failure latency.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Method decorator proxy that benchmarks the original implementation.
+ * @function benchmark
+ * @mermaid
+ * sequenceDiagram
+ *   participant Caller
+ *   participant Decorator as benchmark
+ *   participant Method as Original Method
+ *   Caller->>Decorator: invoke()
+ *   Decorator->>Method: Reflect.apply(...)
+ *   alt Promise result
+ *     Method-->>Decorator: Promise
+ *     Decorator->>Decorator: attach then()
+ *     Decorator->>Decorator: log completion duration
+ *   else Synchronous result
+ *     Method-->>Decorator: value
+ *     Decorator->>Decorator: log completion duration
+ *   end
+ *   Decorator-->>Caller: return result
+ * @category Method Decorators
+ */
 export function benchmark() {
   return function benchmark(
     target: any,
@@ -123,10 +148,10 @@ export function benchmark() {
 }
 
 /**
- * @description Method decorator for logging function calls with debug level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.debug
- * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
- * @return {Function} A method decorator that wraps the original method with debug logging
+ * @description Method decorator for logging function calls with debug level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.debug`.
+ * @param {boolean} [benchmark=false] - When true, records the method duration.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Debug-level logging decorator.
  * @function debug
  * @category Method Decorators
  */
@@ -135,10 +160,10 @@ export function debug(benchmark: boolean = false) {
 }
 
 /**
- * @description Method decorator for logging function calls with info level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.info
- * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
- * @return {Function} A method decorator that wraps the original method with info logging
+ * @description Method decorator for logging function calls with info level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.info`.
+ * @param {boolean} [benchmark=false] - When true, records the method duration.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Info-level logging decorator.
  * @function info
  * @category Method Decorators
  */
@@ -147,10 +172,10 @@ export function info(benchmark: boolean = false) {
 }
 
 /**
- * @description Method decorator for logging function calls with silly level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.silly
- * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
- * @return {Function} A method decorator that wraps the original method with silly logging
+ * @description Method decorator for logging function calls with silly level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.silly`.
+ * @param {boolean} [benchmark=false] - When true, records the method duration.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Silly-level logging decorator.
  * @function silly
  * @category Method Decorators
  */
@@ -159,10 +184,11 @@ export function silly(benchmark: boolean = false) {
 }
 
 /**
- * @description Method decorator for logging function calls with verbose level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
- * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @description Method decorator for logging function calls with verbose level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.verbose` with configurable verbosity.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Verbose logging decorator.
  * @function verbose
+ * @category Method Decorators
  */
 export function verbose(): (
   target: any,
@@ -171,21 +197,22 @@ export function verbose(): (
 ) => void;
 
 /**
- * @description Method decorator for logging function calls with verbose level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
- * @param {boolean} benchmark - Whether to log execution time
- * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @description Method decorator for logging function calls with verbose level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.verbose` while toggling benchmarking.
+ * @param {boolean} benchmark - When true, records the method duration.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Verbose logging decorator.
  * @function verbose
+ * @category Method Decorators
  */
 export function verbose(
   benchmark: boolean
 ): (target: any, propertyKey?: any, descriptor?: any) => void;
 
 /**
- * @description Method decorator for logging function calls with verbose level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
- * @param {number} verbosity - The verbosity level for the log messages (default: 0)
- * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @description Method decorator for logging function calls with verbose level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.verbose` with configurable verbosity.
+ * @param {number|boolean} verbosity - Verbosity level (or benchmarking flag when boolean).
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Verbose logging decorator.
  * @function verbose
  * @category Method Decorators
  */
@@ -193,11 +220,11 @@ export function verbose(
   verbosity: number | boolean
 ): (target: any, propertyKey?: any, descriptor?: any) => void;
 /**
- * @description Method decorator for logging function calls with verbose level
- * @summary Convenience wrapper around the log decorator that uses LogLevel.verbose with configurable verbosity
- * @param {number} verbosity - The verbosity level for the log messages (default: 0)
- * @param {boolean} [benchmark=false] - Whether to log execution time (default: false)
- * @return {Function} A method decorator that wraps the original method with verbose logging
+ * @description Method decorator for logging function calls with verbose level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.verbose` with configurable verbosity and optional benchmarking.
+ * @param {number|boolean} verbosity - Verbosity level for log filtering or flag to enable benchmarking.
+ * @param {boolean} [benchmark=false] - When `verbosity` is numeric, toggles benchmarking output.
+ * @return {function(target: any, propertyKey?: any, descriptor?: PropertyDescriptor): void} Verbose logging decorator.
  * @function verbose
  * @category Method Decorators
  */
@@ -210,10 +237,9 @@ export function verbose(verbosity: number | boolean = 0, benchmark?: boolean) {
 }
 
 /**
- * @description Creates a decorator that makes a method non-configurable
- * @summary This decorator prevents a method from being overridden by making it non-configurable.
- * It throws an error if used on anything other than a method.
- * @return {Function} A decorator function that can be applied to methods
+ * @description Creates a decorator that makes a method non-configurable.
+ * @summary Prevents overriding by marking the method descriptor as non-configurable, throwing if applied to non-method targets.
+ * @return {function(target: object, propertyKey?: any, descriptor?: PropertyDescriptor): PropertyDescriptor|undefined} Decorator that hardens the method descriptor.
  * @function final
  * @category Method Decorators
  */

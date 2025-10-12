@@ -1,28 +1,26 @@
 import { styles } from "styled-string-builder";
 import { LoggingMode, LogLevel } from "./constants";
 /**
- * @description A type representing string-like values
- * @summary Represents either a string or an object with a toString method that returns a string
+ * @description String-compatible value accepted by the logging APIs.
+ * @summary Represents either a literal string or an object exposing a `toString()` method, allowing lazy stringification of complex payloads.
  * @typedef {(string|Object)} StringLike
  * @memberOf module:Logging
  */
 export type StringLike = string | { toString: () => string };
 
 /**
- * @description A generic function type with any arguments and return
- * @summary Represents any callable signature, useful for annotating higher-order utilities
- * and dynamic method references where argument and return types are not constrained.
- * @typedef {Function} AnyFunction
+ * @description Generic function signature for loosely typed callbacks.
+ * @summary Covers variadic functions whose arguments and return types are not constrained, enabling the logging layer to accept any callable.
+ * @typedef {function(...args: any[]): any} AnyFunction
  * @memberOf module:Logging
  */
 export type AnyFunction = (...args: any[]) => any;
 
 /**
- * @description A constructable class type
- * @summary Describes a class constructor that produces instances of type T. Useful when
- * passing class references around (e.g., for context or dependency injection).
+ * @description Constructable class type.
+ * @summary Describes a constructor that produces instances of type `T`, allowing APIs to accept class references for context-aware logging.
  * @template T
- * @typedef {function(any[]): T} Class
+ * @typedef {{new (...args: any[]): T}} Class
  * @memberOf module:Logging
  */
 export type Class<T> = {
@@ -30,20 +28,34 @@ export type Class<T> = {
 };
 
 /**
- * @description A type representing logging context
- * @summary Represents a context for logging, which can be a string, a class constructor, or a function
+ * @description Context descriptor accepted when requesting a logger instance.
+ * @summary Allows the logging system to resolve context names from strings, constructors, or functions.
  * @typedef {(string|Function|Object)} LoggingContext
  * @memberOf module:Logging
  */
 export type LoggingContext = string | Class<any> | AnyFunction;
 
+/**
+ * @description Interface for factories that create contextual clones of the receiver.
+ * @summary Declares a `for` method that returns another instance of `THIS` using the provided arguments, enabling chained logger customization.
+ * @template THIS
+ * @template ARGS
+ * @interface Impersonatable
+ * @memberOf module:Logging
+ */
 export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
+  /**
+   * @description Produce a copy of the current instance with altered context.
+   * @summary Called by logging utilities to derive child objects with supplemental configuration and context metadata.
+   * @param {...ARGS} args - Arguments forwarded to the impersonation strategy.
+   * @return {THIS} Derived instance using the provided arguments.
+   */
   for(...args: ARGS): THIS;
 }
 
 /**
- * @description Interface for a logger with verbosity levels.
- * @summary Defines methods for logging at different verbosity levels.
+ * @description Interface for loggers that support multiple verbosity levels.
+ * @summary Declares severity-specific log methods, configuration overrides, and factory helpers used throughout the logging toolkit.
  * @interface Logger
  * @memberOf module:Logging
  */
@@ -63,48 +75,60 @@ export interface Logger
   > {
   /**
    * @description Logs a benchmark message.
-   * @param {StringLike} msg - The message to log.
+   * @summary Emits high-frequency performance metrics at the `benchmark` log level.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
    */
   benchmark(msg: StringLike): void;
 
   /**
    * @description Logs a `way too verbose` or a silly message.
-   * @param {StringLike} msg - The message to log.
+   * @summary Emits playful or extremely verbose details at the `silly` log level.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
    */
   silly(msg: StringLike): void;
   /**
    * @description Logs a verbose message.
-   * @param {StringLike} msg - The message to log.
-   * @param {number} verbosity - The verbosity level of the message.
+   * @summary Writes diagnostic output governed by the configured verbosity threshold.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @param {number} [verbosity] - Verbosity level required for the message to pass through.
+   * @return {void}
    */
   verbose(msg: StringLike, verbosity?: number): void;
 
   /**
    * @description Logs an info message.
-   * @param {StringLike} msg - The message to log.
+   * @summary Emits general informational events that describe application progress.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
    */
   info(msg: StringLike): void;
 
   /**
    * @description Logs an error message.
-   * @param {StringLike | Error} msg - The message to log.
-   * @param e
+   * @summary Records errors and exceptions, including optional stack traces.
+   * @param {StringLike|Error} msg - Message or {@link Error} instance to log.
+   * @param {Error} [e] - Optional secondary error or cause.
+   * @return {void}
    */
   error(msg: StringLike | Error, e?: Error): void;
 
   /**
    * @description Logs a debug message.
-   * @param {string} msg - The message to log.
+   * @summary Emits fine-grained diagnostic details useful during development and troubleshooting.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
    */
   debug(msg: StringLike): void;
 
   /**
-   * @description Creates a new logger for a specific method or context
-   * @summary Returns a new logger instance that includes the specified method or context in its logs
-   * @param {string|Function} [method] - The method name or function to create a logger for
-   * @param {Partial<LoggingConfig>} [config] - Optional configuration for the new logger
-   * @param args
-   * @return {Logger} A new logger instance
+   * @description Creates a new logger for a specific method or context.
+   * @summary Produces a scoped logger that formats entries using the derived context and overrides supplied configuration.
+   * @param {string|function(...args: any[]): any|{new (...args: any[]): any}|Partial<LoggingConfig>} method - Method name, callback, constructor, or partial configuration used to seed the child logger.
+   * @param {Partial<LoggingConfig>} [config] - Optional configuration overrides for the child logger.
+   * @param {...any[]} args - Extra arguments forwarded to factory implementations.
+   * @return {Logger} Logger instance tailored to the supplied context.
    */
   for(
     method:
@@ -117,14 +141,29 @@ export interface Logger
   ): Logger;
 
   /**
-   * @description Updates the logger configuration
-   * @summary Sets or updates the configuration options for this logger instance
-   * @param {Partial<LoggingConfig>} config - The configuration options to apply
+   * @description Updates the logger configuration.
+   * @summary Merges the given options into the logger's existing configuration.
+   * @param {Partial<LoggingConfig>} config - Configuration overrides to apply.
+   * @return {void}
    */
   setConfig(config: Partial<LoggingConfig>): void;
 }
 
+/**
+ * @description Interface for filters that mutate or reject log messages.
+ * @summary Allows custom pre-processing of log entries before they are formatted or emitted.
+ * @interface LoggingFilter
+ * @memberOf module:Logging
+ */
 export interface LoggingFilter {
+  /**
+   * @description Apply filtering logic to an incoming message.
+   * @summary Receives the active configuration, original message, and context stack to produce the final message string.
+   * @param {LoggingConfig} config - Active logging configuration.
+   * @param {string} message - Message submitted for logging.
+   * @param {string[]} context - Context identifiers associated with the message.
+   * @return {string} Filtered message string.
+   */
   filter(config: LoggingConfig, message: string, context: string[]): string;
 }
 
@@ -166,13 +205,10 @@ export type LoggingConfig = {
 };
 
 /**
- * @description A factory function type for creating loggers
- * @summary Defines a function type that creates and returns a logger instance for a given object
+ * @description Factory signature for creating logger instances.
+ * @summary Allows consumers to override logger construction with custom implementations.
  * @template L - The logger type, extending the base Logger interface
- * @typedef {Function} LoggerFactory
- * @param {string} object - The object or context name for the logger
- * @param {Partial<LoggingConfig>} [config] - Optional configuration for the logger
- * @return {L} A logger instance
+ * @typedef {function(object: string, config?: Partial<LoggingConfig>, ...args: any[]): L} LoggerFactory
  * @memberOf module:Logging
  */
 export type LoggerFactory<L extends Logger = Logger> = (
@@ -182,45 +218,49 @@ export type LoggerFactory<L extends Logger = Logger> = (
 ) => L;
 
 /**
- * @description Represents a theme option for console output styling.
- * @summary Defines the structure for styling a specific element in the console output.
- * It allows for customization of foreground color, background color, and additional styles.
- * Colors can be specified as a single number, an RGB array, or left undefined for default.
+ * @description Theme option applied to a specific log element.
+ * @summary Configures foreground and background colors as well as additional style directives for styled console output.
  * @interface ThemeOption
  * @memberOf module:Logging
  */
 export interface ThemeOption {
+  /**
+   * @description Foreground color expressed as ANSI code or RGB tuple.
+   */
   fg?: number | [number] | [number, number, number];
 
+  /**
+   * @description Background color expressed as ANSI code or RGB tuple.
+   */
   bg?: number | [number] | [number, number, number];
 
+  /**
+   * @description Array of additional style modifiers applied to the text.
+   */
   style?: number[] | [keyof typeof styles];
 }
 
 /**
- * @description A type for theme options organized by log level
- * @summary Defines a partial record mapping log levels to theme options, allowing different styling for different log levels
+ * @description Mapping between log levels and theme overrides.
+ * @summary Enables level-specific styling by associating each {@link LogLevel} with a {@link ThemeOption} configuration.
  * @typedef {Object} ThemeOptionByLogLevel
  * @memberOf module:Logging
  */
 export type ThemeOptionByLogLevel = Partial<Record<LogLevel, ThemeOption>>;
 
 /**
- * @description Defines the color theme for console output.
- * @summary This interface specifies the color scheme for various elements of console output,
- * including styling for different log levels and components. It uses ThemeOption to
- * define the styling for each element, allowing for customization of colors and styles
- * for different parts of the log output.
+ * @description Theme definition applied to console output.
+ * @summary Specifies styling for each console log element and supports overrides based on {@link LogLevel} values.
  * @interface Theme
  * @memberOf module:Logging
  */
 export interface Theme {
   /**
-   * @description Styling for class names in the output.
+   * @description Styling for application identifiers in the output.
    */
   app: ThemeOption | ThemeOptionByLogLevel;
   /**
-   * @description Styling for class names in the output.
+   * @description Styling for separators inserted between log sections.
    */
   separator: ThemeOption | ThemeOptionByLogLevel;
   /**
@@ -249,12 +289,12 @@ export interface Theme {
   id: ThemeOption | ThemeOptionByLogLevel;
 
   /**
-   * @description Styling for identifier elements in the output.
+   * @description Styling for stack trace blocks in the output.
    */
   stack: ThemeOption;
 
   /**
-   * @description Styling for different log levels in the output.
+   * @description Styling overrides keyed by {@link LogLevel}.
    */
   logLevel: ThemeOptionByLogLevel;
 }

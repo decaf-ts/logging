@@ -1,13 +1,30 @@
 import { LoggingConfig, Theme } from "./types";
 
+/**
+ * @description Global key used to store environment variables in browser contexts.
+ * @summary Enables the logging environment helpers to locate serialized environment configuration on `globalThis`.
+ * @const BrowserEnvKey
+ * @type {string}
+ * @memberOf module:Logging
+ */
 export const BrowserEnvKey = "ENV";
 
 /**
  * @description Delimiter used for composing nested environment variable names.
  * @summary Joins parent and child keys when mapping object paths to ENV strings.
+ * @const ENV_PATH_DELIMITER
+ * @type {string}
+ * @memberOf module:Logging
  */
 export const ENV_PATH_DELIMITER = "__";
 
+/**
+ * @description Default prefix and suffix used for template placeholders.
+ * @summary Provides wrapper strings applied when interpolating messages with {@link patchPlaceholders}.
+ * @const DefaultPlaceholderWrappers
+ * @type {string[]}
+ * @memberOf module:Logging
+ */
 export const DefaultPlaceholderWrappers = ["${", "}"];
 
 /**
@@ -18,29 +35,37 @@ export const DefaultPlaceholderWrappers = ["${", "}"];
  * @memberOf module:Logging
  */
 export enum LogLevel {
-  /** Error events that are likely to cause problems. */
+  /** @description Benchmark events that capture performance metrics. */
   benchmark = "benchmark",
-  /** Error events that are likely to cause problems. */
+  /** @description Error events that indicate failures requiring attention. */
   error = "error",
-  /** Routine information, such as ongoing status or performance. */
+  /** @description Informational events describing normal operation. */
   info = "info",
-  /** Additional relevant information. */
+  /** @description Verbose diagnostic information for detailed tracing. */
   verbose = "verbose",
-  /** Debug or trace information. */
+  /** @description Debug or trace details aimed at developers. */
   debug = "debug",
-  /** way too verbose or silly information. */
+  /** @description Extremely chatty or playful log entries. */
   silly = "silly",
 }
 
 /**
  * @description Numeric values associated with log levels.
  * @summary Provides a numeric representation of log levels for comparison and filtering.
- * @const NumericLogLevels
+ * @typedef {Object} NumericLogLevelsShape
+ * @property {number} benchmark - Numeric value for benchmark level (0).
  * @property {number} error - Numeric value for error level (2).
  * @property {number} info - Numeric value for info level (4).
  * @property {number} verbose - Numeric value for verbose level (6).
  * @property {number} debug - Numeric value for debug level (7).
  * @property {number} silly - Numeric value for silly level (9).
+ * @memberOf module:Logging
+ */
+/**
+ * @description Numeric values associated with log levels.
+ * @summary Provides a numeric representation of log levels for comparison and filtering.
+ * @const NumericLogLevels
+ * @type {NumericLogLevelsShape}
  * @memberOf module:Logging
  */
 export const NumericLogLevels = {
@@ -68,7 +93,6 @@ export enum LoggingMode {
 /**
  * @description Default theme for styling log output.
  * @summary Defines the default color and style settings for various components of log messages.
- * @const DefaultTheme
  * @typedef {Theme} DefaultTheme
  * @property {Object} class - Styling for class names.
  * @property {number} class.fg - Foreground color code for class names (34).
@@ -88,6 +112,7 @@ export enum LoggingMode {
  * @property {Object} logLevel.verbose - Styling for verbose level logs (empty object).
  * @property {Object} logLevel.debug - Styling for debug level logs.
  * @property {number} logLevel.debug.fg - Foreground color code for debug level logs (33).
+ * @const DefaultTheme
  * @memberOf module:Logging
  */
 export const DefaultTheme: Theme = {

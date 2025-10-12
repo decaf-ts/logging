@@ -10,20 +10,16 @@ export * from "./types";
 export * from "./web";
 
 /**
- * @description A logging module for TypeScript applications
- * @summary Provides a comprehensive, flexible logging solution. This module exposes:
- * - Core classes like {@link Logging} and {@link MiniLogger}
- * - Decorators such as {@link log} for instrumenting methods
- * - Configuration and constants like {@link LogLevel} and {@link DefaultLoggingConfig}
- * - Type definitions including {@link Logger} and {@link LoggingConfig}
- * These exports enable consistent, context-aware, and optionally themed logging across projects.
+ * @description Comprehensive logging toolkit for browser and Node environments.
+ * @summary Exposes {@link Logging} and {@link MiniLogger} for runtime logging, decorators such as {@link log} for method instrumentation, and utilities like {@link PatternFilter}, {@link StopWatch}, and {@link LoggedEnvironment} to build configurable, theme-aware log pipelines.
  * @module Logging
  */
 
 /**
- * @description Current package version string
- * @summary Stores the current package version, used for version tracking and compatibility checks
+ * @description Current package version string.
+ * @summary Stores the package version for diagnostics and compatibility checks.
  * @const VERSION
+ * @type {string}
  * @memberOf module:Logging
  */
 export const VERSION = "##VERSION##";
