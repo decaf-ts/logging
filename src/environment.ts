@@ -155,6 +155,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         get(target, prop, receiver) {
           const value = Reflect.get(target, prop, receiver);
           if (value === EmptyValue) return undefined;
+          // If the property exists on the instance but resolves to undefined, return undefined (no proxy)
+          if (
+            typeof prop === "string" &&
+            Object.prototype.hasOwnProperty.call(target, prop)
+          ) {
+            if (typeof value === "undefined") return undefined;
+          }
           if (typeof value !== "undefined") return value;
           if (typeof prop === "string") {
             // Avoid interfering with logging config lookups for optional fields like 'app'
@@ -243,10 +250,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         }
         if (typeof prop === "symbol") return undefined;
 
-        const nextModel =
-          current && Object.prototype.hasOwnProperty.call(current, prop)
-            ? (current as any)[prop]
-            : undefined;
+        const hasProp =
+          !!current && Object.prototype.hasOwnProperty.call(current, prop);
+        const nextModel = hasProp ? (current as any)[prop] : undefined;
         const nextPath = [...path, prop];
         const composedKey = buildKey(nextPath);
 
@@ -259,7 +265,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
 
         // If the model marks this leaf as an empty string, treat as undefined (no proxy)
-        if (nextModel === "") return undefined;
+        if (hasProp && nextModel === "") return undefined;
+        // If the model explicitly contains the property with value undefined, treat as undefined (no proxy)
+        if (hasProp && typeof nextModel === "undefined") return undefined;
 
         // Always return a proxy for further path composition when no ENV value;
         // do not surface primitive model defaults here (this API is for key composition).
