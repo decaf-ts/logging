@@ -69,4 +69,18 @@ describe("Environment.proxy", () => {
     expect(env.service.port).toBe("port");
     expect(env.service.config.allow).toBe("allow");
   });
+
+  it("treats explicitly undefined model leaves as undefined (no proxy) at any depth", () => {
+    const env = Environment.accumulate({
+      top: undefined,
+      nested: { leaf: undefined, other: 1 },
+    } as any);
+
+    expect((env as any).top).toBeUndefined();
+    expect((env as any).nested.leaf).toBeUndefined();
+    // ensure other non-undefined leaf still composes
+    expect(String((env as any).nested.other)).toBe(
+      ["NESTED", "OTHER"].join(ENV_PATH_DELIMITER)
+    );
+  });
 });
