@@ -16,12 +16,10 @@ describe("Environment.proxy", () => {
     expect(String((env as any).logLevel)).toBe("LOG_LEVEL");
   });
 
-  it("maps nested properties using delimiter between parent and child", () => {
+  it("maps nested properties using delimiter between parent and child (non-empty leaves), empty string leaves resolve to undefined", () => {
     const env = Environment.accumulate({ service: { host: "", port: 0 } });
 
-    expect(String((env as any).service.host)).toBe(
-      ["SERVICE", "HOST"].join(ENV_PATH_DELIMITER)
-    );
+    expect((env as any).service.host).toBeUndefined();
     expect(String((env as any).service.port)).toBe(
       ["SERVICE", "PORT"].join(ENV_PATH_DELIMITER)
     );

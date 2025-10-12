@@ -46,6 +46,8 @@ export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
  *   end
  *   Env-->>Client: merged value
  */
+const EmptyValue = Symbol("EnvironmentEmpty");
+
 export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
    * @static
@@ -122,9 +124,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (v && typeof v === "object") {
             return Environment.buildEnvProxy(v as any, [k]);
           }
-          // If the model provides an empty string, expose a proxy that composes ENV keys
+          // If the model provides an empty string, mark with EmptyValue so instance proxy can return undefined without enabling key composition
           if (v === "") {
-            return Environment.buildEnvProxy(undefined, [k]);
+            return EmptyValue as unknown as V[keyof V];
           }
           return v;
         },
@@ -152,6 +154,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       const proxied = new Proxy(base as any, {
         get(target, prop, receiver) {
           const value = Reflect.get(target, prop, receiver);
+          if (value === EmptyValue) return undefined;
           if (typeof value !== "undefined") return value;
           if (typeof prop === "string") {
             // Avoid interfering with logging config lookups for optional fields like 'app'
@@ -175,12 +178,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @param {V} value - Object to merge into the environment.
    * @return {Environment} Updated environment reference.
    */
-  static accumulate<V extends object>(
+  static accumulate<V extends object, TBase extends object = object>(
     value: V
-  ): typeof Environment._instance &
-    V &
-    ObjectAccumulator<typeof Environment._instance & V> {
-    const instance = Environment.instance();
+  ): Environment<TBase & V> & TBase & V {
+    const instance = Environment.instance<Environment<TBase & V>>();
     Object.keys(instance as any).forEach((key) => {
       const desc = Object.getOwnPropertyDescriptor(instance as any, key);
       if (desc && desc.configurable && desc.enumerable) {
@@ -190,7 +191,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         });
       }
     });
-    return instance.accumulate(value);
+    return instance.accumulate(value) as unknown as Environment<TBase & V> &
+      TBase &
+      V;
   }
 
   /**
@@ -254,6 +257,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         // Otherwise, if the model has an object at this path, keep drilling with a proxy
         const isNextObject = nextModel && typeof nextModel === "object";
         if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
+
+        // If the model marks this leaf as an empty string, treat as undefined (no proxy)
+        if (nextModel === "") return undefined;
 
         // Always return a proxy for further path composition when no ENV value;
         // do not surface primitive model defaults here (this API is for key composition).

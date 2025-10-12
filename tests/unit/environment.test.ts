@@ -162,12 +162,11 @@ describe("Environment", () => {
     expect(got).toBe("value123");
   });
 
-  it("expands blank string models into ENV key composing proxies", () => {
+  it("does not build ENV key composing proxies for blank string models (returns undefined)", () => {
     const env = Environment.accumulate({ service: "" });
     // @ts-expect-error accessing dynamically
-    const proxy = (env as any).service;
-    expect(`${proxy}`).toBe("SERVICE");
-    expect(`${proxy.api}`).toBe("SERVICE__API");
+    const value = (env as any).service;
+    expect(value).toBeUndefined();
   });
 
   it("buildEnvProxy exposes own keys and property descriptors", () => {
