@@ -122,10 +122,15 @@ export function benchmark() {
         try {
           const result = Reflect.apply(fn, thisArg, args);
           if (result instanceof Promise) {
-            return result.then((r: any) => {
-              logger.benchmark(`completed in ${now() - start}ms`);
-              return r;
-            });
+            return result
+              .then((r: any) => {
+                logger.benchmark(`completed in ${now() - start}ms`);
+                return r;
+              })
+              .catch((e) => {
+                logger.benchmark(`failed in ${now() - start}ms`);
+                throw e;
+              });
           }
           logger.benchmark(`completed in ${now() - start}ms`);
           return result;
