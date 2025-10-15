@@ -307,6 +307,17 @@ export class MiniLogger implements Logger {
   }
 
   /**
+   * @description Logs a message at the error level
+   * @summary Logs a message at the error level for errors and exceptions
+   * @param {StringLike | Error} msg - The message to be logged or an Error object
+   * @param e
+   * @return {void}
+   */
+  warn(msg: StringLike): void {
+    this.log(LogLevel.warn, msg);
+  }
+
+  /**
    * @description Updates the logger configuration
    * @summary Merges the provided configuration with the existing configuration
    * @param {Partial<LoggingConfig>} config - The configuration options to apply
@@ -495,6 +506,16 @@ export class Logging {
    */
   static silly(msg: StringLike): void {
     return this.get().silly(msg);
+  }
+
+  /**
+   * @description Logs a silly message.
+   * @summary Delegates the debug logging to the global logger instance.
+   *
+   * @param msg - The message to be logged.
+   */
+  static warn(msg: StringLike): void {
+    return this.get().warn(msg);
   }
 
   /**

@@ -8,6 +8,7 @@ export * from "./text";
 export * from "./time";
 export * from "./types";
 export * from "./web";
+export * from "./utils";
 
 /**
  * @description Comprehensive logging toolkit for browser and Node environments.

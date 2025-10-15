@@ -47,6 +47,7 @@ export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
  *   Env-->>Client: merged value
  */
 const EmptyValue = Symbol("EnvironmentEmpty");
+const ModelSymbol = Symbol("EnvironmentModel");
 
 export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
@@ -69,6 +70,12 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   protected constructor() {
     super();
+    Object.defineProperty(this, ModelSymbol, {
+      value: {},
+      writable: true,
+      enumerable: false,
+      configurable: false,
+    });
   }
 
   /**
@@ -117,6 +124,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    */
   protected override expand<V extends object>(value: V): void {
     Object.entries(value).forEach(([k, v]) => {
+      Environment.mergeModel((this as any)[ModelSymbol], k, v);
       Object.defineProperty(this, k, {
         get: () => {
           const fromEnv = this.fromEnv(k);
@@ -137,6 +145,119 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         enumerable: true,
       });
     });
+  }
+
+  /**
+   * @description Returns a proxy enforcing required environment variables.
+   * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model throws an error.
+   * @return {this} Proxy of the environment enforcing required variables.
+   */
+  orThrow(): this {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const base = this;
+    const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
+    const buildKey = (path: string[]) =>
+      path.map((segment) => toENVFormat(segment)).join(ENV_PATH_DELIMITER);
+    const readRuntime = (key: string) => Environment.readRuntimeEnv(key);
+    const parseRuntime = (raw: unknown) =>
+      typeof raw !== "undefined" ? this.parseEnvValue(raw) : undefined;
+
+    const missing = (key: string, empty: boolean = false) =>
+      Environment.missingEnvError(key, empty);
+
+    const createNestedProxy = (model: any, path: string[]): any => {
+      const handler: ProxyHandler<any> = {
+        get(_target, prop) {
+          if (typeof prop !== "string") return undefined;
+          const nextPath = [...path, prop];
+          const envKey = buildKey(nextPath);
+          const runtimeRaw = readRuntime(envKey);
+          if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
+            throw missing(envKey, true);
+          const runtimeValue = parseRuntime(runtimeRaw);
+          if (typeof runtimeValue !== "undefined") {
+            if (typeof runtimeValue === "string" && runtimeValue.length === 0)
+              throw missing(envKey, true);
+            return runtimeValue;
+          }
+
+          const hasProp =
+            model && Object.prototype.hasOwnProperty.call(model, prop);
+          if (!hasProp) throw missing(envKey);
+
+          const modelValue = model[prop];
+          if (typeof modelValue === "undefined") return undefined;
+          if (modelValue === "") throw missing(envKey);
+
+          if (
+            modelValue &&
+            typeof modelValue === "object" &&
+            !Array.isArray(modelValue)
+          ) {
+            return createNestedProxy(modelValue, nextPath);
+          }
+
+          return modelValue;
+        },
+        ownKeys() {
+          return model ? Reflect.ownKeys(model) : [];
+        },
+        getOwnPropertyDescriptor(_target, prop) {
+          if (!model) return undefined;
+          if (Object.prototype.hasOwnProperty.call(model, prop)) {
+            return {
+              enumerable: true,
+              configurable: true,
+            } as PropertyDescriptor;
+          }
+          return undefined;
+        },
+      };
+      return new Proxy({}, handler);
+    };
+
+    const handler: ProxyHandler<any> = {
+      get(target, prop, receiver) {
+        if (typeof prop !== "string")
+          return Reflect.get(target, prop, receiver);
+        const hasModelProp = Object.prototype.hasOwnProperty.call(
+          modelRoot,
+          prop
+        );
+        if (!hasModelProp) return Reflect.get(target, prop, receiver);
+
+        const envKey = buildKey([prop]);
+        const runtimeRaw = readRuntime(envKey);
+        if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
+          throw missing(envKey, true);
+        const runtimeValue = parseRuntime(runtimeRaw);
+        if (typeof runtimeValue !== "undefined") {
+          if (typeof runtimeValue === "string" && runtimeValue.length === 0)
+            throw missing(envKey, true);
+          return runtimeValue;
+        }
+
+        const modelValue = modelRoot[prop];
+        if (
+          modelValue &&
+          typeof modelValue === "object" &&
+          !Array.isArray(modelValue)
+        ) {
+          return createNestedProxy(modelValue, [prop]);
+        }
+
+        if (typeof modelValue === "undefined")
+          return Reflect.get(target, prop, receiver);
+
+        const actual = Reflect.get(target, prop);
+        if (typeof actual === "undefined" || actual === "")
+          throw missing(envKey, actual === "");
+
+        return actual;
+      },
+    };
+
+    return new Proxy(base, handler);
   }
 
   /**
@@ -226,15 +347,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
     // Helper to read from the active environment given a composed key
     const readEnv = (key: string): unknown => {
-      if (isBrowser()) {
-        const env = (
-          globalThis as typeof globalThis & {
-            [BrowserEnvKey]?: Record<string, unknown>;
-          }
-        )[BrowserEnvKey];
-        return env ? env[key] : undefined;
-      }
-      return (globalThis as any)?.process?.env?.[key];
+      return Environment.readRuntimeEnv(key);
     };
 
     const handler: ProxyHandler<any> = {
@@ -300,6 +413,46 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return Environment.instance()
       .keys()
       .map((k) => (toEnv ? toENVFormat(k) : k));
+  }
+
+  private static mergeModel(
+    model: Record<string, any>,
+    key: string,
+    value: any
+  ) {
+    if (!model) return;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const existing = model[key];
+      const target =
+        existing && typeof existing === "object" && !Array.isArray(existing)
+          ? existing
+          : {};
+      model[key] = target;
+      Object.entries(value).forEach(([childKey, childValue]) => {
+        Environment.mergeModel(target, childKey, childValue);
+      });
+      return;
+    }
+    model[key] = value;
+  }
+
+  private static readRuntimeEnv(key: string): unknown {
+    if (isBrowser()) {
+      const env = (
+        globalThis as typeof globalThis & {
+          [BrowserEnvKey]?: Record<string, unknown>;
+        }
+      )[BrowserEnvKey];
+      return env ? env[key] : undefined;
+    }
+    return (globalThis as any)?.process?.env?.[key];
+  }
+
+  private static missingEnvError(key: string, empty: boolean): Error {
+    const suffix = empty ? "an empty string" : "undefined";
+    return new Error(
+      `Environment variable ${key} is required but was ${suffix}.`
+    );
   }
 }
 

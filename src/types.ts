@@ -125,6 +125,14 @@ export interface Logger
   debug(msg: StringLike): void;
 
   /**
+   * @description Logs a debug message.
+   * @summary Emits fine-grained diagnostic details useful during development and troubleshooting.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
+   */
+  warn(msg: StringLike): void;
+
+  /**
    * @description Creates a new logger for a specific method or context.
    * @summary Produces a scoped logger that formats entries using the derived context and overrides supplied configuration.
    * @param {any} method - Method name, callback, constructor, or partial configuration used to seed the child logger.

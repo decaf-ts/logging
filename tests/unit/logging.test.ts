@@ -123,6 +123,23 @@ describe("MiniLogger", () => {
       const configLogger = logger.for("testMethod", customConfig);
       expect(configLogger).toBeInstanceOf(MiniLogger);
     });
+
+    it("falls back to parent config when child override omits a key", () => {
+      Logging.setConfig({ verbose: 3 });
+
+      const childLogger = logger.for("child", { level: LogLevel.debug });
+
+      expect((childLogger as any).config("verbose")).toBe(3);
+    });
+
+    it("exposes config proxy metadata for non-overridden properties", () => {
+      const childLogger = logger.for("meta", { level: LogLevel.debug });
+
+      const childConfig = (childLogger as any).config;
+      const parentConfig = (logger as any).config;
+
+      expect(childConfig.name).toBe(parentConfig.name);
+    });
   });
 
   describe("createLog", () => {
@@ -170,6 +187,19 @@ describe("MiniLogger", () => {
       );
       expect(logString).toContain("Stack trace");
       expect(logString).toContain(stack);
+    });
+
+    it("includes the configured app identifier when present", () => {
+      Logging.setConfig({ app: "SvcApp" });
+
+      const logString = (logger as any).createLog(
+        LogLevel.info,
+        "message with app"
+      );
+
+      expect(logString).toContain("SvcApp");
+
+      Logging.setConfig({ app: undefined as any });
     });
   });
 
@@ -300,6 +330,12 @@ describe("MiniLogger", () => {
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test error object")
       );
+    });
+  });
+
+  describe("warn", () => {
+    it("throws because warn is not a supported log level", () => {
+      expect(() => logger.warn("warn message")).toThrow("Invalid log level");
     });
   });
 
@@ -461,6 +497,20 @@ describe("Logging", () => {
       expect(consoleDebugSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test silly message")
       );
+    });
+
+    it("delegates warn calls to the global logger", () => {
+      const stubLogger = {
+        warn: jest.fn(),
+      } as any;
+      const originalGlobal = (Logging as any).global;
+      (Logging as any).global = stubLogger;
+
+      Logging.warn("Test warn message");
+
+      expect(stubLogger.warn).toHaveBeenCalledWith("Test warn message");
+
+      (Logging as any).global = originalGlobal;
     });
 
     it("should log error messages", () => {

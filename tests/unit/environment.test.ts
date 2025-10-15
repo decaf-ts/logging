@@ -177,6 +177,7 @@ describe("Environment", () => {
     expect(Object.keys(target)).toContain("nested");
     const descriptor = Object.getOwnPropertyDescriptor(target, "nested");
     expect(descriptor?.enumerable).toBe(true);
+    expect(Object.getOwnPropertyDescriptor(target, "missing")).toBeUndefined();
   });
 
   it("buildEnvProxy reads values from browser ENV storage", () => {
@@ -193,5 +194,132 @@ describe("Environment", () => {
   it("proxy instance returns base values for symbol lookups", () => {
     const instance = Environment["instance"]();
     expect((instance as any)[Symbol.toPrimitive]).toBeUndefined();
+  });
+
+  describe("orThrow", () => {
+    const restoreEnv = (key: string, previous: string | undefined) => {
+      if (typeof previous === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = previous;
+      }
+    };
+
+    it("returns the resolved value when present", () => {
+      const env = Environment.accumulate({
+        orThrowDefined: "present",
+      });
+
+      expect(env.orThrow().orThrowDefined).toBe("present");
+    });
+
+    it("applies runtime overrides before falling back", () => {
+      const key = "OR_THROW_RUNTIME";
+      const previous = process.env[key];
+      process.env[key] = "runtime";
+
+      const env = Environment.accumulate({
+        orThrowRuntime: "default",
+      });
+
+      expect(env.orThrow().orThrowRuntime).toBe("runtime");
+
+      restoreEnv(key, previous);
+    });
+
+    it("throws when runtime env resolves to an empty string", () => {
+      const key = "OR_THROW_EMPTY";
+      const previous = process.env[key];
+      process.env[key] = "";
+
+      const env = Environment.accumulate({
+        orThrowEmpty: "default",
+      });
+
+      expect(() => env.orThrow().orThrowEmpty).toThrow(
+        "Environment variable OR_THROW_EMPTY is required but was an empty string."
+      );
+
+      restoreEnv(key, previous);
+    });
+
+    it("throws when the model marks a required value with an empty string", () => {
+      delete process.env["OR_THROW_REQUIRED"];
+      const env = Environment.accumulate({
+        orThrowRequired: "",
+      });
+
+      expect(() => env.orThrow().orThrowRequired).toThrow(
+        "Environment variable OR_THROW_REQUIRED is required but was undefined."
+      );
+    });
+
+    it("does not throw for optional undefined leaves", () => {
+      const env = Environment.accumulate({
+        orThrowOptional: undefined as any,
+      });
+
+      expect(env.orThrow().orThrowOptional).toBeUndefined();
+    });
+
+    it("throws for nested required leaves", () => {
+      delete process.env["SERVICE__HOST"];
+      const env = Environment.accumulate({
+        service: { host: "" },
+      });
+
+      expect(() => env.orThrow().service.host).toThrow(
+        "Environment variable SERVICE__HOST is required but was undefined."
+      );
+    });
+
+    it("throws when nested runtime env resolves to an empty string", () => {
+      const key = "RT_NESTED__EMPTY";
+      const previous = process.env[key];
+      process.env[key] = "";
+
+      const env = Environment.accumulate({
+        rtNested: { empty: "default" },
+      });
+
+      expect(() => env.orThrow().rtNested.empty).toThrow(
+        `Environment variable ${key} is required but was an empty string.`
+      );
+
+      restoreEnv(key, previous);
+    });
+
+    it("returns runtime overrides for nested leaves", () => {
+      const key = "RT_NESTED__VALUE";
+      const previous = process.env[key];
+      process.env[key] = "runtime";
+
+      const env = Environment.accumulate({
+        rtNested: { value: "default" },
+      });
+
+      expect(env.orThrow().rtNested.value).toBe("runtime");
+
+      restoreEnv(key, previous);
+    });
+
+    it("enumerates nested proxy keys and descriptors", () => {
+      const env = Environment.accumulate({ nestedProxy: { leaf: "value" } });
+
+      const nested = env.orThrow().nestedProxy;
+
+      expect(Object.keys(nested)).toContain("leaf");
+      expect(Object.getOwnPropertyDescriptor(nested, "leaf")?.enumerable).toBe(
+        true
+      );
+      expect(Object.getOwnPropertyDescriptor(nested, "missing")).toBeUndefined();
+    });
+
+    it("falls back to base handler for symbol property access", () => {
+      const env = Environment.accumulate({ symbolSpec: "value" });
+      const symbol = Symbol("test");
+
+      expect((env.orThrow() as any)[symbol]).toBeUndefined();
+    });
   });
 });

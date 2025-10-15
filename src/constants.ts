@@ -39,6 +39,8 @@ export enum LogLevel {
   benchmark = "benchmark",
   /** @description Error events that indicate failures requiring attention. */
   error = "error",
+  /** @description Warning events that may indicate issues. */
+  warn = "warn",
   /** @description Informational events describing normal operation. */
   info = "info",
   /** @description Verbose diagnostic information for detailed tracing. */
@@ -71,6 +73,7 @@ export enum LogLevel {
 export const NumericLogLevels = {
   benchmark: 0,
   error: 2,
+  warn: 3,
   info: 4,
   verbose: 6,
   debug: 7,
