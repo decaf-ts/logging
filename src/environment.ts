@@ -19,6 +19,9 @@ export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
   ...args: unknown[]
 ) => E;
 
+export type EnvironmentInstance<T extends object> = Environment<T> &
+  T & { orThrow(): EnvironmentInstance<T> };
+
 /**
  * @description Environment accumulator that lazily reads from runtime sources.
  * @summary Extends {@link ObjectAccumulator} to merge configuration objects while resolving values from Node or browser environment variables on demand.
@@ -152,7 +155,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model throws an error.
    * @return {this} Proxy of the environment enforcing required variables.
    */
-  orThrow(): this {
+  orThrow(): EnvironmentInstance<T> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
@@ -257,7 +260,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       },
     };
 
-    return new Proxy(base, handler);
+    return new Proxy(base, handler) as EnvironmentInstance<T>;
   }
 
   /**
@@ -269,7 +272,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @param {...unknown[]} args - Arguments forwarded to the factory when instantiating the singleton.
    * @return {E} Singleton environment instance.
    */
-  protected static instance<E extends Environment<any>>(...args: unknown[]): E {
+  protected static instance<E extends Environment<any>>(
+    ...args: unknown[]
+  ): E {
     if (!Environment._instance) {
       const base = Environment.factory(...args) as E;
       const proxied = new Proxy(base as any, {
@@ -308,7 +313,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    */
   static accumulate<V extends object, TBase extends object = object>(
     value: V
-  ): Environment<TBase & V> & TBase & V {
+  ): EnvironmentInstance<TBase & V> {
     const instance = Environment.instance<Environment<TBase & V>>();
     Object.keys(instance as any).forEach((key) => {
       const desc = Object.getOwnPropertyDescriptor(instance as any, key);
@@ -319,9 +324,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         });
       }
     });
-    return instance.accumulate(value) as unknown as Environment<TBase & V> &
+    return instance.accumulate(value) as unknown as EnvironmentInstance<
       TBase &
-      V;
+        V
+    >;
   }
 
   /**
