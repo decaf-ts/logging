@@ -189,6 +189,17 @@ export function silly() {
 }
 
 /**
+ * @description Method decorator for logging function calls with trace level.
+ * @summary Convenience wrapper around {@link log} that logs using `LogLevel.trace`.
+ * @return {function(any, any, PropertyDescriptor): void} Trace-level logging decorator.
+ * @function trace
+ * @category Method Decorators
+ */
+export function trace() {
+  return log(LogLevel.trace);
+}
+
+/**
  * @description Method decorator for logging function calls with verbose level.
  * @summary Convenience wrapper around {@link log} that logs using `LogLevel.verbose` with configurable verbosity.
  * @return {function(any, any, PropertyDescriptor): void} Verbose logging decorator.
