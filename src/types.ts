@@ -90,6 +90,14 @@ export interface Logger
    * @return {void}
    */
   silly(msg: StringLike): void;
+
+  /**
+   * @description Logs developer trace messages.
+   * @summary Emits playful or extremely verbose details at the `silly` log level.
+   * @param {StringLike} msg - Message or payload to emit.
+   * @return {void}
+   */
+  trace(msg: StringLike): void;
   /**
    * @description Logs a verbose message.
    * @summary Writes diagnostic output governed by the configured verbosity threshold.

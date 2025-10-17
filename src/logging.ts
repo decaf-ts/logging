@@ -235,6 +235,12 @@ export class MiniLogger implements Logger {
       case LogLevel.error:
         method = console.error;
         break;
+      case LogLevel.trace:
+        method = console.trace;
+        break;
+      case LogLevel.silly:
+        method = console.trace;
+        break;
       default:
         throw new Error("Invalid log level");
     }
@@ -309,12 +315,21 @@ export class MiniLogger implements Logger {
   /**
    * @description Logs a message at the error level
    * @summary Logs a message at the error level for errors and exceptions
-   * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param e
+   * @param {StringLike} msg - The message to be logged or an Error object
    * @return {void}
    */
   warn(msg: StringLike): void {
     this.log(LogLevel.warn, msg);
+  }
+
+  /**
+   * @description Logs a message at the error level
+   * @summary Logs a message at the error level for errors and exceptions
+   * @param {StringLike} msg - The message to be logged or an Error object
+   * @return {void}
+   */
+  trace(msg: StringLike): void {
+    this.log(LogLevel.trace, msg);
   }
 
   /**
@@ -476,6 +491,16 @@ export class Logging {
    */
   static info(msg: StringLike): void {
     return this.get().info(msg);
+  }
+
+  /**
+   * @description Logs an info message.
+   * @summary Delegates the info logging to the global logger instance.
+   *
+   * @param msg - The message to be logged.
+   */
+  static trace(msg: StringLike): void {
+    return this.get().trace(msg);
   }
 
   /**

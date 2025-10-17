@@ -47,6 +47,8 @@ export enum LogLevel {
   verbose = "verbose",
   /** @description Debug or trace details aimed at developers. */
   debug = "debug",
+  /** @description trace details aimed at developers */
+  trace = "trace",
   /** @description Extremely chatty or playful log entries. */
   silly = "silly",
 }
@@ -72,12 +74,13 @@ export enum LogLevel {
  */
 export const NumericLogLevels = {
   benchmark: 0,
-  error: 2,
-  warn: 3,
-  info: 4,
-  verbose: 6,
-  debug: 7,
-  silly: 9,
+  error: 3,
+  warn: 6,
+  info: 9,
+  verbose: 12,
+  debug: 15,
+  trace: 18,
+  silly: 21,
 };
 
 /**
@@ -153,6 +156,14 @@ export const DefaultTheme: Theme = {
       style: ["bold"],
     },
     debug: {
+      fg: 33,
+      style: ["bold"],
+    },
+    trace: {
+      fg: 33,
+      style: ["bold"],
+    },
+    silly: {
       fg: 33,
       style: ["bold"],
     },

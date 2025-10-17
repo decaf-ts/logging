@@ -1,4 +1,10 @@
-import { DefaultLoggingConfig, Logging, LogLevel, MiniLogger, DefaultTheme } from "../../src";
+import {
+  DefaultLoggingConfig,
+  Logging,
+  LogLevel,
+  MiniLogger,
+  DefaultTheme,
+} from "../../src";
 
 // Integration tests without mocks; focus on executing branches and verifying return values/state.
 
@@ -46,7 +52,10 @@ describe("Logging core (integration)", () => {
     expect(rawWithStack).toContain("Stack trace:");
 
     // JSON
-    const jsonLogger = new MiniLogger("C", { correlationId: "cid", format: "json" });
+    const jsonLogger = new MiniLogger("C", {
+      correlationId: "cid",
+      format: "json",
+    });
     const json = (jsonLogger as any).createLog(LogLevel.debug, "msg");
     const parsed = JSON.parse(json);
     expect(parsed.message).toBeDefined();
@@ -76,18 +85,27 @@ describe("Logging core (integration)", () => {
       ...DefaultTheme,
       message: { fg: [10, 20] as unknown as [number] }, // invalid length 2 triggers default branch
     };
-    const r1 = Logging.theme("txt", "message" as any, LogLevel.debug, badColorTheme);
+    const r1 = Logging.theme(
+      "txt",
+      "message" as any,
+      LogLevel.debug,
+      badColorTheme
+    );
     expect(typeof r1).toBe("string");
 
     const unknownOptionTheme = {
       ...DefaultTheme,
       message: { unknown: 1 as any },
     } as any;
-    const r2 = Logging.theme("txt", "message" as any, LogLevel.info, unknownOptionTheme);
+    const r2 = Logging.theme(
+      "txt",
+      "message" as any,
+      LogLevel.info,
+      unknownOptionTheme
+    );
     expect(typeof r2).toBe("string");
   });
 });
-
 
 // Additional targeted tests to increase coverage for proxy overrides, unsupported formats, and theme branches
 it("proxy config override via property access on child.config", () => {
@@ -134,9 +152,4 @@ it("theme ignores falsy values while preserving output", () => {
   } as any;
   const out = Logging.theme("keep", "message" as any, LogLevel.info, custom);
   expect(out).toBe("keep");
-});
-
-it("calling protected log with LogLevel.silly triggers default error branch", () => {
-  const l = new MiniLogger("X", { level: LogLevel.silly });
-  expect(() => (l as any).log("silly", "t")).toThrow(/Invalid log level/);
 });
