@@ -628,8 +628,6 @@ export class Logging {
     template: Theme = DefaultTheme
   ) {
     if (!this._config.style) return text;
-    const logger = Logging.get().for(this.theme);
-
     function apply(
       txt: string,
       option: keyof ThemeOption,
@@ -662,7 +660,7 @@ export class Logging {
               f = isBg ? c.bgRgb : c.rgb;
               return c.rgb(val[0], val[1], val[2]);
             default:
-              logger.error(`Not a valid color option: ${option}`);
+              console.error(`Not a valid color option: ${option}`);
               return style(t as string);
           }
         }
@@ -687,12 +685,12 @@ export class Logging {
             }
             return c.text;
           default:
-            logger.error(`Not a valid theme option: ${option}`);
+            console.error(`Not a valid theme option: ${option}`);
             return t;
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (e: unknown) {
-        logger.error(`Error applying style: ${option} with value ${value}`);
+        console.error(`Error applying style: ${option} with value ${value}`);
         return txt;
       }
     }
