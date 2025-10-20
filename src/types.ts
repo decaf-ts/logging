@@ -1,5 +1,5 @@
 import { styles } from "styled-string-builder";
-import { LoggingMode, LogLevel } from "./constants";
+import { LoggingMode, LogLevel, DefaultLevels } from "./constants";
 /**
  * @description String-compatible value accepted by the logging APIs.
  * @summary Represents either a literal string or an object exposing a `toString()` method, allowing lazy stringification of complex payloads.
@@ -61,93 +61,27 @@ export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
  * @interface Logger
  * @memberOf module:Logging
  */
-export interface Logger
-  extends Impersonatable<
-    Logger,
-    [
-      (
-        | string
-        | { new (...args: any[]): any }
-        | AnyFunction
-        | Partial<LoggingConfig>
-      ),
-      Partial<LoggingConfig>,
-      ...any[],
-    ]
-  > {
-  /**
-   * @description Logs a benchmark message.
-   * @summary Emits high-frequency performance metrics at the `benchmark` log level.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
+export interface BaseLogger extends Impersonatable<
+  Logger,
+  [
+    (
+      | string
+      | { new (...args: any[]): any }
+      | AnyFunction
+      | Partial<LoggingConfig>
+    ),
+    Partial<LoggingConfig>,
+    ...any[],
+  ]
+> {
   benchmark(msg: StringLike): void;
-
-  /**
-   * @description Logs a `way too verbose` or a silly message.
-   * @summary Emits playful or extremely verbose details at the `silly` log level.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
   silly(msg: StringLike): void;
-
-  /**
-   * @description Logs developer trace messages.
-   * @summary Emits playful or extremely verbose details at the `silly` log level.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
   trace(msg: StringLike): void;
-  /**
-   * @description Logs a verbose message.
-   * @summary Writes diagnostic output governed by the configured verbosity threshold.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @param {number} [verbosity] - Verbosity level required for the message to pass through.
-   * @return {void}
-   */
   verbose(msg: StringLike, verbosity?: number): void;
-
-  /**
-   * @description Logs an info message.
-   * @summary Emits general informational events that describe application progress.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
   info(msg: StringLike): void;
-
-  /**
-   * @description Logs an error message.
-   * @summary Records errors and exceptions, including optional stack traces.
-   * @param {StringLike|Error} msg - Message or {@link Error} instance to log.
-   * @param {Error} [e] - Optional secondary error or cause.
-   * @return {void}
-   */
   error(msg: StringLike | Error, e?: Error): void;
-
-  /**
-   * @description Logs a debug message.
-   * @summary Emits fine-grained diagnostic details useful during development and troubleshooting.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
   debug(msg: StringLike): void;
-
-  /**
-   * @description Logs a debug message.
-   * @summary Emits fine-grained diagnostic details useful during development and troubleshooting.
-   * @param {StringLike} msg - Message or payload to emit.
-   * @return {void}
-   */
   warn(msg: StringLike): void;
-
-  /**
-   * @description Creates a new logger for a specific method or context.
-   * @summary Produces a scoped logger that formats entries using the derived context and overrides supplied configuration.
-   * @param {any} method - Method name, callback, constructor, or partial configuration used to seed the child logger.
-   * @param {Partial<LoggingConfig>} [config] - Optional configuration overrides for the child logger.
-   * @param {...any[]} args - Extra arguments forwarded to factory implementations.
-   * @return {Logger} Logger instance tailored to the supplied context.
-   */
   for(
     method:
       | string
@@ -157,15 +91,15 @@ export interface Logger
     config?: Partial<LoggingConfig>,
     ...args: any[]
   ): Logger;
-
-  /**
-   * @description Updates the logger configuration.
-   * @summary Merges the given options into the logger's existing configuration.
-   * @param {Partial<LoggingConfig>} config - Configuration overrides to apply.
-   * @return {void}
-   */
   setConfig(config: Partial<LoggingConfig>): void;
 }
+
+export type DynamicLogger<L extends readonly string[]> = {
+  [K in L[number]]: (msg: StringLike, ...args: any[]) => void;
+};
+
+export type ConfiguredLevels = typeof DefaultLevels;
+export type Logger = BaseLogger & DynamicLogger<ConfiguredLevels>;
 
 /**
  * @description Interface for filters that mutate or reject log messages.
@@ -206,7 +140,7 @@ export interface LoggingFilter {
 export type LoggingConfig = {
   app?: string;
   env: "development" | "production" | "test" | "staging" | string;
-  level: LogLevel;
+  level: string;
   logLevel?: boolean;
   verbose: number;
   contextSeparator: string;
@@ -220,6 +154,7 @@ export type LoggingConfig = {
   pattern: string;
   correlationId?: string | number;
   filters?: string[] | LoggingFilter[];
+  levels?: readonly string[];
 };
 
 /**

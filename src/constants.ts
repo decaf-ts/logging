@@ -187,6 +187,17 @@ export const DefaultTheme: Theme = {
  * @property {Theme} theme - The theme to use for styling log messages (DefaultTheme).
  * @memberOf module:Logging
  */
+export const DefaultLevels = [
+  "benchmark",
+  "error",
+  "warn",
+  "info",
+  "verbose",
+  "debug",
+  "trace",
+  "silly",
+] as const;
+
 export const DefaultLoggingConfig: LoggingConfig = {
   env: "development",
   verbose: 0,
@@ -202,4 +213,5 @@ export const DefaultLoggingConfig: LoggingConfig = {
   pattern:
     "{level} [{timestamp}] {app} {context} {separator} {message} {stack}",
   theme: DefaultTheme,
+  levels: DefaultLevels,
 };

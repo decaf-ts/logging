@@ -1,16 +1,21 @@
 import {
   DefaultLoggingConfig,
+  DefaultTheme,
   Logging,
+  LoggingMode,
   LogLevel,
   MiniLogger,
-  DefaultTheme,
 } from "../../src";
 
 // Integration tests without mocks; focus on executing branches and verifying return values/state.
 
 describe("Logging core (integration)", () => {
   beforeEach(() => {
-    Logging.setConfig({ ...DefaultLoggingConfig, style: false, format: "raw" });
+    Logging.setConfig({
+      ...DefaultLoggingConfig,
+      style: false,
+      format: LoggingMode.RAW,
+    });
   });
 
   it("setConfig/getConfig roundtrip", () => {
@@ -42,7 +47,10 @@ describe("Logging core (integration)", () => {
   });
 
   it("createLog produces RAW and JSON formats including stack and correlationId", () => {
-    const logger = new MiniLogger("C", { correlationId: "abc", format: "raw" });
+    const logger = new MiniLogger("C", {
+      correlationId: "abc",
+      format: LoggingMode.RAW,
+    });
     const raw = (logger as any).createLog(LogLevel.info, "hello");
     expect(typeof raw).toBe("string");
     expect(raw).toContain("hello");
@@ -54,7 +62,7 @@ describe("Logging core (integration)", () => {
     // JSON
     const jsonLogger = new MiniLogger("C", {
       correlationId: "cid",
-      format: "json",
+      format: LoggingMode.JSON,
     });
     const json = (jsonLogger as any).createLog(LogLevel.debug, "msg");
     const parsed = JSON.parse(json);

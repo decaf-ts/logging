@@ -251,11 +251,13 @@ describe("MiniLogger", () => {
       );
     });
 
-    it("should throw an error for invalid log level", () => {
-      expect(() => {
-        // Access the protected log method using type assertion
-        (logger as any).log("invalid" as LogLevel, "Test message");
-      }).toThrow("Invalid log level");
+    it("does not throw for unknown log level and uses console.debug fallback", () => {
+      // Access the protected log method using type assertion
+      expect(() => (logger as any).log("unknown" as LogLevel, "Test message")).not.toThrow();
+      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Test message")
+      );
     });
   });
 
@@ -334,8 +336,11 @@ describe("MiniLogger", () => {
   });
 
   describe("warn", () => {
-    it("throws because warn is not a supported log level", () => {
-      expect(() => logger.warn("warn message")).toThrow("Invalid log level");
+    it("logs warn messages using console.log and does not throw", () => {
+      expect(() => logger.warn("warn message")).not.toThrow();
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining("warn message")
+      );
     });
   });
 

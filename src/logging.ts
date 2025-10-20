@@ -9,7 +9,12 @@ import {
   Logger,
 } from "./types";
 import { ColorizeOptions, style, StyledString } from "styled-string-builder";
-import { DefaultTheme, LogLevel, NumericLogLevels } from "./constants";
+import {
+  DefaultTheme,
+  LogLevel,
+  NumericLogLevels,
+  DefaultLevels,
+} from "./constants";
 import { sf } from "./text";
 import { LoggedEnvironment } from "./environment";
 
@@ -41,7 +46,34 @@ export class MiniLogger implements Logger {
   constructor(
     protected context: string,
     protected conf?: Partial<LoggingConfig>
-  ) {}
+  ) {
+    // Dynamically attach level methods based on configured levels at construction time
+    const levels = Logging.getLevels();
+    for (const lvl of levels) {
+      const key = lvl as keyof this;
+      if ((this as any)[key]) continue; // do not override existing methods
+      Object.defineProperty(this, key, {
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value: (...args: any[]) => {
+          if (lvl === "verbose") {
+            const [msg, verbosity = 0] = args;
+            if ((this.config("verbose") as number) >= (verbosity as number))
+              this.log(lvl as any, msg);
+            return;
+          }
+          if (lvl === "error") {
+            const [msg, e] = args;
+            this.log(lvl as any, msg, e);
+            return;
+          }
+          const [msg] = args;
+          this.log(lvl as any, msg);
+        },
+      });
+    }
+  }
 
   protected config(
     key: keyof LoggingConfig
@@ -217,34 +249,41 @@ export class MiniLogger implements Logger {
    * @param {string} [error] - Optional stack trace to include in the log
    * @return {void}
    */
-  protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
-    const confLvl = this.config("level") as LogLevel;
-    if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
-    let method;
+  protected log(level: string, msg: StringLike | Error, error?: Error): void {
+    const confLvl = this.config("level") as string;
+    const lvMap = Logging.getNumericLevels();
+    const current = lvMap[confLvl] ?? 0;
+    const incoming = lvMap[level] ?? 0;
+    if (current < incoming) return;
+    let method: (...args: any[]) => void;
     switch (level) {
-      case LogLevel.benchmark:
+      case "benchmark":
         method = console.log;
         break;
-      case LogLevel.info:
+      case "info":
         method = console.log;
         break;
-      case LogLevel.verbose:
-      case LogLevel.debug:
+      case "verbose":
+      case "debug":
         method = console.debug;
         break;
-      case LogLevel.error:
+      case "error":
         method = console.error;
         break;
-      case LogLevel.trace:
+      case "trace":
         method = console.trace;
         break;
-      case LogLevel.silly:
+      case "warn":
+        method = console.log;
+        break;
+      case "silly":
         method = console.trace;
         break;
       default:
-        throw new Error("Invalid log level");
+        method = console.debug;
+        break;
     }
-    method(this.createLog(level, msg, error));
+    method(this.createLog(level as any, msg, error));
   }
 
   /**
@@ -410,6 +449,25 @@ export class MiniLogger implements Logger {
  */
 export class Logging {
   /**
+   * @description Computes a numeric map for log levels based on configured order.
+   * @summary Uses the configured `levels` array to derive a monotonic numeric severity for comparisons.
+   */
+  static getLevels(): readonly string[] {
+    const raw = this._levels || (this._config.levels as any);
+    return (Array.isArray(raw) ? raw : DefaultLevels) as readonly string[];
+  }
+
+  static getNumericLevels(): Record<string, number> {
+    const levels = this.getLevels();
+    const map: Record<string, number> = {};
+    levels.forEach((l, i) => (map[l] = i * 3));
+    // Keep known NumericLogLevels values as fallback, without overriding configured ones
+    Object.entries(NumericLogLevels).forEach(([k, v]) => {
+      if (!(k in map)) map[k] = v as number;
+    });
+    return map;
+  }
+  /**
    * @description The global logger instance
    * @summary A singleton instance of Logger used for global logging
    */
@@ -425,6 +483,8 @@ export class Logging {
   ) => {
     return new MiniLogger(object, config);
   };
+
+  private static _levels?: readonly string[];
 
   private static _config: typeof LoggedEnvironment = LoggedEnvironment;
 
@@ -448,6 +508,9 @@ export class Logging {
    */
   static setConfig(config: Partial<LoggingConfig>): void {
     Object.entries(config).forEach(([k, v]) => {
+      if (k === "levels" && Array.isArray(v)) {
+        this._levels = v as readonly string[];
+      }
       (this._config as any)[k] = v as any;
     });
   }
