@@ -23,4 +23,13 @@ export * from "./utils";
  * @type {string}
  * @memberOf module:Logging
  */
-export const VERSION = "##VERSION##";
+export const VERSION: string = "##VERSION##";
+
+/**
+ * @description Current package version string.
+ * @summary Stores the package version for diagnostics and compatibility checks.
+ * @const PACKAGE_NAME
+ * @type {string}
+ * @memberOf module:Logging
+ */
+export const PACKAGE_NAME: string = "##PACKAGE##";
