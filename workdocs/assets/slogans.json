@@ -1,0 +1,184 @@
+{
+  "logging": [
+    {
+      "Slogan": "Decaf‑TS logging: record your errors without racing your heart.",
+      "Tags": "Logging, Calm, Coffee‑themed"
+    },
+    {
+      "Slogan": "Log entries that whisper, not scream — decaf edition.",
+      "Tags": "Logging, Chill, Humor"
+    },
+    {
+      "Slogan": "When your logs relax, your dev workflow rejoices.",
+      "Tags": "DeveloperDX, Calm, Logging"
+    },
+    {
+      "Slogan": "Capture info, warn gently, error kindly.",
+      "Tags": "Logging, Calm, Technical"
+    },
+    {
+      "Slogan": "Logging so smooth you’ll forget you hit an exception.",
+      "Tags": "Logging, Coffee‑themed, Fun"
+    },
+    {
+      "Slogan": "No caffeine crash in your logs — only clean tracebacks.",
+      "Tags": "Tracebacks, Calm, Humor"
+    },
+    {
+      "Slogan": "Errors happen. Your logger doesn’t need an energy drink.",
+      "Tags": "Errors, Logging, Calm"
+    },
+    {
+      "Slogan": "Logs that brew while you sip your decaf.",
+      "Tags": "Logging, Coffee‑themed, Developer"
+    },
+    {
+      "Slogan": "A logger that logs quietly, like library footsteps at midnight.",
+      "Tags": "Logging, Metaphor, Calm"
+    },
+    {
+      "Slogan": "Your console’s decaf‑shot: strong insight, low jitter.",
+      "Tags": "Console, Coffee‑themed, Insight"
+    },
+    {
+      "Slogan": "Debug mode, but make it decaf.",
+      "Tags": "Debugging, Coffee‑themed, Logging"
+    },
+    {
+      "Slogan": "Log levels handled like barista foam: light and consistent.",
+      "Tags": "LogLevels, Calm, Humor"
+    },
+    {
+      "Slogan": "Crash less. Log more. Stay mellow.",
+      "Tags": "Logging, Productivity, Calm"
+    },
+    {
+      "Slogan": "Strict typing, soft logging — the Decaf‑TS way.",
+      "Tags": "Typing, Logging, Technical"
+    },
+    {
+      "Slogan": "Your logs in full flavour, zero spill‑over.",
+      "Tags": "Logging, Coffee‑themed, Fun"
+    },
+    {
+      "Slogan": "When your logger purrs instead of roars, you’re using decaf.",
+      "Tags": "Logging, Humor, Calm"
+    },
+    {
+      "Slogan": "Record everything. Panic nothing.",
+      "Tags": "Logging, Calm, Developer"
+    },
+    {
+      "Slogan": "Log entries that read like your best espresso: rich, clear, no crash.",
+      "Tags": "Logging, Coffee‑themed, Metaphor"
+    },
+    {
+      "Slogan": "Let your logger sit back in the armchair while you build features.",
+      "Tags": "Logging, Chill, Developer"
+    },
+    {
+      "Slogan": "Logs that won’t keep you up at night worrying about state.",
+      "Tags": "Logging, Calm, State"
+    },
+    {
+      "Slogan": "From info to error with the same mellow vibration.",
+      "Tags": "Logging, Calm, Technical"
+    },
+    {
+      "Slogan": "Your logs don’t need caffeine — your productivity does enough already.",
+      "Tags": "Logging, Humor, Productivity"
+    },
+    {
+      "Slogan": "Structured logs, decaf‑style: clear, calm, consistent.",
+      "Tags": "Logging, Structure, Calm"
+    },
+    {
+      "Slogan": "When your logger is relaxed, your builds deploy smoother.",
+      "Tags": "Logging, DevOps, Calm"
+    },
+    {
+      "Slogan": "Log formatting that’s less shout, more conversation.",
+      "Tags": "Logging, Casting, Calm"
+    },
+    {
+      "Slogan": "Your logger’s flavour profile: mellow, robust, decaf.",
+      "Tags": "Logging, Coffee‑themed, Branding"
+    },
+    {
+      "Slogan": "Choose your level: DEBUG, INFO, WARN… all chill.",
+      "Tags": "LogLevels, Calm, Technical"
+    },
+    {
+      "Slogan": "Silence the jitters in your error logs.",
+      "Tags": "Errors, Logging, Calm"
+    },
+    {
+      "Slogan": "When the stack trace doesn’t spike your caffeine levels.",
+      "Tags": "Traceback, Humor, Logging"
+    },
+    {
+      "Slogan": "Console logs that relax as much as your morning brew.",
+      "Tags": "Console, Coffee‑themed, Fun"
+    },
+    {
+      "Slogan": "Your logger: the barista of observability.",
+      "Tags": "Observability, Logging, Coffee‑themed"
+    },
+    {
+      "Slogan": "Record the chaos quietly; debug it calmly.",
+      "Tags": "Debugging, Calm, Logging"
+    },
+    {
+      "Slogan": "No caffeine in your logs, no chaos in your codebase.",
+      "Tags": "Logging, Calm, Tech"
+    },
+    {
+      "Slogan": "Build features, not panic‑traces.",
+      "Tags": "Developer, Logging, Calm"
+    },
+    {
+      "Slogan": "Log handlers that prioritize calm over commotion.",
+      "Tags": "Handlers, Calm, Logging"
+    },
+    {
+      "Slogan": "Error logs with grace, not with heart palpitations.",
+      "Tags": "Errors, Logging, Coffee‑themed"
+    },
+    {
+      "Slogan": "Your logs sipping tea while your stack drinks decaf.",
+      "Tags": "Metaphor, Logging, Humor"
+    },
+    {
+      "Slogan": "Log watchers that don’t watch you crash.",
+      "Tags": "Monitoring, Logging, Calm"
+    },
+    {
+      "Slogan": "Analytics? Sure. Panic? Never.",
+      "Tags": "Analytics, Calm, Logging"
+    },
+    {
+      "Slogan": "Quiet logs. Loud features.",
+      "Tags": "Logging, Productivity, Calm"
+    },
+    {
+      "Slogan": "Let your logger brew consistency into your application.",
+      "Tags": "Logging, Consistency, Calm"
+    },
+    {
+      "Slogan": "Turn chaos into entries, entries into calm.",
+      "Tags": "Logging, Workflow, Humor"
+    },
+    {
+      "Slogan": "Your code’s new favourite lounge: Logger Edition.",
+      "Tags": "Logging, Chill, Developer"
+    },
+    {
+      "Slogan": "Log format so smooth it feels like a decaf latte.",
+      "Tags": "Logging, Coffee‑themed, Fun"
+    },
+    {
+      "Slogan": "Decaf‑TS logging: because even your errors deserve peace.",
+      "Tags": "Logging, Calm, Branding"
+    }
+  ]
+}
