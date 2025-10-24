@@ -1,4 +1,6 @@
 <!-- AUTO-GENERATED: logging/workdocs/1-Header.md -->
+![Banner](./workdocs/assets/decaf-logo.svg)
+
 # Logging Library (decaf-ts/logging)
 
 A small, flexible TypeScript logging library designed for framework-agnostic projects. It provides:
