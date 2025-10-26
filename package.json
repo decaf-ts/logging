@@ -110,6 +110,6 @@
     "winston": "^3.17.0"
   },
   "dependencies": {
-    "styled-string-builder": "^1.4.12"
+    "styled-string-builder": "latest"
   }
 }
