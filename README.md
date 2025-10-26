@@ -9,7 +9,6 @@ A small, flexible TypeScript logging library designed for framework-agnostic pro
 - Simple method decorators (log/debug/info/verbose/silly) to instrument class methods without boilerplate.
 - Extensibility through a pluggable LoggerFactory (e.g., WinstonLogger) while keeping a minimal default runtime.
 
-
 ![Licence](https://img.shields.io/github/license/decaf-ts/logging.svg?style=plastic)
 ![GitHub language count](https://img.shields.io/github/languages/count/decaf-ts/logging?style=plastic)
 ![GitHub top language](https://img.shields.io/github/languages/top/decaf-ts/logging?style=plastic)
@@ -38,6 +37,9 @@ A small, flexible TypeScript logging library designed for framework-agnostic pro
 ![NPM Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbadges%2Fshields%2Fmaster%2Fpackage.json&label=NPM&query=$.engines.npm&colorB=purple)
 
 Documentation available [here](https://decaf-ts.github.io/logging/)
+
+Minimal size: ##PACKAGE_SIZE## kb gzipped
+
 
 # Logging Library — Detailed Description
 
