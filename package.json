@@ -64,8 +64,15 @@
   ],
   "keywords": [
     "logging",
+    "winston",
+    "logger",
+    "decaf",
     "typescript",
-    "ts"
+    "observability",
+    "tracing",
+    "structured-logging",
+    "debug",
+    "telemetry"
   ],
   "author": "Tiago Venceslau and Contributors",
   "license": "MIT",
