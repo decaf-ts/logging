@@ -38,7 +38,7 @@ A small, flexible TypeScript logging library designed for framework-agnostic pro
 
 Documentation available [here](https://decaf-ts.github.io/logging/)
 
-Minimal size: ##PACKAGE_SIZE## kb gzipped
+Minimal size: 5.1 KB kb gzipped
 
 
 # Logging Library — Detailed Description
