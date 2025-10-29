@@ -83,5 +83,9 @@
   "devDependencies": {
     "@decaf-ts/utils": "latest",
     "winston": "^3.17.0"
+  },
+  "dependencies": {
+    "styled-string-builder": "latest",
+    "typed-object-accumulator": "latest"
   }
 }
