@@ -238,6 +238,9 @@ export class MiniLogger implements Logger {
       case LogLevel.trace:
         method = console.trace;
         break;
+      case LogLevel.warn:
+        method = console.warn;
+        break;
       case LogLevel.silly:
         method = console.trace;
         break;

@@ -334,8 +334,10 @@ describe("MiniLogger", () => {
   });
 
   describe("warn", () => {
-    it("throws because warn is not a supported log level", () => {
-      expect(() => logger.warn("warn message")).toThrow("Invalid log level");
+    it("does not throws because warn is now supported", () => {
+      expect(() => logger.warn("warn message")).not.toThrow(
+        "Invalid log level"
+      );
     });
   });
 
@@ -565,8 +567,9 @@ describe("Logging", () => {
     Logging.setFactory(() => fakeLogger as any);
     (Logging as any).global = undefined;
 
-    expect(() => Logging.benchmark("payload"))
-      .toThrow("benchmark not implemented");
+    expect(() => Logging.benchmark("payload")).toThrow(
+      "benchmark not implemented"
+    );
     expect(fakeLogger.benchmark).toHaveBeenCalledWith("payload");
 
     (Logging as any)._factory = originalFactory;
