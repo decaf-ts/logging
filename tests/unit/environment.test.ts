@@ -149,7 +149,6 @@ describe("Environment", () => {
 
   it("Expanded nested objects support ENV key composition via string coercion", () => {
     const env = Environment.accumulate({ service: { host: "localhost" } });
-    // @ts-expect-error accessing dynamically
     const service = (env as any).service;
     expect(`${service}`).toBe("SERVICE");
     expect(`${service.host}`).toBe("SERVICE__HOST");
@@ -157,14 +156,12 @@ describe("Environment", () => {
 
   it("Environment.get returns accumulated value by key path", () => {
     Environment.accumulate({ sampleKey: "value123" });
-    // @ts-expect-error accessing private in test context
     const got = Environment.get("sampleKey");
     expect(got).toBe("value123");
   });
 
   it("does not build ENV key composing proxies for blank string models (returns undefined)", () => {
     const env = Environment.accumulate({ service: "" });
-    // @ts-expect-error accessing dynamically
     const value = (env as any).service;
     expect(value).toBeUndefined();
   });
@@ -312,7 +309,9 @@ describe("Environment", () => {
       expect(Object.getOwnPropertyDescriptor(nested, "leaf")?.enumerable).toBe(
         true
       );
-      expect(Object.getOwnPropertyDescriptor(nested, "missing")).toBeUndefined();
+      expect(
+        Object.getOwnPropertyDescriptor(nested, "missing")
+      ).toBeUndefined();
     });
 
     it("falls back to base handler for symbol property access", () => {

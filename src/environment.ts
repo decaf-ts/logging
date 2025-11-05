@@ -19,8 +19,16 @@ export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
   ...args: unknown[]
 ) => E;
 
-export type EnvironmentInstance<T extends object> = Environment<T> &
-  T & { orThrow(): EnvironmentInstance<T> };
+// Default to `any` so standalone static `Environment.accumulate(...)` calls
+// remain permissive and don't narrow the global singleton's shape.
+export type EnvironmentInstance<T extends object = any> = Environment<T> &
+  T & { orThrow(): EnvironmentInstance<any> };
+
+export type AccumulatedEnvironment<T extends object = any> =
+  EnvironmentInstance<T> &
+    ObjectAccumulator<T> & {
+      accumulate<V extends object>(value: V): AccumulatedEnvironment<T & V>;
+    };
 
 /**
  * @description Environment accumulator that lazily reads from runtime sources.
@@ -155,7 +163,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model throws an error.
    * @return {this} Proxy of the environment enforcing required variables.
    */
-  orThrow(): EnvironmentInstance<T> {
+  // Return a permissive EnvironmentInstance<any> so consumers won't lose
+  // access to properties when the singleton is accumulated multiple times
+  // through separate static calls.
+  orThrow(): EnvironmentInstance<any> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
@@ -260,7 +271,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       },
     };
 
-    return new Proxy(base, handler) as EnvironmentInstance<T>;
+    return new Proxy(base, handler) as EnvironmentInstance<any>;
   }
 
   /**
@@ -272,9 +283,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @param {...unknown[]} args - Arguments forwarded to the factory when instantiating the singleton.
    * @return {E} Singleton environment instance.
    */
-  protected static instance<E extends Environment<any>>(
-    ...args: unknown[]
-  ): E {
+  protected static instance<E extends Environment<any>>(...args: unknown[]): E {
     if (!Environment._instance) {
       const base = Environment.factory(...args) as E;
       const proxied = new Proxy(base as any, {
@@ -302,6 +311,17 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return Environment._instance as E;
   }
 
+  // Instance-level override so chained calls to `.accumulate(...)` keep the
+  // EnvironmentInstance typing (including `orThrow`) instead of falling back
+  // to the ObjectAccumulator return type which lacks that method.
+  public override accumulate<V extends object>(
+    value: V
+  ): AccumulatedEnvironment<T & V> {
+    // delegate to base behavior to define properties and update internal size
+    super.accumulate(value as any);
+    return this as unknown as AccumulatedEnvironment<T & V>;
+  }
+
   /**
    * @static
    * @description Accumulates the given value into the environment.
@@ -311,10 +331,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @param {V} value - Object to merge into the environment.
    * @return {Environment} Updated environment reference.
    */
-  static accumulate<V extends object, TBase extends object = object>(
-    value: V
-  ): EnvironmentInstance<TBase & V> {
-    const instance = Environment.instance<Environment<TBase & V>>();
+  // Keep the static API permissive: separate static `accumulate` calls cannot
+  // be tracked by the type system across call boundaries, so return a more
+  // permissive AccumulatedEnvironment<any> that preserves instance methods
+  // like `orThrow()` while not narrowing the singleton to a single call's
+  // shape.
+  static accumulate<V extends object>(value: V): AccumulatedEnvironment<any> {
+    const instance = Environment.instance<Environment<any>>();
     Object.keys(instance as any).forEach((key) => {
       const desc = Object.getOwnPropertyDescriptor(instance as any, key);
       if (desc && desc.configurable && desc.enumerable) {
@@ -324,10 +347,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         });
       }
     });
-    return instance.accumulate(value) as unknown as EnvironmentInstance<
-      TBase &
-        V
-    >;
+    // Call the accumulator to attach properties, but always return the
+    // proxied singleton `instance` so instance methods like `orThrow` are
+    // preserved on every call to `Environment.accumulate`.
+    instance.accumulate(value);
+    // Also expose the ObjectAccumulator typing so chained accumulate calls
+    // preserve the accumulated type information.
+    return instance as unknown as AccumulatedEnvironment<any>;
   }
 
   /**

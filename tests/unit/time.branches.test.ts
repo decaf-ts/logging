@@ -16,7 +16,8 @@ describe("time module high resolution selection", () => {
         originalPerformanceDescriptor
       );
     } else {
-      delete (globalThis as { performance?: Performance }).performance;
+      delete (globalThis as unknown as { performance?: Performance })
+        .performance;
     }
     process.hrtime = originalHrtime;
     jest.restoreAllMocks();
@@ -30,7 +31,9 @@ describe("time module high resolution selection", () => {
     });
 
     const bigintSpy = jest.fn(() => BigInt(5_000_000));
-    (process as any).hrtime = Object.assign(() => undefined, { bigint: bigintSpy });
+    (process as any).hrtime = Object.assign(() => undefined, {
+      bigint: bigintSpy,
+    });
 
     const { now } = await import("../../src/time");
     expect(now()).toBeCloseTo(5, 6);

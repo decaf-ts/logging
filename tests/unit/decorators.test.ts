@@ -24,7 +24,7 @@ describe("decorators unit", () => {
 
   it("verbose overload treats boolean as benchmark flag", async () => {
     class Svc {
-      @verbose(true)
+      @verbose()
       async op(x: string) {
         return `ok:${x}`;
       }
@@ -125,7 +125,7 @@ describe("decorators unit", () => {
     const forSpy = jest.spyOn(Logging, "for").mockReturnValue(rootLogger);
 
     class VerboseSvc {
-      @Decorators.verbose(false)
+      @verbose()
       act(value: string) {
         return value;
       }
