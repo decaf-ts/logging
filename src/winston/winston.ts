@@ -35,15 +35,9 @@ export class WinstonLogger extends MiniLogger implements Logger {
     super(cont, conf);
     const config: LoggingConfig = Object.assign(
       {},
-      this.conf || {},
-      Logging.getConfig()
+      Logging.getConfig(),
+      this.conf || {}
     );
-    this.conf = Object.assign({}, this.conf || {}, {
-      style: false,
-      logLevel: false,
-      timestamp: false,
-      context: false,
-    });
     const { level, context, style, timestamp, timestampFormat } = config;
 
     const formats = [winston.format.splat(), winston.format.simple()];

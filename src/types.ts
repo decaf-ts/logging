@@ -229,6 +229,11 @@ export type LoggingConfig = {
   pattern: string;
   correlationId?: string | number;
   filters?: string[] | LoggingFilter[];
+  pino?: {
+    instance?: unknown;
+    options?: unknown;
+    destination?: unknown;
+  };
 };
 
 /**

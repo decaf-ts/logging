@@ -6,11 +6,18 @@
   "exports": {
     ".": {
       "require": "./lib/index.cjs",
-      "import": "./lib/esm/index.js"
+      "import": "./lib/esm/index.js",
+      "types": "./lib/index.d.ts"
     },
     "./winston": {
-      "require": "./lib/winston.cjs",
-      "import": "./lib/esm/winston.js"
+      "require": "./lib/winston/index.cjs",
+      "import": "./lib/esm/winston/index.js",
+      "types": "./lib/winston/index.d.ts"
+    },
+    "./pino": {
+      "require": "./lib/pino/index.cjs",
+      "import": "./lib/esm/pino/index.js",
+      "types": "./lib/pino/index.d.ts"
     }
   },
   "types": "lib/index.d.ts",
@@ -81,11 +88,14 @@
   },
   "homepage": "https://github.com/decaf-ts/logging#readme",
   "devDependencies": {
-    "@decaf-ts/utils": "latest",
-    "winston": "^3.17.0"
+    "@decaf-ts/utils": "latest"
   },
   "dependencies": {
     "styled-string-builder": "latest",
     "typed-object-accumulator": "latest"
+  },
+  "optionalDependencies": {
+    "pino": "^10.1.0",
+    "winston": "^3.17.0"
   }
 }
