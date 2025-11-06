@@ -102,17 +102,33 @@ describe("MiniLogger", () => {
   });
 
   describe("for", () => {
-    it("should create a new logger for a method", () => {
+    it("extends context with string method names", () => {
       const methodLogger = logger.for("testMethod");
       expect(methodLogger).toBeInstanceOf(MiniLogger);
+      expect((methodLogger as any).context).toBe("TestContext.testMethod");
     });
 
-    it("should create a new logger for a function", () => {
+    it("extends context with function names", () => {
       function testFunction() {
         return true;
       }
       const functionLogger = logger.for(testFunction);
       expect(functionLogger).toBeInstanceOf(MiniLogger);
+      expect((functionLogger as any).context).toBe("TestContext.testFunction");
+    });
+
+    it("extends context with class references", () => {
+      class TestClass {}
+      const classLogger = logger.for(TestClass);
+      expect(classLogger).toBeInstanceOf(MiniLogger);
+      expect((classLogger as any).context).toBe("TestContext.TestClass");
+    });
+
+    it("extends context with class instances", () => {
+      class TestClass {}
+      const instanceLogger = logger.for(new TestClass());
+      expect(instanceLogger).toBeInstanceOf(MiniLogger);
+      expect((instanceLogger as any).context).toBe("TestContext.TestClass");
     });
 
     it("should create a new logger with custom config", () => {
@@ -122,6 +138,7 @@ describe("MiniLogger", () => {
       };
       const configLogger = logger.for("testMethod", customConfig);
       expect(configLogger).toBeInstanceOf(MiniLogger);
+      expect((configLogger as any).context).toBe("TestContext.testMethod");
     });
 
     it("falls back to parent config when child override omits a key", () => {
@@ -139,6 +156,19 @@ describe("MiniLogger", () => {
       const parentConfig = (logger as any).config;
 
       expect(childConfig.name).toBe(parentConfig.name);
+    });
+
+    it("treats leading config objects as configuration overrides", () => {
+      const overrides: Partial<LoggingConfig> = {
+        level: LogLevel.debug,
+        verbose: 1,
+      };
+
+      const childLogger = logger.for(overrides);
+
+      expect(childLogger).toBeInstanceOf(MiniLogger);
+      expect((childLogger as any).context).toBe("TestContext");
+      expect((childLogger as any).config("level")).toBe(LogLevel.debug);
     });
   });
 

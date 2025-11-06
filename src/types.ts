@@ -148,11 +148,20 @@ export interface Logger
    * @param {...any[]} args - Extra arguments forwarded to factory implementations.
    * @return {Logger} Logger instance tailored to the supplied context.
    */
+  for(config: Partial<LoggingConfig>): Logger;
+  for(
+    context:
+      | string
+      | { new (...args: any[]): any }
+      | AnyFunction
+      | object
+  ): Logger;
   for(
     method:
       | string
       | { new (...args: any[]): any }
       | AnyFunction
+      | object
       | Partial<LoggingConfig>,
     config?: Partial<LoggingConfig>,
     ...args: any[]

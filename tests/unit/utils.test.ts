@@ -1,4 +1,10 @@
-import { isClass } from "../../src/utils";
+import {
+  getObjectName,
+  isClass,
+  isFunction,
+  isInstance,
+  isMethod,
+} from "../../src/utils";
 
 describe("utils:isClass", () => {
   it("detects native ES class declarations", () => {
@@ -83,5 +89,94 @@ describe("utils:isClass", () => {
     } finally {
       Function.prototype.toString = original;
     }
+  });
+});
+
+describe("utils:isFunction", () => {
+  it("detects plain functions", () => {
+    function testFn() {
+      return true;
+    }
+    expect(isFunction(testFn)).toBe(true);
+  });
+
+  it("rejects classes", () => {
+    class Sample {}
+    expect(isFunction(Sample)).toBe(false);
+  });
+
+  it("rejects non-functions", () => {
+    expect(isFunction({})).toBe(false);
+  });
+});
+
+describe("utils:isMethod", () => {
+  it("detects prototype methods", () => {
+    class Example {
+      method() {}
+    }
+    expect(isMethod(Example.prototype.method)).toBe(true);
+  });
+
+  it("rejects constructors", () => {
+    class Example {}
+    expect(isMethod(Example)).toBe(false);
+  });
+
+  it("rejects non-functions", () => {
+    expect(isMethod(undefined)).toBe(false);
+  });
+});
+
+describe("utils:isInstance", () => {
+  it("detects class instances", () => {
+    class Example {}
+    const instance = new Example();
+    expect(isInstance(instance)).toBe(true);
+  });
+
+  it("rejects plain functions", () => {
+    function Example() {
+      return null;
+    }
+    expect(isInstance(Example)).toBe(false);
+  });
+
+  it("rejects primitives and null", () => {
+    expect(isInstance(null)).toBe(false);
+    expect(isInstance(42)).toBe(false);
+    expect(isInstance({})).toBe(false);
+  });
+});
+
+describe("utils:getObjectName", () => {
+  it("returns class names", () => {
+    class Example {}
+    expect(getObjectName(Example)).toBe("Example");
+  });
+
+  it("returns method names", () => {
+    class Example {
+      method() {}
+    }
+    expect(getObjectName(Example.prototype.method)).toBe("method");
+  });
+
+  it("returns function names or source", () => {
+    const anon = () => true;
+    expect(getObjectName(anon)).toBe("anon");
+  });
+
+  it("returns instance constructor names", () => {
+    class Example {}
+    expect(getObjectName(new Example())).toBe("Example");
+  });
+
+  it("returns string representations for primitives and objects", () => {
+    expect(getObjectName("context")).toBe("context");
+    expect(getObjectName(Symbol.for("test"))).toBe("symbol");
+    expect(getObjectName({})).toBe("Object");
+    expect(getObjectName(undefined)).toBe("undefined");
+    expect(getObjectName(null)).toBe("null");
   });
 });

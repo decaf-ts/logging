@@ -12,6 +12,7 @@ import { ColorizeOptions, style, StyledString } from "styled-string-builder";
 import { DefaultTheme, LogLevel, NumericLogLevels } from "./constants";
 import { sf } from "./text";
 import { LoggedEnvironment } from "./environment";
+import { getObjectName, isClass, isFunction, isInstance } from "./utils";
 
 /**
  * @description A minimal logger implementation.
@@ -50,10 +51,21 @@ export class MiniLogger implements Logger {
     return Logging.getConfig()[key];
   }
 
-  for(method: string | ((...args: any[]) => any)): Logger;
   for(config: Partial<LoggingConfig>): Logger;
   for(
-    method: string | ((...args: any[]) => any) | Partial<LoggingConfig>,
+    method:
+      | string
+      | ((...args: any[]) => any)
+      | { new (...args: any[]): any }
+      | object
+  ): Logger;
+  for(
+    method:
+      | string
+      | ((...args: any[]) => any)
+      | { new (...args: any[]): any }
+      | object
+      | Partial<LoggingConfig>,
     config: Partial<LoggingConfig>,
     ...args: any[]
   ): Logger;
@@ -66,20 +78,26 @@ export class MiniLogger implements Logger {
    * @return {Logger} A new logger instance for the specified method
    */
   for(
-    method?: string | ((...args: any[]) => any) | Partial<LoggingConfig>,
+    method?:
+      | string
+      | ((...args: any[]) => any)
+      | { new (...args: any[]): any }
+      | object
+      | Partial<LoggingConfig>,
     config?: Partial<LoggingConfig>,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ...args: any[]
+    ...args: any[] // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Logger {
-    if (!config && typeof method === "object") {
-      config = method;
-      method = undefined;
-    } else {
-      method = method
-        ? typeof method === "string"
-          ? method
-          : (method as any).name
-        : undefined;
+    let contextName: string | undefined;
+    let childConfig = config;
+
+    if (typeof method === "string") {
+      contextName = method;
+    } else if (method !== undefined) {
+      if (isClass(method) || isInstance(method) || isFunction(method)) {
+        contextName = getObjectName(method);
+      } else if (!childConfig && method && typeof method === "object") {
+        childConfig = method as Partial<LoggingConfig>;
+      }
     }
 
     return new Proxy(this, {
@@ -87,15 +105,26 @@ export class MiniLogger implements Logger {
         const result = Reflect.get(target, p, receiver);
         if (p === "config") {
           return new Proxy(this.config, {
+            apply: (
+              target: typeof this.config,
+              _thisArg: unknown,
+              argArray: [keyof LoggingConfig]
+            ) => {
+              const [key] = argArray;
+              if (childConfig && key !== undefined && key in childConfig) {
+                return childConfig[key];
+              }
+              return Reflect.apply(target, receiver, argArray);
+            },
             get: (target: typeof this.config, p: string | symbol) => {
-              if (config && p in config)
-                return config[p as keyof LoggingConfig];
+              if (childConfig && p in childConfig)
+                return childConfig[p as keyof LoggingConfig];
               return Reflect.get(target, p, receiver);
             },
           });
         }
-        if (p === "context" && method) {
-          return [result, method].join(".");
+        if (p === "context" && contextName) {
+          return [result, contextName].join(".");
         }
         return result;
       },

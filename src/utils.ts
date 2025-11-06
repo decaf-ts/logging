@@ -30,3 +30,63 @@ export function isClass(
   );
   return names.length > 0;
 }
+
+export function isFunction<T extends (...args: any[]) => unknown>(
+  value: unknown
+): value is T {
+  return typeof value === "function" && !isClass(value);
+}
+
+export function isMethod<T extends (...args: any[]) => unknown>(
+  value: unknown
+): value is T {
+  if (!isFunction<T>(value)) return false;
+
+  const descriptor = Object.getOwnPropertyDescriptor(value, "prototype");
+  return !descriptor || descriptor.value === undefined;
+}
+
+export function isInstance<T extends object>(value: unknown): value is T {
+  if (value === null || typeof value !== "object") return false;
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  const ctor = (value as { constructor?: Function }).constructor;
+  if (!ctor || ctor === Object) return false;
+
+  return isClass(ctor);
+}
+
+export function getObjectName(value: unknown): string {
+  if (value === null) return "null";
+  if (value === undefined) return "undefined";
+  if (typeof value === "string") return value;
+
+  if (isClass(value)) {
+    return value.name || "AnonymousClass";
+  }
+
+  if (isInstance(value)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    const ctor = (value as { constructor?: Function }).constructor;
+    return ctor && ctor.name ? ctor.name : "AnonymousInstance";
+  }
+
+  if (isMethod(value) || isFunction(value)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    const fn = value as Function;
+    if (fn.name) return fn.name;
+
+    const src = Function.prototype.toString.call(fn).trim();
+    if (src) return src.split("\n")[0];
+    return "anonymous";
+  }
+
+  if (typeof value === "object") {
+    const tag = Object.prototype.toString.call(value);
+    const match = /^\[object ([^\]]+)\]$/.exec(tag);
+    if (match?.[1]) return match[1];
+    return "Object";
+  }
+
+  return typeof value;
+}
