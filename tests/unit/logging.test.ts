@@ -37,7 +37,6 @@ describe("MiniLogger", () => {
   let consoleLogSpy: jest.SpyInstance;
   let consoleDebugSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
-  let consoleTraceSpy: jest.SpyInstance;
 
   beforeEach(() => {
     // Reset Logging configuration
@@ -50,7 +49,6 @@ describe("MiniLogger", () => {
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
     consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-    consoleTraceSpy = jest.spyOn(console, "trace").mockImplementation();
   });
 
   afterEach(() => {
@@ -254,7 +252,7 @@ describe("MiniLogger", () => {
       );
     });
 
-    it("should log verbose messages with console.log", () => {
+    it("should log verbose messages with console.debug", () => {
       Logging.setConfig({ level: LogLevel.verbose });
       // Access the protected log method using type assertion
       (logger as any).log(LogLevel.verbose, "Test verbose message");
@@ -295,18 +293,18 @@ describe("MiniLogger", () => {
     it("should log silly messages if verbosity is sufficient", () => {
       Logging.setConfig({ verbose: 1, level: LogLevel.silly });
       logger.silly("Test silly message", 1);
-      expect(consoleTraceSpy).toHaveBeenCalledTimes(1);
-      expect(consoleTraceSpy).toHaveBeenCalledWith(
+      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test silly message")
       );
-      const loggedArg = consoleTraceSpy.mock.calls[0][0] as string;
+      const loggedArg = consoleDebugSpy.mock.calls[0][0] as string;
       expect(loggedArg).toContain("SILLY");
     });
 
     it("should not log silly messages if verbosity is insufficient", () => {
       Logging.setConfig({ verbose: 0 });
       logger.silly("Test silly message", 1);
-      expect(consoleTraceSpy).not.toHaveBeenCalled();
+      expect(consoleDebugSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -414,7 +412,6 @@ describe("Logging", () => {
   let consoleLogSpy: jest.SpyInstance;
   let consoleDebugSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
-  let consoleTraceSpy: jest.SpyInstance;
 
   beforeEach(() => {
     // Reset Logging configuration
@@ -424,7 +421,6 @@ describe("Logging", () => {
     consoleLogSpy = jest.spyOn(console, "log").mockImplementation();
     consoleDebugSpy = jest.spyOn(console, "debug").mockImplementation();
     consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
-    consoleTraceSpy = jest.spyOn(console, "trace").mockImplementation();
   });
 
   afterEach(() => {
@@ -531,11 +527,11 @@ describe("Logging", () => {
     it("should log silly messages", () => {
       Logging.setConfig({ verbose: 1, level: LogLevel.silly });
       Logging.silly("Test silly message");
-      expect(consoleTraceSpy).toHaveBeenCalledTimes(1);
-      expect(consoleTraceSpy).toHaveBeenCalledWith(
+      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
+      expect(consoleDebugSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test silly message")
       );
-      const loggedArg = consoleTraceSpy.mock.calls[0][0] as string;
+      const loggedArg = consoleDebugSpy.mock.calls[0][0] as string;
       expect(loggedArg).toContain("SILLY");
     });
 

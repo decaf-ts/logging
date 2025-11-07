@@ -271,7 +271,7 @@ export class MiniLogger implements Logger {
         method = console.warn;
         break;
       case LogLevel.silly:
-        method = console.trace;
+        method = console.debug;
         break;
       default:
         throw new Error("Invalid log level");

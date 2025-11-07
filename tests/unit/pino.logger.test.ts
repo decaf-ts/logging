@@ -291,7 +291,6 @@ describe("PinoLogger", () => {
       invoke(pinoLogger);
       const pinoInstance = getPinoInstances()[0];
       const pinoOutput = pinoInstance?.__calls[methodToPino[method]].at(-1);
-
       expect(miniOutput).toBeDefined();
       expect(winstonOutput).toEqual(miniOutput);
       expect(pinoOutput).toEqual(miniOutput);
