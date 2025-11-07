@@ -298,7 +298,7 @@ export class MiniLogger implements Logger {
    */
   silly(msg: StringLike, verbosity: number = 0): void {
     if ((this.config("verbose") as number) >= verbosity)
-      this.log(LogLevel.verbose, msg);
+      this.log(LogLevel.silly, msg);
   }
 
   /**
