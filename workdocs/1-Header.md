@@ -3,8 +3,7 @@
 
 # Logging Library (decaf-ts/logging)
 
-A small, flexible TypeScript logging library designed for framework-agnostic projects. It provides:
-- Context-aware loggers with hierarchical contexts (class.method) via MiniLogger and the static Logging facade.
-- Configurable output (level filtering, verbosity, separators, timestamps) and optional ANSI styling/theming.
-- Simple method decorators (log/debug/info/verbose/silly) to instrument class methods without boilerplate.
-- Extensibility through a pluggable LoggerFactory (e.g., WinstonLogger) while keeping a minimal default runtime.
+Decaf’s logging toolkit keeps one fast MiniLogger at the core while exposing adapters, filters, and utilities that fit both browser and Node.js runtimes:
+- Configure once through `Logging.setConfig` or the `Environment` accumulator and let impersonated child loggers inherit overrides without allocations.
+- Apply filter chains, transports, and adapter-specific features (Pino, Winston, custom factories) through the shared `LoggingConfig` contract.
+- Instrument classes using decorators, `LoggedClass`, and `Logging.because` while StopWatch, text/time utilities, and environment helpers round out the diagnostics surface.

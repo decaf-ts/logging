@@ -5,4 +5,3 @@ Document file according to:
 - decorators (file is called decorators.ts): read the file [./decorator.md](./decorator.md) and follow that instruction
 - functions: read the file [./function.md](./function.md) and follow that instruction
 - enums and constants: read the file [./constant.md](./constant.md) and follow that instruction
-- module files (path matching ./src/index.ts): read the file [./module.md](./module.md) and follow that instruction
