@@ -1,0 +1,5 @@
+.token
+.npmtoken
+.confluence-token
+.dockertoken
+.dockeruser
