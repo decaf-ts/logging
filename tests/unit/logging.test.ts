@@ -6,6 +6,7 @@ import {
   LoggingConfig,
   LogLevel,
   Theme,
+  LoggedEnvironment,
 } from "../../src";
 
 // Mock the styled-string library
@@ -32,6 +33,15 @@ jest.mock("styled-string-builder", () => {
   };
 });
 
+const rootFactory = (context?: string, conf?: Partial<LoggingConfig>) => {
+  const base =
+    typeof LoggedEnvironment.app === "string" &&
+    LoggedEnvironment.app?.length
+      ? [LoggedEnvironment.app as string]
+      : [];
+  return new MiniLogger(context, conf, base);
+};
+
 describe("MiniLogger", () => {
   let logger: MiniLogger;
   let consoleLogSpy: jest.SpyInstance;
@@ -39,6 +49,8 @@ describe("MiniLogger", () => {
   let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
+    Logging.setFactory(rootFactory);
+    (LoggedEnvironment as any).app = undefined;
     // Reset Logging configuration
     Logging.setConfig({ ...DefaultLoggingConfig });
 
@@ -60,6 +72,13 @@ describe("MiniLogger", () => {
   describe("constructor", () => {
     it("should create a new MiniLogger instance with default config", () => {
       expect(logger).toBeInstanceOf(MiniLogger);
+    });
+
+    it("stores the initial context as the immutable root", () => {
+      expect(logger.root).toEqual(["TestContext"]);
+      const rootCopy = logger.root as string[];
+      (rootCopy as string[]).push("mutated");
+      expect(logger.root).toEqual(["TestContext"]);
     });
 
     it("should create a new MiniLogger instance with custom config", () => {
@@ -105,7 +124,10 @@ describe("MiniLogger", () => {
     it("extends context with string method names", () => {
       const methodLogger = logger.for("testMethod");
       expect(methodLogger).toBeInstanceOf(MiniLogger);
-      expect((methodLogger as any).context).toBe("TestContext.testMethod");
+      expect((methodLogger as any).context).toEqual([
+        "TestContext",
+        "testMethod",
+      ]);
     });
 
     it("extends context with function names", () => {
@@ -114,21 +136,30 @@ describe("MiniLogger", () => {
       }
       const functionLogger = logger.for(testFunction);
       expect(functionLogger).toBeInstanceOf(MiniLogger);
-      expect((functionLogger as any).context).toBe("TestContext.testFunction");
+      expect((functionLogger as any).context).toEqual([
+        "TestContext",
+        "testFunction",
+      ]);
     });
 
     it("extends context with class references", () => {
       class TestClass {}
       const classLogger = logger.for(TestClass);
       expect(classLogger).toBeInstanceOf(MiniLogger);
-      expect((classLogger as any).context).toBe("TestContext.TestClass");
+      expect((classLogger as any).context).toEqual([
+        "TestContext",
+        "TestClass",
+      ]);
     });
 
     it("extends context with class instances", () => {
       class TestClass {}
       const instanceLogger = logger.for(new TestClass());
       expect(instanceLogger).toBeInstanceOf(MiniLogger);
-      expect((instanceLogger as any).context).toBe("TestContext.TestClass");
+      expect((instanceLogger as any).context).toEqual([
+        "TestContext",
+        "TestClass",
+      ]);
     });
 
     it("should create a new logger with custom config", () => {
@@ -138,7 +169,10 @@ describe("MiniLogger", () => {
       };
       const configLogger = logger.for("testMethod", customConfig);
       expect(configLogger).toBeInstanceOf(MiniLogger);
-      expect((configLogger as any).context).toBe("TestContext.testMethod");
+      expect((configLogger as any).context).toEqual([
+        "TestContext",
+        "testMethod",
+      ]);
     });
 
     it("falls back to parent config when child override omits a key", () => {
@@ -167,8 +201,83 @@ describe("MiniLogger", () => {
       const childLogger = logger.for(overrides);
 
       expect(childLogger).toBeInstanceOf(MiniLogger);
-      expect((childLogger as any).context).toBe("TestContext");
+      expect((childLogger as any).context).toEqual(["TestContext"]);
       expect((childLogger as any).config("level")).toBe(LogLevel.debug);
+    });
+  });
+
+  describe("clear", () => {
+    it("resets proxy context and config overrides", () => {
+      const child = logger.for("method", { level: LogLevel.debug });
+      expect((child as any).context).toEqual(["TestContext", "method"]);
+      expect((child as any).config("level")).toBe(LogLevel.debug);
+
+      const cleared = child.clear();
+
+      expect(cleared).toBe(child);
+      expect((cleared as any).context).toEqual(["TestContext"]);
+      expect((cleared as any).config("level")).toBe(
+        (logger as any).config("level")
+      );
+    });
+
+    it("preserves subclass instances when chaining", () => {
+      class CustomLogger extends MiniLogger {
+        custom(): string {
+          return "ok";
+        }
+      }
+
+      const custom = new CustomLogger("Custom");
+      const scoped = custom.for("Child");
+
+      expect(scoped).toBeInstanceOf(CustomLogger);
+      expect(scoped.custom()).toBe("ok");
+      expect((scoped as any).context).toEqual(["Custom", "Child"]);
+
+      const cleared = scoped.clear();
+      expect(cleared).toBe(scoped);
+      expect((cleared as any).context).toEqual(["Custom"]);
+
+      const next = cleared.for("Next");
+      expect(next).toBeInstanceOf(CustomLogger);
+      expect((next as any).context).toEqual(["Custom", "Next"]);
+    });
+
+    it("keeps clear available across arbitrary for chains", () => {
+      const segments = ["One", "Two", "Three", "Four"];
+      let scoped: MiniLogger = logger;
+
+      segments.forEach((segment) => {
+        scoped = scoped.for(segment);
+        expect(typeof (scoped as any).clear).toBe("function");
+      });
+
+      const cleared = scoped.clear();
+      expect((cleared as any).context).toEqual(["TestContext"]);
+      expect(typeof (cleared as any).clear).toBe("function");
+
+      const next = cleared.for("Final");
+      expect(next).toBeInstanceOf(MiniLogger);
+      expect((next as any).context).toEqual(["TestContext", "Final"]);
+    });
+  });
+
+  describe("app context prefix", () => {
+    it("keeps the configured app as the leading context entry", () => {
+      (LoggedEnvironment as any).app = "SeedApp";
+      Logging.setFactory(rootFactory);
+      const logger = Logging.for("Root") as MiniLogger;
+      expect((logger as any).context).toEqual(["SeedApp", "Root"]);
+
+      const child = logger.for("Child");
+      expect((child as any).context).toEqual(["SeedApp", "Root", "Child"]);
+
+      child.clear();
+      expect((child as any).context).toEqual(["SeedApp"]);
+
+      logger.clear();
+      expect((logger as any).context).toEqual(["SeedApp"]);
     });
   });
 
@@ -220,7 +329,8 @@ describe("MiniLogger", () => {
     });
 
     it("includes the configured app identifier when present", () => {
-      Logging.setConfig({ app: "SvcApp" });
+      const prev = LoggedEnvironment.app;
+      (LoggedEnvironment as any).app = "SvcApp";
 
       const logString = (logger as any).createLog(
         LogLevel.info,
@@ -229,7 +339,7 @@ describe("MiniLogger", () => {
 
       expect(logString).toContain("SvcApp");
 
-      Logging.setConfig({ app: undefined as any });
+      (LoggedEnvironment as any).app = prev;
     });
   });
 
@@ -482,6 +592,23 @@ describe("Logging", () => {
         Object.assign({ correlationId: "test-id" }, config)
       );
       expect(logger).toBeInstanceOf(MiniLogger);
+    });
+  });
+
+  describe("single logger reuse", () => {
+    afterEach(() => {
+      Logging.setFactory(rootFactory);
+    });
+
+    it("reuses the root logger for multiple for/because calls", () => {
+      const factory = jest.fn(rootFactory);
+      Logging.setFactory(factory);
+
+      Logging.for("Alpha");
+      Logging.for("Beta");
+      Logging.because("Gamma", "123");
+
+      expect(factory).toHaveBeenCalledTimes(1);
     });
   });
 

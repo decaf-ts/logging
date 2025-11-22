@@ -14,6 +14,8 @@ import { sf } from "./text";
 import { LoggedEnvironment } from "./environment";
 import { getObjectName, isClass, isFunction, isInstance } from "./utils";
 
+const ROOT_CONTEXT_SYMBOL = Symbol("MiniLoggerRootContext");
+
 /**
  * @description A minimal logger implementation.
  * @summary MiniLogger is a lightweight logging class that implements the Logger interface.
@@ -39,10 +41,19 @@ import { getObjectName, isClass, isFunction, isInstance } from "./utils";
  * logger.for('specialMethod', { style: true }).info('Styled message');
  */
 export class MiniLogger implements Logger {
+  protected context: string[];
+  protected baseContext: string[];
+
   constructor(
-    protected context: string,
-    protected conf?: Partial<LoggingConfig>
-  ) {}
+    context?: string,
+    protected conf?: Partial<LoggingConfig>,
+    baseContext: string[] = []
+  ) {
+    this.baseContext = Array.isArray(baseContext) ? [...baseContext] : [];
+    if (context) this.baseContext.push(context);
+    this.context = [...this.baseContext];
+    (this as any)[ROOT_CONTEXT_SYMBOL] = [...this.baseContext];
+  }
 
   protected config(
     key: keyof LoggingConfig
@@ -51,14 +62,14 @@ export class MiniLogger implements Logger {
     return Logging.getConfig()[key];
   }
 
-  for(config: Partial<LoggingConfig>): Logger;
+  for(config: Partial<LoggingConfig>): this;
   for(
     method:
       | string
       | ((...args: any[]) => any)
       | { new (...args: any[]): any }
       | object
-  ): Logger;
+  ): this;
   for(
     method:
       | string
@@ -68,7 +79,7 @@ export class MiniLogger implements Logger {
       | Partial<LoggingConfig>,
     config: Partial<LoggingConfig>,
     ...args: any[]
-  ): Logger;
+  ): this;
   /**
    * @description Creates a child logger for a specific method or context
    * @summary Returns a new logger instance with the current context extended by the specified method name
@@ -86,9 +97,20 @@ export class MiniLogger implements Logger {
       | Partial<LoggingConfig>,
     config?: Partial<LoggingConfig>,
     ...args: any[] // eslint-disable-line @typescript-eslint/no-unused-vars
-  ): Logger {
+  ): this {
     let contextName: string | undefined;
     let childConfig = config;
+    const parentContext = Array.isArray(this.context)
+      ? [...this.context]
+      : typeof this.context === "string" && this.context
+        ? [this.context]
+        : [];
+    const rootCandidate = (this as any)[ROOT_CONTEXT_SYMBOL];
+    const baseContext = Array.isArray(rootCandidate)
+      ? [...rootCandidate]
+      : Array.isArray(this.baseContext)
+        ? [...this.baseContext]
+        : [];
 
     if (typeof method === "string") {
       contextName = method;
@@ -99,6 +121,10 @@ export class MiniLogger implements Logger {
         childConfig = method as Partial<LoggingConfig>;
       }
     }
+
+    let contextSegments = contextName
+      ? [...parentContext, contextName]
+      : [...parentContext];
 
     return new Proxy(this, {
       get: (target: typeof this, p: string | symbol, receiver: any) => {
@@ -116,19 +142,48 @@ export class MiniLogger implements Logger {
               }
               return Reflect.apply(target, receiver, argArray);
             },
-            get: (target: typeof this.config, p: string | symbol) => {
-              if (childConfig && p in childConfig)
-                return childConfig[p as keyof LoggingConfig];
-              return Reflect.get(target, p, receiver);
+            get: (target: typeof this.config, key: string | symbol) => {
+              if (childConfig && key in childConfig)
+                return childConfig[key as keyof LoggingConfig];
+              return Reflect.get(target, key, receiver);
             },
           });
         }
-        if (p === "context" && contextName) {
-          return [result, contextName].join(".");
+        if (p === "clear") {
+          return () => {
+            contextSegments = [...baseContext];
+            childConfig = undefined;
+            return receiver;
+          };
+        }
+        if (p === "context") {
+          return contextSegments;
+        }
+        if (p === "root") {
+          return [...baseContext];
+        }
+        if (p === ROOT_CONTEXT_SYMBOL) {
+          return baseContext;
+        }
+        if (p === "for") {
+          return (...innerArgs: Parameters<MiniLogger["for"]>) => {
+            const originalContext = Array.isArray(target.context)
+              ? [...target.context]
+              : typeof target.context === "string" && target.context
+                ? [target.context]
+                : [];
+            target.context = [...contextSegments];
+            try {
+              // eslint-disable-next-line prefer-spread
+              return target.for.apply(target, innerArgs);
+            } finally {
+              target.context = originalContext;
+            }
+          };
         }
         return result;
       },
-    });
+    }) as this;
   }
 
   /**
@@ -157,11 +212,8 @@ export class MiniLogger implements Logger {
     > = {} as any;
     const style = this.config("style");
     const separator = this.config("separator");
-    const app = this.config("app");
-    if (app)
-      log.app = style
-        ? Logging.theme(app as string, "app", level)
-        : (app as string);
+    const app = Logging.getConfig().app;
+    if (app) log.app = style ? Logging.theme(app as string, "app", level) : app;
 
     if (separator)
       log.separator = style
@@ -182,10 +234,18 @@ export class MiniLogger implements Logger {
     }
 
     if (this.config("context")) {
-      const context: string = style
-        ? Logging.theme(this.context, "class", level)
-        : this.context;
-      log.context = context;
+      const contextSegments = Array.isArray(this.context)
+        ? this.context
+        : typeof this.context === "string" && this.context
+          ? [this.context]
+          : [];
+      if (contextSegments.length) {
+        const joined = contextSegments.join(
+          (this.config("contextSeparator") as string) || "."
+        );
+        const context = style ? Logging.theme(joined, "class", level) : joined;
+        log.context = context;
+      }
     }
 
     if (this.config("correlationId")) {
@@ -373,6 +433,19 @@ export class MiniLogger implements Logger {
   setConfig(config: Partial<LoggingConfig>): void {
     this.conf = { ...(this.conf || {}), ...config };
   }
+
+  get root(): readonly string[] {
+    return [...this.baseContext];
+  }
+
+  /**
+   * @description Clears any contextual overrides applied by `for`.
+   * @summary Returns the same logger instance so more contexts can be chained afterwards.
+   */
+  clear(): this {
+    this.context = [...this.baseContext];
+    return this;
+  }
 }
 
 /**
@@ -452,10 +525,14 @@ export class Logging {
    * @summary A function that creates new Logger instances. By default, it creates a MiniLogger.
    */
   private static _factory: LoggerFactory = (
-    object: string,
+    object?: string,
     config?: Partial<LoggingConfig>
   ) => {
-    return new MiniLogger(object, config);
+    const base =
+      typeof LoggedEnvironment.app === "string"
+        ? [LoggedEnvironment.app as string]
+        : [];
+    return new MiniLogger(object, config, base);
   };
 
   private static _config: typeof LoggedEnvironment = LoggedEnvironment;
@@ -470,6 +547,7 @@ export class Logging {
    */
   static setFactory(factory: LoggerFactory) {
     Logging._factory = factory;
+    this.global = undefined;
   }
 
   /**
@@ -500,8 +578,7 @@ export class Logging {
    * @return The global VerbosityLogger instance.
    */
   static get(): Logger {
-    this.global = this.global ? this.global : this._factory("Logging");
-    return this.global;
+    return this.ensureRoot();
   }
 
   /**
@@ -599,13 +676,9 @@ export class Logging {
     config?: Partial<LoggingConfig>,
     ...args: any[]
   ): Logger {
-    object =
-      typeof object === "string"
-        ? object
-        : object.constructor
-          ? object.constructor.name
-          : object.name;
-    return this._factory(object, config, ...args);
+    const root = this.global ? this.global : this.ensureRoot(args);
+    const callArgs = config !== undefined ? [object, config] : [object];
+    return (root.for as any)(...callArgs);
   }
 
   /**
@@ -617,7 +690,39 @@ export class Logging {
    * @return {Logger} A new logger instance labeled with the provided reason and id
    */
   static because(reason: string, id?: string): Logger {
-    return this._factory(reason, this._config, id);
+    const root = this.ensureRoot();
+    let logger = (root.for as any)(reason, this._config);
+    if (id) logger = (logger.for as any)(id);
+    return logger;
+  }
+
+  private static baseContext(): string[] {
+    const app = this._config.app;
+    return typeof app === "string" && app.length ? [app] : [];
+  }
+
+  private static attachRootContext(logger: Logger): Logger {
+    const base =
+      (logger as any).root && Array.isArray((logger as any).root)
+        ? [...(logger as any).root]
+        : this.baseContext();
+    if (
+      !(logger as any).context ||
+      (Array.isArray((logger as any).context) &&
+        (logger as any).context.length === 0)
+    ) {
+      (logger as any).context = [...base];
+    }
+    (logger as any)[ROOT_CONTEXT_SYMBOL] = [...base];
+    return logger;
+  }
+
+  private static ensureRoot(extras: any[] = []): Logger {
+    if (!this.global) {
+      const instance = this._factory(undefined, undefined, ...extras);
+      this.global = this.attachRootContext(instance);
+    }
+    return this.global;
   }
 
   /**

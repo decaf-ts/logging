@@ -4,12 +4,22 @@ import {
   LogLevel,
   MiniLogger,
   DefaultTheme,
+  LoggedEnvironment,
 } from "../../src";
 
 // Integration tests without mocks; focus on executing branches and verifying return values/state.
 
 describe("Logging core (integration)", () => {
   beforeEach(() => {
+    Logging.setFactory((context, conf) => {
+      const base =
+        typeof LoggedEnvironment.app === "string" &&
+        LoggedEnvironment.app?.length
+          ? [LoggedEnvironment.app as string]
+          : [];
+      return new MiniLogger(context, conf, base);
+    });
+    (LoggedEnvironment as any).app = undefined;
     Logging.setConfig({ ...DefaultLoggingConfig, style: false, format: "raw" });
   });
 
@@ -23,7 +33,7 @@ describe("Logging core (integration)", () => {
   it("for() with method name extends context and remains callable", () => {
     const base = new MiniLogger("Ctx");
     const child = base.for("method", { level: LogLevel.error });
-    expect((child as any).context).toBe("Ctx.method");
+    expect((child as any).context).toEqual(["Ctx", "method"]);
     // ensure child logger can log without throwing
     child.info("hello");
   });
@@ -31,7 +41,7 @@ describe("Logging core (integration)", () => {
   it("for() with only config object (no method) keeps context and remains callable", () => {
     const base = new MiniLogger("C");
     const child = base.for({ level: LogLevel.silly });
-    expect((child as any).context).toBe("C");
+    expect((child as any).context).toEqual(["C"]);
     child.debug("x");
   });
 
@@ -65,6 +75,33 @@ describe("Logging core (integration)", () => {
     if (parsed.correlationId) {
       expect(parsed.correlationId).toBeDefined();
     }
+  });
+
+  it("prefixes contexts with app name and preserves it through clear", () => {
+    (LoggedEnvironment as any).app = "AppCtx";
+    Logging.setFactory((context, conf) => {
+      const base =
+        typeof LoggedEnvironment.app === "string" &&
+        LoggedEnvironment.app?.length
+          ? [LoggedEnvironment.app as string]
+          : [];
+      return new MiniLogger(context, conf, base);
+    });
+    Logging.setConfig({
+      ...DefaultLoggingConfig,
+      style: false,
+      separator: "|",
+      pattern: "{level}|{context}|{message}{stack}",
+    });
+    const base = Logging.for("Service") as MiniLogger;
+    const line = (base as any).createLog(LogLevel.info, "hello");
+    expect(line).toContain("AppCtx.Service");
+
+    const child = base.for("method");
+    expect((child as any).context).toEqual(["AppCtx", "Service", "method"]);
+
+    const cleared = child.clear();
+    expect((cleared as any).context).toEqual(["AppCtx"]);
   });
 
   it("theme returns input when style disabled, and applies template when enabled", () => {

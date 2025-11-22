@@ -66,6 +66,18 @@ export function getObjectName(value: unknown): string {
   }
 
   if (isInstance(value)) {
+    const toStringFn = (value as { toString?: () => string }).toString;
+    if (
+      typeof toStringFn === "function" &&
+      toStringFn !== Object.prototype.toString
+    ) {
+      try {
+        const rendered = toStringFn.call(value);
+        if (typeof rendered === "string" && rendered.length) return rendered;
+      } catch {
+        // ignore custom toString errors and fall back to constructor name.
+      }
+    }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const ctor = (value as { constructor?: Function }).constructor;
     return ctor && ctor.name ? ctor.name : "AnonymousInstance";
@@ -75,9 +87,6 @@ export function getObjectName(value: unknown): string {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     const fn = value as Function;
     if (fn.name) return fn.name;
-
-    const src = Function.prototype.toString.call(fn).trim();
-    if (src) return src.split("\n")[0];
     return "anonymous";
   }
 

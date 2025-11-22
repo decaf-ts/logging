@@ -162,7 +162,7 @@ describe("utils:getObjectName", () => {
     expect(getObjectName(Example.prototype.method)).toBe("method");
   });
 
-  it("returns function names or source", () => {
+  it("returns function names", () => {
     const anon = () => true;
     expect(getObjectName(anon)).toBe("anon");
   });
@@ -170,6 +170,25 @@ describe("utils:getObjectName", () => {
   it("returns instance constructor names", () => {
     class Example {}
     expect(getObjectName(new Example())).toBe("Example");
+  });
+
+  it("returns 'anonymous' for unnamed functions", () => {
+    const fn = new Function("return true;");
+    expect(getObjectName(fn)).toBe("anonymous");
+  });
+
+  it("prefers custom toString() on instances", () => {
+    class Fancy {
+      toString() {
+        return "CustomFancy#1";
+      }
+    }
+    expect(getObjectName(new Fancy())).toBe("CustomFancy#1");
+  });
+
+  it("falls back to class name when toString is default", () => {
+    class Plain {}
+    expect(getObjectName(new Plain())).toBe("Plain");
   });
 
   it("returns string representations for primitives and objects", () => {

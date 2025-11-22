@@ -27,37 +27,32 @@ import { LogLevel } from "../constants";
 export class WinstonLogger extends MiniLogger implements Logger {
   protected winston: winston.Logger;
 
-  constructor(
-    cont: string,
-    conf?: Partial<LoggingConfig>,
-    protected transports?: Transport[] | Transport
-  ) {
+  constructor(cont?: string, conf?: Partial<LoggingConfig>) {
     super(cont, conf);
-    const config: LoggingConfig = Object.assign(
+    const config = Object.assign(
       {},
       Logging.getConfig(),
       this.conf || {}
+    ) as LoggingConfig<Transport>;
+
+    const transports = this.resolveTransports(
+      (config.transports as Transport[] | undefined) || undefined
     );
-    const { level, context, style, timestamp, timestampFormat } = config;
-
-    const formats = [winston.format.splat(), winston.format.simple()];
-    if (timestamp)
-      formats.unshift(winston.format.timestamp({ format: timestampFormat }));
-    if (style) formats.unshift(winston.format.colorize());
-
-    this.transports = this.transports || [
-      new winston.transports.Console({
-        format: winston.format.combine(...formats),
-      }),
-    ];
+    const passThrough = winston.format.printf(({ message }) =>
+      typeof message === "string" ? message : JSON.stringify(message)
+    );
 
     const winstonConfig: LoggerOptions = {
-      level: level,
-      defaultMeta: context,
-      format: winston.format.json(),
-      transports: transports,
+      level: config.level,
+      transports,
+      format: passThrough,
     };
     this.winston = winston.createLogger(winstonConfig);
+  }
+
+  private resolveTransports(transports?: Transport[]): Transport[] {
+    if (transports && transports.length) return transports;
+    return [new winston.transports.Console()];
   }
 
   /**
@@ -95,7 +90,8 @@ export class WinstonLogger extends MiniLogger implements Logger {
  * @memberOf module:Logging
  */
 export const WinstonFactory: LoggerFactory = (
-  context: string,
+  context?: string,
   conf?: Partial<LoggingConfig>,
-  ...args: any[]
-) => new WinstonLogger(context, conf, ...args);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  ..._args: any[]
+): WinstonLogger => new WinstonLogger(context, conf);

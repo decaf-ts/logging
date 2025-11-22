@@ -19,7 +19,7 @@ describe("Winston adapter (integration)", () => {
 
   it("creates WinstonLogger via constructor and logs at different levels", () => {
     const transport = new winston.transports.Console();
-    const wl = new WinstonLogger("WCtx", {}, transport);
+    const wl = new WinstonLogger("WCtx", { transports: [transport] });
     wl.info("hello");
     wl.debug("dbg");
     wl.error("oops");
@@ -29,7 +29,7 @@ describe("Winston adapter (integration)", () => {
 
   it("creates via WinstonFactory and is instance of WinstonLogger", () => {
     const transport = new winston.transports.Console();
-    const logger = WinstonFactory("F", {}, transport);
+    const logger = WinstonFactory("F", { transports: [transport] });
     expect(logger).toBeInstanceOf(WinstonLogger);
     logger.info("hi");
   });
@@ -37,14 +37,14 @@ describe("Winston adapter (integration)", () => {
   it("applies style branch when style=true", () => {
     Logging.setConfig({ style: true, timestamp: false });
     const transport = new winston.transports.Console();
-    const wl = new WinstonLogger("B1", {}, transport);
+    const wl = new WinstonLogger("B1", { transports: [transport] });
     wl.info("x");
   });
 
   it("applies timestamp branch when timestamp=true", () => {
     Logging.setConfig({ style: false, timestamp: true });
     const transport = new winston.transports.Console();
-    const wl = new WinstonLogger("B2", {}, transport);
+    const wl = new WinstonLogger("B2", { transports: [transport] });
     wl.info("y");
   });
 

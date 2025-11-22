@@ -495,10 +495,16 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
  * @memberOf module:Logging
  */
 export const LoggedEnvironment = Environment.accumulate(
-  Object.assign({}, DefaultLoggingConfig, {
-    env:
-      (isBrowser() && (globalThis as any)[BrowserEnvKey]
-        ? (globalThis as any)[BrowserEnvKey]["NODE_ENV"]
+  Object.assign(
+    {
+      app: undefined as string | undefined,
+    },
+    DefaultLoggingConfig,
+    {
+      env:
+        (isBrowser() && (globalThis as any)[BrowserEnvKey]
+          ? (globalThis as any)[BrowserEnvKey]["NODE_ENV"]
         : (globalThis as any).process.env["NODE_ENV"]) || "development",
-  })
+    }
+  )
 );

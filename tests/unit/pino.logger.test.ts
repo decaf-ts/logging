@@ -4,6 +4,7 @@ import {
   LoggingMode,
   LoggingConfig,
 } from "../../src";
+import type { DestinationStream } from "pino";
 import { MiniLogger } from "../../src/logging";
 import { PinoFactory, PinoLogger } from "../../src/pino/pino";
 import { WinstonLogger } from "../../src/winston/winston";
@@ -11,6 +12,7 @@ import { Logging } from "../../src";
 
 type PinoMockInstance = {
   __options: Record<string, unknown>;
+  __destination?: unknown;
   __calls: Record<string, string[]>;
 };
 
@@ -58,14 +60,28 @@ const createPinoInstance = (): PinoMockInstance & Record<string, any> => {
 
 jest.mock("pino", () => {
   const instances: Array<PinoMockInstance & Record<string, any>> = [];
-  const factory = jest.fn((options?: Record<string, unknown>) => {
-    const instance = createPinoInstance();
-    instance.__options = options || {};
-    instances.push(instance);
-    return instance;
-  });
+  const factory = jest.fn(
+    (options?: Record<string, unknown>, destination?: unknown) => {
+      const instance = createPinoInstance();
+      instance.__options = options || {};
+      instance.__destination = destination;
+      instances.push(instance);
+      return instance;
+    }
+  );
   (factory as any).__instances = instances;
-  return { __esModule: true, default: factory };
+  const multistream = jest.fn(
+    (targets: Array<{ stream: DestinationStream }>) => {
+      const combined: DestinationStream = {
+        write: jest.fn((msg: string) => {
+          targets.forEach((target) => target.stream.write(msg));
+        }),
+        flush: jest.fn(),
+      } as unknown as DestinationStream;
+      return combined;
+    }
+  );
+  return { __esModule: true, default: factory, multistream };
 });
 
 jest.mock("winston-transport", () => ({
@@ -105,6 +121,7 @@ jest.mock("winston", () => {
     colorize: jest.fn(() => "colorize"),
     json: jest.fn(() => "json"),
     combine: jest.fn((...parts: unknown[]) => parts.filter(Boolean)),
+    printf: jest.fn(() => "printf"),
   };
 
   return {
@@ -123,9 +140,13 @@ jest.mock("winston", () => {
 
 const getPinoFactory = () => jest.requireMock("pino").default as jest.Mock;
 const getPinoInstances = () =>
-  ((getPinoFactory() as unknown as {
-    __instances: Array<PinoMockInstance & Record<string, any>>;
-  }).__instances || []) as Array<PinoMockInstance & Record<string, any>>;
+  ((
+    getPinoFactory() as unknown as {
+      __instances: Array<PinoMockInstance & Record<string, any>>;
+    }
+  ).__instances || []) as Array<PinoMockInstance & Record<string, any>>;
+const getPinoMultistream = () =>
+  jest.requireMock("pino").multistream as jest.Mock;
 const getWinstonMock = () =>
   jest.requireMock("winston") as WinstonMockModule & {
     createLogger: jest.Mock;
@@ -153,18 +174,16 @@ const methodToConsole: Record<OperationMethod, ConsoleMethod> = {
   trace: "trace",
 };
 
-const methodToPino: Record<
-  OperationMethod,
-  keyof PinoMockInstance["__calls"]
-> = {
-  benchmark: "info",
-  info: "info",
-  debug: "debug",
-  verbose: "debug",
-  warn: "warn",
-  error: "error",
-  trace: "trace",
-};
+const methodToPino: Record<OperationMethod, keyof PinoMockInstance["__calls"]> =
+  {
+    benchmark: "info",
+    info: "info",
+    debug: "debug",
+    verbose: "debug",
+    warn: "warn",
+    error: "error",
+    trace: "trace",
+  };
 
 describe("PinoLogger", () => {
   beforeEach(() => {
@@ -183,6 +202,7 @@ describe("PinoLogger", () => {
     const pinoFactory = getPinoFactory();
     pinoFactory.mockClear();
     getPinoInstances().length = 0;
+    getPinoMultistream().mockClear();
     const winstonMock = getWinstonMock();
     winstonMock.createLogger.mockClear();
     getWinstonLogCalls().length = 0;
@@ -197,8 +217,9 @@ describe("PinoLogger", () => {
     const logger = new PinoLogger("Ctx", { level: LogLevel.debug });
     expect(logger).toBeInstanceOf(PinoLogger);
     expect(pinoFactory).toHaveBeenCalledTimes(1);
-    const [options] = pinoFactory.mock.calls[0];
+    const [options, destination] = pinoFactory.mock.calls[0];
     expect(options).toMatchObject({ level: "debug", name: "Ctx" });
+    expect(destination).toBeUndefined();
   });
 
   it("reuses a provided Pino logger instance", () => {
@@ -211,11 +232,36 @@ describe("PinoLogger", () => {
       fatal: jest.fn(),
       level: "debug",
     };
-    const logger = new PinoLogger("Ctx", { pino: { instance: external } });
+    const logger = new PinoLogger("Ctx", undefined, external);
     expect(logger).toBeInstanceOf(PinoLogger);
     expect(getPinoFactory()).not.toHaveBeenCalled();
     logger.info("hello");
     expect(external.info).toHaveBeenCalled();
+  });
+
+  it("uses transports from config as destination streams", () => {
+    const sink: DestinationStream = {
+      write: jest.fn(),
+    } as unknown as DestinationStream;
+    new PinoLogger("Ctx", { transports: [sink] });
+    // @ts-expect-error jest
+    const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(destination).toBe(sink);
+  });
+
+  it("combines multiple transports via multistream", () => {
+    const first: DestinationStream = {
+      write: jest.fn(),
+    } as unknown as DestinationStream;
+    const second: DestinationStream = {
+      write: jest.fn(),
+    } as unknown as DestinationStream;
+    const multi = getPinoMultistream();
+    new PinoLogger("Ctx", { transports: [first, second] });
+    expect(multi).toHaveBeenCalledTimes(1);
+    // @ts-expect-error jest
+    const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(destination).toBe(multi.mock.results[0].value);
   });
 
   it("creates child logger preserving Pino child bindings", () => {
@@ -224,7 +270,50 @@ describe("PinoLogger", () => {
     const child = logger.child({ name: "Child" });
     expect(instance.child).toHaveBeenCalled();
     expect(child).toBeInstanceOf(PinoLogger);
-    expect((child as unknown as MiniLogger)["context"]).toBe("Parent.Child");
+    expect((child as unknown as MiniLogger)["context"]).toEqual([
+      "Parent",
+      "Child",
+    ]);
+  });
+
+  it("preserves subclass typing for for/clear chains", () => {
+    const logger = new PinoLogger("Ctx");
+    const scoped = logger.for("Child");
+    expect(scoped).toBeInstanceOf(PinoLogger);
+    expect((scoped as unknown as MiniLogger)["context"]).toEqual([
+      "Ctx",
+      "Child",
+    ]);
+
+    const cleared = scoped.clear();
+    expect(cleared).toBe(scoped);
+    expect((cleared as unknown as MiniLogger)["context"]).toEqual(["Ctx"]);
+
+    const next = cleared.for("Next");
+    expect(next).toBeInstanceOf(PinoLogger);
+    expect((next as unknown as MiniLogger)["context"]).toEqual(["Ctx", "Next"]);
+  });
+
+  it("keeps clear accessible after multiple nested for calls", () => {
+    const logger = new PinoLogger("Ctx");
+    const chained = logger.for("A").for("B").for("C");
+    expect(chained).toBeInstanceOf(PinoLogger);
+    expect((chained as unknown as MiniLogger)["context"]).toEqual([
+      "Ctx",
+      "A",
+      "B",
+      "C",
+    ]);
+    expect(typeof (chained as MiniLogger).clear).toBe("function");
+
+    const cleared = chained.clear();
+    expect((cleared as unknown as MiniLogger)["context"]).toEqual(["Ctx"]);
+    const final = cleared.for("Next");
+    expect(final).toBeInstanceOf(PinoLogger);
+    expect((final as unknown as MiniLogger)["context"]).toEqual([
+      "Ctx",
+      "Next",
+    ]);
   });
 
   it("exposes level setter and getter syncing with config", () => {
@@ -283,13 +372,16 @@ describe("PinoLogger", () => {
     operations.forEach(({ method, invoke }) => {
       invoke(mini);
       const miniOutput =
+        // @ts-expect-error jest
         spies[methodToConsole[method]].mock.calls.at(-1)?.[0];
 
       invoke(winston);
+      // @ts-expect-error jest
       const winstonOutput = getWinstonLogCalls().at(-1)?.message;
 
       invoke(pinoLogger);
       const pinoInstance = getPinoInstances()[0];
+      // @ts-expect-error jest
       const pinoOutput = pinoInstance?.__calls[methodToPino[method]].at(-1);
       expect(miniOutput).toBeDefined();
       expect(winstonOutput).toEqual(miniOutput);
@@ -304,5 +396,21 @@ describe("PinoLogger", () => {
   it("factory produces PinoLogger instances", () => {
     const logger = PinoFactory("Ctx");
     expect(logger).toBeInstanceOf(PinoLogger);
+  });
+
+  it("honors winston transports and raw log output", () => {
+    const winstonMock = getWinstonMock();
+    // @ts-expect-error jest
+    const transport = new (winstonMock.transports.Console as any)();
+    const logger = new WinstonLogger("Compat", { transports: [transport] });
+    logger.info("message");
+    const [{ transports: appliedTransports, format }] =
+      // @ts-expect-error jest
+      winstonMock.createLogger.mock.calls.at(-1) || [];
+    expect(appliedTransports).toEqual([transport]);
+    // @ts-expect-error jest
+    const logEntry = getWinstonLogCalls().at(-1);
+    expect(format).toBeDefined();
+    expect(logEntry?.message).toContain("INFO|Compat|message");
   });
 });

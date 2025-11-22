@@ -148,14 +148,10 @@ export interface Logger
    * @param {...any[]} args - Extra arguments forwarded to factory implementations.
    * @return {Logger} Logger instance tailored to the supplied context.
    */
-  for(config: Partial<LoggingConfig>): Logger;
+  for(config: Partial<LoggingConfig>): this;
   for(
-    context:
-      | string
-      | { new (...args: any[]): any }
-      | AnyFunction
-      | object
-  ): Logger;
+    context: string | { new (...args: any[]): any } | AnyFunction | object
+  ): this;
   for(
     method:
       | string
@@ -165,7 +161,14 @@ export interface Logger
       | Partial<LoggingConfig>,
     config?: Partial<LoggingConfig>,
     ...args: any[]
-  ): Logger;
+  ): this;
+
+  /**
+   * @description Clears any contextual overrides applied via {@link Logger.for}.
+   * @summary Resets temporary context/configuration so ensuing chains start from the base logger while preserving the concrete instance type.
+   * @return {this} The same logger instance to continue chaining.
+   */
+  clear(): this;
 
   /**
    * @description Updates the logger configuration.
@@ -174,6 +177,12 @@ export interface Logger
    * @return {void}
    */
   setConfig(config: Partial<LoggingConfig>): void;
+
+  /**
+   * @description Immutable base context for the logger instance.
+   * @summary Returned as a copy so callers cannot mutate the internal base context while still allowing inspection.
+   */
+  readonly root: readonly string[];
 }
 
 /**
@@ -212,8 +221,7 @@ export interface LoggingFilter {
  * @property {string|number} [correlationId] - Correlation ID for tracking related log messages.
  * @memberOf module:Logging
  */
-export type LoggingConfig = {
-  app?: string;
+export type LoggingConfig<TRANSPORT = object> = {
   env: "development" | "production" | "test" | "staging" | string;
   level: LogLevel;
   logLevel?: boolean;
@@ -229,11 +237,7 @@ export type LoggingConfig = {
   pattern: string;
   correlationId?: string | number;
   filters?: string[] | LoggingFilter[];
-  pino?: {
-    instance?: unknown;
-    options?: unknown;
-    destination?: unknown;
-  };
+  transports?: TRANSPORT[];
 };
 
 /**
@@ -244,7 +248,7 @@ export type LoggingConfig = {
  * @memberOf module:Logging
  */
 export type LoggerFactory<L extends Logger = Logger> = (
-  object: string,
+  object?: string,
   config?: Partial<LoggingConfig>,
   ...args: any[]
 ) => L;

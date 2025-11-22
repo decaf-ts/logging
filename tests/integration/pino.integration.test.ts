@@ -5,6 +5,7 @@ import {
   Logging,
   LogLevel,
   MiniLogger,
+  LoggedEnvironment,
 } from "../../src";
 import { PinoFactory, PinoLogger } from "../../src/pino/pino";
 
@@ -24,9 +25,14 @@ class MemoryStream extends Writable {
 }
 
 const resetFactory = () =>
-  Logging.setFactory(
-    (context, conf, ...rest) => new MiniLogger(context, conf, ...rest)
-  );
+  Logging.setFactory((context, conf) => {
+    const base =
+      typeof LoggedEnvironment.app === "string" &&
+      LoggedEnvironment.app?.length
+        ? [LoggedEnvironment.app as string]
+        : [];
+    return new MiniLogger(context, conf, base);
+  });
 
 describe("PinoLogger (integration)", () => {
   beforeEach(() => {
@@ -50,7 +56,7 @@ describe("PinoLogger (integration)", () => {
   it("wraps a real Pino instance and emits formatted messages", () => {
     const sink = new MemoryStream();
     const pinoInstance = pino({ level: "trace", name: "Compat" }, sink);
-    const logger = new PinoLogger("Compat", { pino: { instance: pinoInstance } });
+    const logger = new PinoLogger("Compat", undefined, pinoInstance);
 
     logger.info("hello");
     logger.error("boom");
@@ -64,7 +70,7 @@ describe("PinoLogger (integration)", () => {
     Logging.setFactory(PinoFactory);
     const sink = new MemoryStream();
     const external = pino({ level: "trace", name: "FactoryCtx" }, sink);
-    const logger = Logging.for("FactoryCtx", { pino: { instance: external } });
+    const logger = Logging.for("FactoryCtx", undefined, external);
 
     expect(logger).toBeInstanceOf(PinoLogger);
 
