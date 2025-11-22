@@ -4,7 +4,7 @@ import {
   LoggingMode,
   LoggingConfig,
 } from "../../src";
-import type { DestinationStream } from "pino";
+import type { DestinationStream, Logger as PinoBaseLogger } from "pino";
 import { MiniLogger } from "../../src/logging";
 import { PinoFactory, PinoLogger } from "../../src/pino/pino";
 import { WinstonLogger } from "../../src/winston/winston";
@@ -153,6 +153,25 @@ const getWinstonMock = () =>
   };
 const getWinstonLogCalls = () => getWinstonMock().__logCalls;
 
+const buildDriver = (
+  overrides: Partial<PinoBaseLogger & { log?: jest.Mock; flush?: jest.Mock }> =
+    {}
+) => {
+  const base: Record<string, any> = {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    trace: jest.fn(),
+    fatal: jest.fn(),
+    log: jest.fn(),
+    level: "info",
+    child: jest.fn().mockImplementation(() => base),
+    flush: jest.fn(),
+  };
+  return Object.assign(base, overrides);
+};
+
 type OperationMethod =
   | "benchmark"
   | "info"
@@ -249,6 +268,13 @@ describe("PinoLogger", () => {
     expect(destination).toBe(sink);
   });
 
+  it("leaves destination undefined when transports are omitted", () => {
+    new PinoLogger("Ctx");
+    // @ts-expect-error jest
+    const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(destination).toBeUndefined();
+  });
+
   it("combines multiple transports via multistream", () => {
     const first: DestinationStream = {
       write: jest.fn(),
@@ -262,6 +288,24 @@ describe("PinoLogger", () => {
     // @ts-expect-error jest
     const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
     expect(destination).toBe(multi.mock.results[0].value);
+  });
+
+  it("returns undefined when transport list is empty", () => {
+    new PinoLogger("Ctx", { transports: [] });
+    // @ts-expect-error jest
+    const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(destination).toBeUndefined();
+  });
+
+  it("ignores transports lacking a write method", () => {
+    const valid: DestinationStream = {
+      write: jest.fn(),
+    } as unknown as DestinationStream;
+    const invalid = {} as DestinationStream;
+    new PinoLogger("Ctx", { transports: [invalid, valid] });
+    // @ts-expect-error jest
+    const [, destination] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(destination).toBe(valid);
   });
 
   it("creates child logger preserving Pino child bindings", () => {
@@ -323,6 +367,32 @@ describe("PinoLogger", () => {
     logger.info("info");
     const instance = getPinoInstances()[0];
     expect(instance.__calls.info).toHaveLength(1);
+  });
+
+  it("ignores level assignments when value is undefined", () => {
+    const logger = new PinoLogger("Ctx");
+    const instance = getPinoInstances()[0];
+    logger.level = undefined;
+    expect(instance.level).toBe("info");
+  });
+
+  it("keeps config untouched when mapping level fails", () => {
+    const logger = new PinoLogger("Ctx");
+    const before = (logger as any).config("level");
+    logger.level = "silent" as any;
+    expect((logger as any).config("level")).toBe(before);
+  });
+
+  it("syncs config level from external driver instances", () => {
+    const driver = buildDriver({ level: "warn" });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    expect((logger as any).config("level")).toBe(LogLevel.warn);
+  });
+
+  it("ignores driver level when undefined", () => {
+    const driver = buildDriver({ level: undefined });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    expect((logger as any).config("level")).toBe(LogLevel.trace);
   });
 
   it("emits identical messages across MiniLogger, WinstonLogger, and PinoLogger", () => {
@@ -396,6 +466,100 @@ describe("PinoLogger", () => {
   it("factory produces PinoLogger instances", () => {
     const logger = PinoFactory("Ctx");
     expect(logger).toBeInstanceOf(PinoLogger);
+  });
+
+  it("defaults context name to 'Logger' when no segments exist", () => {
+    new PinoLogger(undefined);
+    // @ts-expect-error jest
+    const [options] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(options.name).toBe("Logger");
+  });
+
+  it("coerces unknown log levels to info", () => {
+    new PinoLogger("Ctx", { level: undefined as unknown as LogLevel });
+    // @ts-expect-error jest
+    const [options] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(options.level).toBe("info");
+  });
+
+  it("falls back to global context separator when override is falsy", () => {
+    Logging.setConfig({ contextSeparator: "::" });
+    new PinoLogger("Root", { contextSeparator: "" as any });
+    // @ts-expect-error jest
+    const [options] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(options.name).toBe("Root");
+  });
+
+  it("enables timestamp functions when configured", () => {
+    Logging.setConfig({ timestamp: true });
+    const logger = new PinoLogger("TimeCtx");
+    expect(logger).toBeInstanceOf(PinoLogger);
+    // @ts-expect-error jest
+    const [options] = getPinoFactory().mock.calls.at(-1) ?? [];
+    expect(typeof options.timestamp).toBe("function");
+    expect(options.timestamp()).toMatch(/T/);
+  });
+
+  it("falls back to driver.log when specific log method is missing", () => {
+    const logSpy = jest.fn();
+    const driver = buildDriver({
+      info: undefined,
+      log: logSpy,
+    });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    logger.info("payload");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "info", msg: expect.any(String) })
+    );
+  });
+
+  it("delegates fatal calls to error when fatal method is unavailable", () => {
+    const errorSpy = jest.fn();
+    const driver = buildDriver({
+      fatal: undefined,
+      error: errorSpy,
+    });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    logger.fatal("failure");
+    expect(errorSpy).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it("invokes the fatal method when supported by the driver", () => {
+    const fatalSpy = jest.fn();
+    const driver = buildDriver({ fatal: fatalSpy });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    logger.fatal("fatal error");
+    expect(fatalSpy).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it("delegates flush to the underlying Pino driver when present", () => {
+    const flushSpy = jest.fn();
+    const driver = buildDriver({ flush: flushSpy });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    logger.flush();
+    expect(flushSpy).toHaveBeenCalled();
+  });
+
+  it("falls back to the parent logger when driver does not expose child", () => {
+    const driver = buildDriver({ child: undefined });
+    const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
+    const child = logger.child({});
+    expect(child).toBeInstanceOf(PinoLogger);
+  });
+
+  it("prefers bindings.context when deriving the child name", () => {
+    const logger = new PinoLogger("Parent");
+    const child = logger.child({ context: "Override" });
+    expect((child as unknown as MiniLogger)["context"]).toEqual([
+      "Parent",
+      "Override",
+    ]);
+  });
+
+  it("propagates context when bindings omit routing hints", () => {
+    const logger = new PinoLogger("Parent");
+    const child = logger.child({});
+    expect((child as unknown as MiniLogger)["context"]).toEqual(["Parent"]);
   });
 
   it("honors winston transports and raw log output", () => {

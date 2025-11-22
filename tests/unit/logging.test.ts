@@ -204,6 +204,26 @@ describe("MiniLogger", () => {
       expect((childLogger as any).context).toEqual(["TestContext"]);
       expect((childLogger as any).config("level")).toBe(LogLevel.debug);
     });
+
+    it("exposes root getter on proxy instances with cloned arrays", () => {
+      const childLogger = logger.for("child");
+      const root = childLogger.root;
+      expect(root).toEqual(["TestContext"]);
+      root.push("mutated");
+      expect(childLogger.root).toEqual(["TestContext"]);
+    });
+
+    it("exposes the internal root symbol through proxies", () => {
+      const childLogger = logger.for("child");
+      const symbols = Object.getOwnPropertySymbols(childLogger);
+      const rootSymbol = symbols.find(
+        (sym) => sym.description === "MiniLoggerRootContext"
+      );
+      expect(rootSymbol).toBeDefined();
+      expect((childLogger as any)[rootSymbol as symbol]).toEqual([
+        "TestContext",
+      ]);
+    });
   });
 
   describe("clear", () => {
@@ -219,6 +239,13 @@ describe("MiniLogger", () => {
       expect((cleared as any).config("level")).toBe(
         (logger as any).config("level")
       );
+    });
+
+    it("resets the base context on the root instance", () => {
+      (logger as any).context = ["TestContext", "temp"];
+      const cleared = logger.clear();
+      expect(cleared).toBe(logger);
+      expect((logger as any).context).toEqual(["TestContext"]);
     });
 
     it("preserves subclass instances when chaining", () => {
@@ -672,6 +699,20 @@ describe("Logging", () => {
       Logging.warn("Test warn message");
 
       expect(stubLogger.warn).toHaveBeenCalledWith("Test warn message");
+
+      (Logging as any).global = originalGlobal;
+    });
+
+    it("delegates trace calls to the current global logger", () => {
+      const stubLogger = {
+        trace: jest.fn(),
+      } as any;
+      const originalGlobal = (Logging as any).global;
+      (Logging as any).global = stubLogger;
+
+      Logging.trace("trace payload");
+
+      expect(stubLogger.trace).toHaveBeenCalledWith("trace payload");
 
       (Logging as any).global = originalGlobal;
     });

@@ -198,4 +198,15 @@ describe("utils:getObjectName", () => {
     expect(getObjectName(undefined)).toBe("undefined");
     expect(getObjectName(null)).toBe("null");
   });
+
+  it("returns 'Object' when tag parsing fails", () => {
+    const spy = jest.spyOn(Object.prototype, "toString");
+    spy.mockImplementation(function () {
+      return "[malformed";
+    });
+
+    expect(getObjectName({ foo: "bar" })).toBe("Object");
+
+    spy.mockRestore();
+  });
 });

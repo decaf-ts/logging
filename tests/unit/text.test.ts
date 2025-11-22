@@ -16,6 +16,10 @@ describe("text utils", () => {
     expect(padEnd("hi", 4, ".")).toBe("hi..");
   });
 
+  it("padEnd uses the default space padding when char omitted", () => {
+    expect(padEnd("xy", 4)).toBe("xy  ");
+  });
+
   it("padEnd throws on invalid pad char length", () => {
     expect(() => padEnd("x", 3, "--")).toThrow(
       "Invalid character length for padding. must be one!"

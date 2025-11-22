@@ -300,6 +300,31 @@ describe("Environment", () => {
       restoreEnv(key, previous);
     });
 
+    it("returns nested proxies for object leaves without runtime overrides", () => {
+      const env = Environment.accumulate({
+        nestedBranch: {
+          leaf: "default-leaf",
+          inner: {
+            child: "child-default",
+          },
+        },
+      });
+
+      const nested = env.orThrow().nestedBranch;
+      expect(nested.leaf).toBe("default-leaf");
+      expect(nested.inner.child).toBe("child-default");
+    });
+
+    it("resolves default nested strings when runtime overrides are absent", () => {
+      const env = Environment.accumulate({
+        defaults: {
+          value: "inner-default",
+        },
+      });
+
+      expect(env.orThrow().defaults.value).toBe("inner-default");
+    });
+
     it("enumerates nested proxy keys and descriptors", () => {
       const env = Environment.accumulate({ nestedProxy: { leaf: "value" } });
 
