@@ -1,6 +1,6 @@
 You are preparing release notes for this repo.
 1) Summarize notable changes since the last tag:
-   a) compile the unique TICKETS for the commits since the last tag (TICKETS follow the pattern DECAF-XXX);
+   a) compile the unique TICKETS for the commits since the last tag (TICKETS follow the pattern DECAF-XXX in the commit message);
    b) if there's a file `<base_path>/workdocs/ai/tracked-files.json` read the file list and:
       1 - analyze all changes in those files since the last tag;
       2 - identify any breaking changes in the api;
