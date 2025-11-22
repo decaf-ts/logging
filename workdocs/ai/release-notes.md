@@ -19,3 +19,4 @@ You are preparing release notes for this repo.
    b) include upgrade instructions if applicable;
    c) include summary of breaking changes if applicable, along with link to CHANGELOG file;
    d) include summary of vulnerabilities if applicable, along with link to DEPENDENCIES file;
+   e) include a markdown table with a human readable version of the coverage report;
