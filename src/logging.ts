@@ -18,11 +18,10 @@ const ROOT_CONTEXT_SYMBOL = Symbol("MiniLoggerRootContext");
 
 /**
  * @description A minimal logger implementation.
- * @summary MiniLogger is a lightweight logging class that implements the Logger interface.
- * It provides basic logging functionality with support for different log levels, verbosity,
- * context-aware logging, and customizable formatting.
- * @param {string} context - The context (typically class name) this logger is associated with
- * @param {Partial<LoggingConfig>} conf - Optional configuration to override global settings
+ * @summary MiniLogger is a lightweight logging class that implements the Logger interface. It provides basic logging functionality with support for different log levels, verbosity, context-aware logging, and customizable formatting.
+ * @param {string} [context] - The context (typically class name) this logger is associated with.
+ * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings.
+ * @param {string[]} [baseContext=[]] - The base context for the logger.
  * @class MiniLogger
  * @example
  * // Create a new logger for a class
@@ -81,12 +80,12 @@ export class MiniLogger implements Logger {
     ...args: any[]
   ): this;
   /**
-   * @description Creates a child logger for a specific method or context
-   * @summary Returns a new logger instance with the current context extended by the specified method name
-   * @param {string | Function} method - The method name or function to create a logger for
-   * @param {Partial<LoggingConfig>} config - Optional configuration to override settings
-   * @param {...any[]} args - Additional arguments to pass to the logger factory
-   * @return {Logger} A new logger instance for the specified method
+   * @description Creates a child logger for a specific method or context.
+   * @summary Returns a new logger instance with the current context extended by the specified method name.
+   * @param {string | Function | object | Partial<LoggingConfig>} [method] - The method name, function, or configuration to create a logger for.
+   * @param {Partial<LoggingConfig>} [config] - Optional configuration to override settings.
+   * @param {...any[]} args - Additional arguments to pass to the logger factory.
+   * @return {Logger} A new logger instance for the specified method.
    */
   for(
     method?:
@@ -187,12 +186,12 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Creates a formatted log string
-   * @summary Generates a log string with timestamp, colored log level, context, and message
-   * @param {LogLevel} level - The log level for this message
-   * @param {StringLike | Error} message - The message to log or an Error object
-   * @param {string} [error] - Optional error to extract stack trace to include in the log
-   * @return {string} A formatted log string with all components
+   * @description Creates a formatted log string.
+   * @summary Generates a log string with timestamp, colored log level, context, and message.
+   * @param {LogLevel} level - The log level for this message.
+   * @param {StringLike | Error} message - The message to log or an Error object.
+   * @param {Error} [error] - Optional error to extract stack trace to include in the log.
+   * @return {string} A formatted log string with all components.
    */
   protected createLog(
     level: LogLevel,
@@ -298,12 +297,11 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message with the specified log level
-   * @summary Checks if the message should be logged based on the current log level,
-   * then uses the appropriate console method to output the formatted log
-   * @param {LogLevel} level - The log level of the message
-   * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param {string} [error] - Optional stack trace to include in the log
+   * @description Logs a message with the specified log level.
+   * @summary Checks if the message should be logged based on the current log level, then uses the appropriate console method to output the formatted log.
+   * @param {LogLevel} level - The log level of the message.
+   * @param {StringLike | Error} msg - The message to be logged or an Error object.
+   * @param {Error} [error] - Optional stack trace to include in the log.
    * @return {void}
    */
   protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
@@ -340,9 +338,9 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the benchmark level
-   * @summary Logs a message at the benchmark level if the current verbosity setting allows it
-   * @param {StringLike} msg - The message to be logged
+   * @description Logs a message at the benchmark level.
+   * @summary Logs a message at the benchmark level if the current verbosity setting allows it.
+   * @param {StringLike} msg - The message to be logged.
    * @return {void}
    */
   benchmark(msg: StringLike): void {
@@ -350,10 +348,10 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the silly level
-   * @summary Logs a message at the silly level if the current verbosity setting allows it
-   * @param {StringLike} msg - The message to be logged
-   * @param {number} [verbosity=0] - The verbosity level of the message
+   * @description Logs a message at the silly level.
+   * @summary Logs a message at the silly level if the current verbosity setting allows it.
+   * @param {StringLike} msg - The message to be logged.
+   * @param {number} [verbosity=0] - The verbosity level of the message.
    * @return {void}
    */
   silly(msg: StringLike, verbosity: number = 0): void {
@@ -362,10 +360,10 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the verbose level
-   * @summary Logs a message at the verbose level if the current verbosity setting allows it
-   * @param {StringLike} msg - The message to be logged
-   * @param {number} [verbosity=0] - The verbosity level of the message
+   * @description Logs a message at the verbose level.
+   * @summary Logs a message at the verbose level if the current verbosity setting allows it.
+   * @param {StringLike} msg - The message to be logged.
+   * @param {number} [verbosity=0] - The verbosity level of the message.
    * @return {void}
    */
   verbose(msg: StringLike, verbosity: number = 0): void {
@@ -374,9 +372,9 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the info level
-   * @summary Logs a message at the info level for general application information
-   * @param {StringLike} msg - The message to be logged
+   * @description Logs a message at the info level.
+   * @summary Logs a message at the info level for general application information.
+   * @param {StringLike} msg - The message to be logged.
    * @return {void}
    */
   info(msg: StringLike): void {
@@ -384,9 +382,9 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the debug level
-   * @summary Logs a message at the debug level for detailed troubleshooting information
-   * @param {StringLike} msg - The message to be logged
+   * @description Logs a message at the debug level.
+   * @summary Logs a message at the debug level for detailed troubleshooting information.
+   * @param {StringLike} msg - The message to be logged.
    * @return {void}
    */
   debug(msg: StringLike): void {
@@ -394,10 +392,10 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the error level
-   * @summary Logs a message at the error level for errors and exceptions
-   * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param e
+   * @description Logs a message at the error level.
+   * @summary Logs a message at the error level for errors and exceptions.
+   * @param {StringLike | Error} msg - The message to be logged or an Error object.
+   * @param {Error} [e] - Optional error to include in the log.
    * @return {void}
    */
   error(msg: StringLike | Error, e?: Error): void {
@@ -405,9 +403,9 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the error level
-   * @summary Logs a message at the error level for errors and exceptions
-   * @param {StringLike} msg - The message to be logged or an Error object
+   * @description Logs a message at the warning level.
+   * @summary Logs a message at the warning level for potential issues.
+   * @param {StringLike} msg - The message to be logged.
    * @return {void}
    */
   warn(msg: StringLike): void {
@@ -415,9 +413,9 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message at the error level
-   * @summary Logs a message at the error level for errors and exceptions
-   * @param {StringLike} msg - The message to be logged or an Error object
+   * @description Logs a message at the trace level.
+   * @summary Logs a message at the trace level for tracing code execution.
+   * @param {StringLike} msg - The message to be logged.
    * @return {void}
    */
   trace(msg: StringLike): void {
@@ -425,22 +423,23 @@ export class MiniLogger implements Logger {
   }
 
   /**
-   * @description Updates the logger configuration
-   * @summary Merges the provided configuration with the existing configuration
-   * @param {Partial<LoggingConfig>} config - The configuration options to apply
+   * @description Updates the logger configuration.
+   * @summary Merges the provided configuration with the existing configuration.
+   * @param {Partial<LoggingConfig>} config - The configuration options to apply.
    * @return {void}
    */
   setConfig(config: Partial<LoggingConfig>): void {
     this.conf = { ...(this.conf || {}), ...config };
   }
 
-  get root(): readonly string[] {
+  get root(): string[] {
     return [...this.baseContext];
   }
 
   /**
    * @description Clears any contextual overrides applied by `for`.
    * @summary Returns the same logger instance so more contexts can be chained afterwards.
+   * @return {this} The same logger instance.
    */
   clear(): this {
     this.context = [...this.baseContext];
@@ -449,10 +448,8 @@ export class MiniLogger implements Logger {
 }
 
 /**
- * @description A static class for managing logging operations
- * @summary The Logging class provides a centralized logging mechanism with support for
- * different log levels, verbosity, and styling. It uses a singleton pattern to maintain a global
- * logger instance and allows creating specific loggers for different classes and methods.
+ * @description A static class for managing logging operations.
+ * @summary The Logging class provides a centralized logging mechanism with support for different log levels, verbosity, and styling. It uses a singleton pattern to maintain a global logger instance and allows creating specific loggers for different classes and methods.
  * @class Logging
  * @example
  * // Set global configuration
@@ -515,13 +512,13 @@ export class MiniLogger implements Logger {
  */
 export class Logging {
   /**
-   * @description The global logger instance
-   * @summary A singleton instance of Logger used for global logging
+   * @description The global logger instance.
+   * @summary A singleton instance of Logger used for global logging.
    */
   private static global?: Logger;
 
   /**
-   * @description Factory function for creating logger instances
+   * @description Factory function for creating logger instances.
    * @summary A function that creates new Logger instances. By default, it creates a MiniLogger.
    */
   private static _factory: LoggerFactory = (
@@ -532,7 +529,7 @@ export class Logging {
       typeof LoggedEnvironment.app === "string"
         ? [LoggedEnvironment.app as string]
         : [];
-    return new MiniLogger(object, config, base);
+    return new MiniLogger(object, config, base) as unknown as Logger;
   };
 
   private static _config: typeof LoggedEnvironment = LoggedEnvironment;
@@ -540,9 +537,9 @@ export class Logging {
   private constructor() {}
 
   /**
-   * @description Sets the factory function for creating logger instances
-   * @summary Allows customizing how logger instances are created
-   * @param {LoggerFactory} factory - The factory function to use for creating loggers
+   * @description Sets the factory function for creating logger instances.
+   * @summary Allows customizing how logger instances are created.
+   * @param {LoggerFactory} factory - The factory function to use for creating loggers.
    * @return {void}
    */
   static setFactory(factory: LoggerFactory) {
@@ -551,9 +548,9 @@ export class Logging {
   }
 
   /**
-   * @description Updates the global logging configuration
-   * @summary Allows updating the global logging configuration with new settings
-   * @param {Partial<LoggingConfig>} config - The configuration options to apply
+   * @description Updates the global logging configuration.
+   * @summary Allows updating the global logging configuration with new settings.
+   * @param {Partial<LoggingConfig>} config - The configuration options to apply.
    * @return {void}
    */
   static setConfig(config: Partial<LoggingConfig>): void {
@@ -563,9 +560,9 @@ export class Logging {
   }
 
   /**
-   * @description Gets a copy of the current global logging configuration
-   * @summary Returns a copy of the current global logging configuration
-   * @return {LoggingConfig} A copy of the current configuration
+   * @description Gets a copy of the current global logging configuration.
+   * @summary Returns a copy of the current global logging configuration.
+   * @return {LoggingConfig} A copy of the current configuration.
    */
   static getConfig(): typeof LoggedEnvironment {
     return this._config;
@@ -574,8 +571,7 @@ export class Logging {
   /**
    * @description Retrieves or creates the global logger instance.
    * @summary Returns the existing global logger or creates a new one if it doesn't exist.
-   *
-   * @return The global VerbosityLogger instance.
+   * @return {Logger} The global Logger instance.
    */
   static get(): Logger {
     return this.ensureRoot();
@@ -584,9 +580,9 @@ export class Logging {
   /**
    * @description Logs a verbose message.
    * @summary Delegates the verbose logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
-   * @param verbosity - The verbosity level of the message (default: 0).
+   * @param {StringLike} msg - The message to be logged.
+   * @param {number} [verbosity=0] - The verbosity level of the message.
+   * @return {void}
    */
   static verbose(msg: StringLike, verbosity: number = 0): void {
     return this.get().verbose(msg, verbosity);
@@ -595,18 +591,18 @@ export class Logging {
   /**
    * @description Logs an info message.
    * @summary Delegates the info logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static info(msg: StringLike): void {
     return this.get().info(msg);
   }
 
   /**
-   * @description Logs an info message.
-   * @summary Delegates the info logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @description Logs a trace message.
+   * @summary Delegates the trace logging to the global logger instance.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static trace(msg: StringLike): void {
     return this.get().trace(msg);
@@ -615,8 +611,8 @@ export class Logging {
   /**
    * @description Logs a debug message.
    * @summary Delegates the debug logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static debug(msg: StringLike): void {
     return this.get().debug(msg);
@@ -625,8 +621,8 @@ export class Logging {
   /**
    * @description Logs a benchmark message.
    * @summary Delegates the benchmark logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static benchmark(msg: StringLike): void {
     return this.get().benchmark(msg);
@@ -634,19 +630,19 @@ export class Logging {
 
   /**
    * @description Logs a silly message.
-   * @summary Delegates the debug logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @summary Delegates the silly logging to the global logger instance.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static silly(msg: StringLike): void {
     return this.get().silly(msg);
   }
 
   /**
-   * @description Logs a silly message.
-   * @summary Delegates the debug logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
+   * @description Logs a warning message.
+   * @summary Delegates the warning logging to the global logger instance.
+   * @param {StringLike} msg - The message to be logged.
+   * @return {void}
    */
   static warn(msg: StringLike): void {
     return this.get().warn(msg);
@@ -655,21 +651,21 @@ export class Logging {
   /**
    * @description Logs an error message.
    * @summary Delegates the error logging to the global logger instance.
-   *
-   * @param msg - The message to be logged.
-   * @param e
+   * @param {StringLike | Error} msg - The message to be logged.
+   * @param {Error} [e] - Optional error to include in the log.
+   * @return {void}
    */
-  static error(msg: StringLike, e?: Error): void {
+  static error(msg: StringLike | Error, e?: Error): void {
     return this.get().error(msg, e);
   }
 
   /**
-   * @description Creates a logger for a specific object or context
-   * @summary Creates a new logger instance for the given object or context using the factory function
-   * @param {LoggingContext} object - The object, class, or context to create a logger for
-   * @param {Partial<LoggingConfig>} [config] - Optional configuration to override global settings
-   * @param {...any} args - Additional arguments to pass to the logger factory
-   * @return {Logger} A new logger instance for the specified object or context
+   * @description Creates a logger for a specific object or context.
+   * @summary Creates a new logger instance for the given object or context using the factory function.
+   * @param {LoggingContext} object - The object, class, or context to create a logger for.
+   * @param {Partial<LoggingConfig>} [config] - Optional configuration to override global settings.
+   * @param {...any} args - Additional arguments to pass to the logger factory.
+   * @return {Logger} A new logger instance for the specified object or context.
    */
   static for(
     object: LoggingContext,
@@ -682,12 +678,11 @@ export class Logging {
   }
 
   /**
-   * @description Creates a logger for a specific reason or correlation context
-   * @summary Utility to quickly create a logger labeled with a free-form reason and optional identifier
-   * so that ad-hoc operations can be traced without tying the logger to a class or method name.
-   * @param {string} reason - A textual reason or context label for this logger instance
-   * @param {string} [id] - Optional identifier to help correlate related log entries
-   * @return {Logger} A new logger instance labeled with the provided reason and id
+   * @description Creates a logger for a specific reason or correlation context.
+   * @summary Utility to quickly create a logger labeled with a free-form reason and optional identifier so that ad-hoc operations can be traced without tying the logger to a class or method name.
+   * @param {string} reason - A textual reason or context label for this logger instance.
+   * @param {string} [id] - Optional identifier to help correlate related log entries.
+   * @return {Logger} A new logger instance labeled with the provided reason and id.
    */
   static because(reason: string, id?: string): Logger {
     const root = this.ensureRoot();
@@ -726,13 +721,13 @@ export class Logging {
   }
 
   /**
-   * @description Applies theme styling to text
-   * @summary Applies styling (colors, formatting) to text based on the theme configuration
-   * @param {string} text - The text to style
-   * @param {string} type - The type of element to style (e.g., "class", "message", "logLevel")
-   * @param {LogLevel} loggerLevel - The log level to use for styling
-   * @param {Theme} [template=DefaultTheme] - The theme to use for styling
-   * @return {string} The styled text
+   * @description Applies theme styling to text.
+   * @summary Applies styling (colors, formatting) to text based on the theme configuration.
+   * @param {string} text - The text to style.
+   * @param type - The type of element to style (e.g., "class", "message", "logLevel").
+   * @param {LogLevel} loggerLevel - The log level to use for styling.
+   * @param {Theme} [template=DefaultTheme] - The theme to use for styling.
+   * @return {string} The styled text.
    * @mermaid
    * sequenceDiagram
    *   participant Caller

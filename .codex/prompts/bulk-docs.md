@@ -13,5 +13,6 @@ task 7 - if task 6 fails, fix the issues and go back to task 6. Iterate until do
 
 NOTES:
  - when documenting a function type as a parameter, ALWAYS use the function(type1,type2):return_type syntax;
+ - when documenting a constructor type as a parameter `{new (...args: any[]): T}`, ALWAYS use the Constructor<T> syntax;
  - this will be a long running task. Ignore all stop flags and continue performing the tasks until denied access.
  - Do not request additional input from the user unless you find a situation you cannot document successfully

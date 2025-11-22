@@ -1,26 +1,27 @@
 import { styles } from "styled-string-builder";
 import { LoggingMode, LogLevel } from "./constants";
+
 /**
- * @description String-compatible value accepted by the logging APIs.
- * @summary Represents either a literal string or an object exposing a `toString()` method, allowing lazy stringification of complex payloads.
+ * @description A string-compatible value that can be accepted by the logging APIs.
+ * @summary Represents either a literal string or an object that has a `toString()` method. This allows for the lazy stringification of complex payloads.
  * @typedef {(string|Object)} StringLike
  * @memberOf module:Logging
  */
 export type StringLike = string | { toString: () => string };
 
 /**
- * @description Generic function signature for loosely typed callbacks.
- * @summary Covers variadic functions whose arguments and return types are not constrained, enabling the logging layer to accept any callable.
- * @typedef {function(any[]): any} AnyFunction
+ * @description A generic function signature for loosely typed callbacks.
+ * @summary This type covers variadic functions where the arguments and return types are not constrained, which enables the logging layer to accept any callable.
+ * @typedef {function(...any[]): any} AnyFunction
  * @memberOf module:Logging
  */
 export type AnyFunction = (...args: any[]) => any;
 
 /**
- * @description Constructable class type.
- * @summary Describes a constructor that produces instances of type `T`, allowing APIs to accept class references for context-aware logging.
+ * @description A constructable class type.
+ * @summary Describes a constructor that produces instances of type `T`. This allows APIs to accept class references for context-aware logging.
  * @template T
- * @typedef {any} Class
+ * @typedef Class
  * @memberOf module:Logging
  */
 export type Class<T> = {
@@ -28,16 +29,16 @@ export type Class<T> = {
 };
 
 /**
- * @description Context descriptor accepted when requesting a logger instance.
+ * @description A context descriptor that is accepted when requesting a logger instance.
  * @summary Allows the logging system to resolve context names from strings, constructors, or functions.
- * @typedef {(string|Function|Object)} LoggingContext
+ * @typedef {(string|Class<any>|AnyFunction)} LoggingContext
  * @memberOf module:Logging
  */
 export type LoggingContext = string | Class<any> | AnyFunction;
 
 /**
- * @description Interface for factories that create contextual clones of the receiver.
- * @summary Declares a `for` method that returns another instance of `THIS` using the provided arguments, enabling chained logger customization.
+ * @description An interface for factories that create contextual clones of the receiver.
+ * @summary Declares a `for` method that returns another instance of `THIS` using the provided arguments. This enables chained logger customization.
  * @template THIS
  * @template ARGS
  * @interface Impersonatable
@@ -47,8 +48,6 @@ export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
   /**
    * @description Produce a copy of the current instance with altered context.
    * @summary Called by logging utilities to derive child objects with supplemental configuration and context metadata.
-   * @template THIS
-   * @template ARGS
    * @param {ARGS} args - Arguments forwarded to the impersonation strategy.
    * @return {THIS} Derived instance using the provided arguments.
    */
@@ -56,8 +55,8 @@ export interface Impersonatable<THIS, ARGS extends any[] = any[]> {
 }
 
 /**
- * @description Interface for loggers that support multiple verbosity levels.
- * @summary Declares severity-specific log methods, configuration overrides, and factory helpers used throughout the logging toolkit.
+ * @description An interface for loggers that support multiple verbosity levels.
+ * @summary This interface declares severity-specific log methods, configuration overrides, and factory helpers that are used throughout the logging toolkit.
  * @interface Logger
  * @memberOf module:Logging
  */
@@ -182,12 +181,12 @@ export interface Logger
    * @description Immutable base context for the logger instance.
    * @summary Returned as a copy so callers cannot mutate the internal base context while still allowing inspection.
    */
-  readonly root: readonly string[];
+  readonly root: string[];
 }
 
 /**
- * @description Interface for filters that mutate or reject log messages.
- * @summary Allows custom pre-processing of log entries before they are formatted or emitted.
+ * @description An interface for filters that can mutate or reject log messages.
+ * @summary This allows for custom pre-processing of log entries before they are formatted or emitted.
  * @interface LoggingFilter
  * @memberOf module:Logging
  */
@@ -204,21 +203,26 @@ export interface LoggingFilter {
 }
 
 /**
- * @description Configuration for logging.
- * @summary Defines the log level and verbosity for logging.
- * @typedef {Object} LoggingConfig
+ * @description Configuration for the logging system.
+ * @summary Defines the log level, verbosity, and other settings for logging.
+ * @template TRANSPORT
+ * @typedef {object} LoggingConfig
+ * @property {string} env - The environment, e.g., "development", "production".
  * @property {LogLevel} level - The logging level.
- * @property {boolean} [logLevel] - Whether to display log level in output.
+ * @property {boolean} [logLevel] - Whether to display the log level in the output.
  * @property {number} verbose - The verbosity level.
- * @property {LoggingMode} [mode] - Output format mode.
- * @property {string} contextSeparator - Separator between context entries.
- * @property {string} separator - Separator between log components.
- * @property {boolean} [style] - Whether to apply styling to log output.
+ * @property {string} contextSeparator - The separator to use between context entries.
+ * @property {string} separator - The separator to use between log components.
+ * @property {boolean} [style] - Whether to apply styling to the log output.
  * @property {boolean} [timestamp] - Whether to include timestamps in log messages.
- * @property {string} [timestampFormat] - Format for timestamps.
+ * @property {string} [timestampFormat] - The format for timestamps.
  * @property {boolean} [context] - Whether to include context information in log messages.
  * @property {Theme} [theme] - The theme to use for styling log messages.
- * @property {string|number} [correlationId] - Correlation ID for tracking related log messages.
+ * @property {LoggingMode} format - The output format for log messages.
+ * @property {string} pattern - The pattern to use for formatting log messages.
+ * @property {(string|number)} [correlationId] - A correlation ID for tracking related log messages.
+ * @property {(string[]|LoggingFilter[])} [filters] - An array of filters to apply to log messages.
+ * @property {TRANSPORT[]} [transports] - An array of transports to use for logging.
  * @memberOf module:Logging
  */
 export type LoggingConfig<TRANSPORT = object> = {
@@ -241,10 +245,10 @@ export type LoggingConfig<TRANSPORT = object> = {
 };
 
 /**
- * @description Factory signature for creating logger instances.
- * @summary Allows consumers to override logger construction with custom implementations.
- * @template L - The logger type, extending the base Logger interface
- * @typedef {function(string, Partial<LoggingConfig>, any[]): L} LoggerFactory
+ * @description A factory signature for creating logger instances.
+ * @summary This allows consumers to override the logger construction with custom implementations.
+ * @template L
+ * @typedef {function(string, Partial<LoggingConfig>, ...any[]): L} LoggerFactory
  * @memberOf module:Logging
  */
 export type LoggerFactory<L extends Logger = Logger> = (
@@ -254,8 +258,8 @@ export type LoggerFactory<L extends Logger = Logger> = (
 ) => L;
 
 /**
- * @description Theme option applied to a specific log element.
- * @summary Configures foreground and background colors as well as additional style directives for styled console output.
+ * @description A theme option that is applied to a specific log element.
+ * @summary This interface configures the foreground and background colors, as well as additional style directives for styled console output.
  * @interface ThemeOption
  * @memberOf module:Logging
  */
@@ -266,16 +270,16 @@ export interface ThemeOption {
 }
 
 /**
- * @description Mapping between log levels and theme overrides.
- * @summary Enables level-specific styling by associating each {@link LogLevel} with a {@link ThemeOption} configuration.
- * @typedef {Object} ThemeOptionByLogLevel
+ * @description A mapping between log levels and theme overrides.
+ * @summary This enables level-specific styling by associating each {@link LogLevel} with a {@link ThemeOption} configuration.
+ * @typedef {Partial<Record<LogLevel, ThemeOption>>} ThemeOptionByLogLevel
  * @memberOf module:Logging
  */
 export type ThemeOptionByLogLevel = Partial<Record<LogLevel, ThemeOption>>;
 
 /**
- * @description Theme definition applied to console output.
- * @summary Specifies styling for each console log element and supports overrides based on {@link LogLevel} values.
+ * @description A theme definition that is applied to the console output.
+ * @summary This interface specifies the styling for each console log element and supports overrides based on {@link LogLevel} values.
  * @interface Theme
  * @memberOf module:Logging
  */

@@ -8,8 +8,8 @@ import {
 } from "./constants";
 
 /**
- * @description Factory type for creating Environment instances.
- * @summary Describes factories that construct {@link Environment} derivatives with custom initialization.
+ * @description A factory type for creating Environment instances.
+ * @summary This describes factories that construct {@link Environment} derivatives with custom initialization.
  * @template T - The type of object the Environment will accumulate.
  * @template E - The specific Environment type to be created, extending Environment<T>.
  * @typedef {function(unknown[]): E} EnvironmentFactory
@@ -31,8 +31,8 @@ export type AccumulatedEnvironment<T extends object = any> =
     };
 
 /**
- * @description Environment accumulator that lazily reads from runtime sources.
- * @summary Extends {@link ObjectAccumulator} to merge configuration objects while resolving values from Node or browser environment variables on demand.
+ * @description An environment accumulator that lazily reads from runtime sources.
+ * @summary This class extends {@link ObjectAccumulator} to merge configuration objects while resolving values from Node or browser environment variables on demand.
  * @template T
  * @class Environment
  * @example
@@ -91,9 +91,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   /**
    * @description Retrieves a value from the runtime environment.
-   * @summary Handles browser and Node.js environments by normalizing keys and parsing values.
-   * @param {string} k - Key to resolve from the environment.
-   * @return {unknown} Value resolved from the environment or `undefined` when absent.
+   * @summary This method handles browser and Node.js environments by normalizing keys and parsing values.
+   * @param {string} k - The key to resolve from the environment.
+   * @return {unknown} The value that is resolved from the environment, or `undefined` if it is absent.
    */
   protected fromEnv(k: string) {
     let env: Record<string, unknown>;
@@ -113,9 +113,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   /**
    * @description Converts stringified environment values into native types.
-   * @summary Interprets booleans and numbers while leaving other types unchanged.
-   * @param {unknown} val - Raw value retrieved from the environment.
-   * @return {unknown} Parsed value converted to boolean, number, or left as-is.
+   * @summary This method interprets booleans and numbers, while leaving other types unchanged.
+   * @param {unknown} val - The raw value that is retrieved from the environment.
+   * @return {unknown} The parsed value, converted to a boolean or number, or left as-is.
    */
   protected parseEnvValue(val: unknown) {
     if (typeof val !== "string") return val;
@@ -128,9 +128,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   /**
    * @description Expands an object into the environment.
-   * @summary Defines lazy properties that first consult runtime variables before falling back to seeded values.
-   * @template V - Type of the object being expanded.
-   * @param {V} value - Object to expose through environment getters and setters.
+   * @summary This method defines lazy properties that first consult runtime variables before falling back to seeded values.
+   * @template V - The type of the object being expanded.
+   * @param {V} value - The object to expose through environment getters and setters.
    * @return {void}
    */
   protected override expand<V extends object>(value: V): void {
@@ -159,13 +159,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   }
 
   /**
-   * @description Returns a proxy enforcing required environment variables.
-   * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model throws an error.
-   * @return {this} Proxy of the environment enforcing required variables.
+   * @description Returns a proxy that enforces required environment variables.
+   * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model will throw an error.
+   * @return {EnvironmentInstance<any>} A proxy of the environment that enforces required variables.
    */
-  // Return a permissive EnvironmentInstance<any> so consumers won't lose
-  // access to properties when the singleton is accumulated multiple times
-  // through separate static calls.
   orThrow(): EnvironmentInstance<any> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
@@ -278,10 +275,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @protected
    * @static
    * @description Retrieves or creates the singleton instance of the Environment class.
-   * @summary Ensures only one {@link Environment} instance is created, wrapping it in a proxy to compose ENV keys on demand.
+   * @summary This method ensures that only one {@link Environment} instance is created, and wraps it in a proxy to compose ENV keys on demand.
    * @template E
-   * @param {...unknown[]} args - Arguments forwarded to the factory when instantiating the singleton.
-   * @return {E} Singleton environment instance.
+   * @param {...unknown[]} args - Arguments that are forwarded to the factory when instantiating the singleton.
+   * @return {E} The singleton environment instance.
    */
   protected static instance<E extends Environment<any>>(...args: unknown[]): E {
     if (!Environment._instance) {
@@ -325,17 +322,11 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
    * @static
    * @description Accumulates the given value into the environment.
-   * @summary Adds new properties, hiding raw descriptors to avoid leaking enumeration semantics.
-   * @template T
+   * @summary This method adds new properties and hides raw descriptors to avoid leaking enumeration semantics.
    * @template V
-   * @param {V} value - Object to merge into the environment.
-   * @return {Environment} Updated environment reference.
+   * @param {V} value - The object to merge into the environment.
+   * @return {AccumulatedEnvironment<any>} The updated environment reference.
    */
-  // Keep the static API permissive: separate static `accumulate` calls cannot
-  // be tracked by the type system across call boundaries, so return a more
-  // permissive AccumulatedEnvironment<any> that preserves instance methods
-  // like `orThrow()` while not narrowing the singleton to a single call's
-  // shape.
   static accumulate<V extends object>(value: V): AccumulatedEnvironment<any> {
     const instance = Environment.instance<Environment<any>>();
     Object.keys(instance as any).forEach((key) => {
@@ -358,9 +349,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   /**
    * @description Retrieves a value using a dot-path key from the accumulated environment.
-   * @summary Delegates to the singleton instance to access stored configuration.
-   * @param {string} key - Key to resolve from the environment store.
-   * @return {unknown} Stored value corresponding to the provided key.
+   * @summary This method delegates to the singleton instance to access stored configuration.
+   * @param {string} key - The key to resolve from the environment store.
+   * @return {unknown} The stored value that corresponds to the provided key.
    */
   static get(key: string) {
     return Environment._instance.get(key);
@@ -368,10 +359,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
   /**
    * @description Builds a proxy that composes environment keys for nested properties.
-   * @summary Allows chained property access to emit uppercase ENV identifiers while honoring existing runtime overrides.
-   * @param {any} current - Seed model segment used when projecting nested structures.
-   * @param {string[]} path - Accumulated path segments leading to the proxy.
-   * @return {any} Proxy that resolves environment values or composes additional proxies for deeper paths.
+   * @summary This allows chained property access to emit uppercase ENV identifiers, while honoring existing runtime overrides.
+   * @param {any} current - The seed model segment to use when projecting nested structures.
+   * @param {string[]} path - The accumulated path segments that lead to the proxy.
+   * @return {any} A proxy that resolves environment values or composes additional proxies for deeper paths.
    */
   private static buildEnvProxy(current: any, path: string[]): any {
     const buildKey = (p: string[]) =>
@@ -437,7 +428,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
    * @static
    * @description Retrieves the keys of the environment, optionally converting them to ENV format.
-   * @summary Gets all keys in the environment, with an option to format them for environment variables.
+   * @summary This method gets all keys in the environment, with an option to format them for environment variables.
    * @param {boolean} [toEnv=true] - Whether to convert the keys to ENV format.
    * @return {string[]} An array of keys from the environment.
    */
@@ -489,9 +480,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 }
 
 /**
- * @description Singleton environment instance seeded with default logging configuration.
- * @summary Combines {@link DefaultLoggingConfig} with runtime environment variables to provide consistent logging defaults across platforms.
- * @const LoggedEnvironment
+ * @description A singleton environment instance that is seeded with the default logging configuration.
+ * @summary This constant combines {@link DefaultLoggingConfig} with runtime environment variables to provide consistent logging defaults across platforms.
+ * @const {AccumulatedEnvironment<any>} LoggedEnvironment
  * @memberOf module:Logging
  */
 export const LoggedEnvironment = Environment.accumulate(

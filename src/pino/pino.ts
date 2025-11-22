@@ -77,6 +77,14 @@ const buildDestination = (
   return multistream(streams.map((stream) => ({ stream })));
 };
 
+/**
+ * @description A logger that is powered by the Pino logging library.
+ * @summary This class extends {@link MiniLogger} and uses Pino as its underlying logging engine.
+ * @param {string} [context] - The context (typically the class name) that this logger is associated with.
+ * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings.
+ * @param {PinoBaseLogger} [driver] - An optional, pre-existing Pino logger instance to use.
+ * @class PinoLogger
+ */
 export class PinoLogger extends MiniLogger implements Logger {
   protected pino: PinoBaseLogger;
 
@@ -190,6 +198,12 @@ export class PinoLogger extends MiniLogger implements Logger {
   }
 }
 
+/**
+ * @description A factory for creating {@link PinoLogger} instances.
+ * @summary This factory function creates a new {@link PinoLogger} instance, and can optionally accept a pre-existing Pino logger instance.
+ * @const {LoggerFactory} PinoFactory
+ * @memberOf module:Logging
+ */
 export const PinoFactory: LoggerFactory = (
   context?: string,
   conf?: Partial<LoggingConfig>,

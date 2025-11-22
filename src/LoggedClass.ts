@@ -2,8 +2,8 @@ import { Logging } from "./logging";
 import { Logger } from "./types";
 
 /**
- * @description Base class that provides a ready-to-use logger instance.
- * @summary Supplies inheriting classes with a lazily created, context-aware {@link Logger} via the protected `log` getter, promoting consistent structured logging without manual wiring.
+ * @description A base class that provides a ready-to-use logger instance.
+ * @summary This class supplies inheriting classes with a lazily created, context-aware {@link Logger} via the protected `log` getter. This promotes consistent, structured logging without the need for manual wiring.
  * @class LoggedClass
  * @example
  * class UserService extends LoggedClass {
@@ -34,8 +34,8 @@ export abstract class LoggedClass {
 
   /**
    * @description Lazily provides a context-aware logger for the current instance.
-   * @summary Calls {@link Logging.for} with the subclass instance to obtain a logger whose context matches the subclass name.
-   * @return {Logger} Logger bound to the subclass context.
+   * @summary This method calls {@link Logging.for} with the subclass instance to obtain a logger whose context matches the subclass name.
+   * @return {Logger} A logger that is bound to the subclass context.
    */
   protected get log(): Logger {
     if (!this._log) this._log = Logging.for(this as any);

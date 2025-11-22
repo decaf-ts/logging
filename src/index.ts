@@ -11,9 +11,9 @@ export * from "./web";
 export * from "./utils";
 
 /**
- * @description Comprehensive logging toolkit for browser and Node environments.
- * @summary Exposes {@link Logging} and {@link MiniLogger} for runtime logging, decorators such as {@link log} for method instrumentation, and utilities like {@link PatternFilter}, {@link StopWatch}, and {@link LoggedEnvironment} to build configurable, theme-aware log pipelines.
  * @module Logging
+ * @description A comprehensive and versatile logging toolkit for both browser and Node.js environments.
+ * @summary This module provides a complete logging solution, exposing {@link Logging} and {@link MiniLogger} for runtime logging. It also includes decorators like {@link log} for method instrumentation, and various utilities such as {@link PatternFilter}, {@link StopWatch}, and {@link LoggedEnvironment} to help build configurable and theme-aware log pipelines.
  */
 
 /**

@@ -1,35 +1,32 @@
 import { LoggingConfig, Theme } from "./types";
 
 /**
- * @description Global key used to store environment variables in browser contexts.
- * @summary Enables the logging environment helpers to locate serialized environment configuration on `globalThis`.
- * @const BrowserEnvKey
- * @type {string}
+ * @description The global key that is used to store environment variables in browser contexts.
+ * @summary This enables the logging environment helpers to locate serialized environment configuration on `globalThis`.
+ * @const {string} BrowserEnvKey
  * @memberOf module:Logging
  */
 export const BrowserEnvKey = "ENV";
 
 /**
- * @description Delimiter used for composing nested environment variable names.
- * @summary Joins parent and child keys when mapping object paths to ENV strings.
- * @const ENV_PATH_DELIMITER
- * @type {string}
+ * @description The delimiter that is used for composing nested environment variable names.
+ * @summary This joins parent and child keys when mapping object paths to ENV strings.
+ * @const {string} ENV_PATH_DELIMITER
  * @memberOf module:Logging
  */
 export const ENV_PATH_DELIMITER = "__";
 
 /**
- * @description Default prefix and suffix used for template placeholders.
- * @summary Provides wrapper strings applied when interpolating messages with {@link patchPlaceholders}.
- * @const DefaultPlaceholderWrappers
- * @type {string[]}
+ * @description The default prefix and suffix that are used for template placeholders.
+ * @summary This provides wrapper strings that are applied when interpolating messages with {@link patchPlaceholders}.
+ * @const {string[]} DefaultPlaceholderWrappers
  * @memberOf module:Logging
  */
 export const DefaultPlaceholderWrappers = ["${", "}"];
 
 /**
- * @description Enum for log levels.
- * @summary Defines different levels of logging for the application.
+ * @description An enum for log levels.
+ * @summary Defines the different levels of logging for the application.
  * @enum {string}
  * @readonly
  * @memberOf module:Logging
@@ -54,22 +51,24 @@ export enum LogLevel {
 }
 
 /**
- * @description Numeric values associated with log levels.
- * @summary Provides a numeric representation of log levels for comparison and filtering.
- * @typedef {Object} NumericLogLevelsShape
- * @property {number} benchmark - Numeric value for benchmark level (0).
- * @property {number} error - Numeric value for error level (2).
- * @property {number} info - Numeric value for info level (4).
- * @property {number} verbose - Numeric value for verbose level (6).
- * @property {number} debug - Numeric value for debug level (7).
- * @property {number} silly - Numeric value for silly level (9).
+ * @description The numeric values that are associated with log levels.
+ * @summary This provides a numeric representation of log levels for comparison and filtering.
+ * @typedef {object} NumericLogLevelsShape
+ * @property {number} benchmark - The numeric value for the benchmark level (0).
+ * @property {number} error - The numeric value for the error level (3).
+ * @property {number} warn - The numeric value for the warn level (6).
+ * @property {number} info - The numeric value for the info level (9).
+ * @property {number} verbose - The numeric value for the verbose level (12).
+ * @property {number} debug - The numeric value for the debug level (15).
+ * @property {number} trace - The numeric value for the trace level (18).
+ * @property {number} silly - The numeric value for the silly level (21).
  * @memberOf module:Logging
  */
+
 /**
- * @description Numeric values associated with log levels.
- * @summary Provides a numeric representation of log levels for comparison and filtering.
- * @const NumericLogLevels
- * @type {NumericLogLevelsShape}
+ * @description The numeric values that are associated with log levels.
+ * @summary This provides a numeric representation of log levels for comparison and filtering.
+ * @const {NumericLogLevelsShape} NumericLogLevels
  * @memberOf module:Logging
  */
 export const NumericLogLevels = {
@@ -84,9 +83,10 @@ export const NumericLogLevels = {
 };
 
 /**
- * @description Enum for logging output modes.
- * @summary Defines different output formats for log messages.
+ * @description An enum for logging output modes.
+ * @summary Defines the different output formats for log messages.
  * @enum {string}
+ * @readonly
  * @memberOf module:Logging
  */
 export enum LoggingMode {
@@ -97,28 +97,9 @@ export enum LoggingMode {
 }
 
 /**
- * @description Default theme for styling log output.
+ * @description The default theme for styling log output.
  * @summary Defines the default color and style settings for various components of log messages.
- * @typedef {Theme} DefaultTheme
- * @property {Object} class - Styling for class names.
- * @property {number} class.fg - Foreground color code for class names (34).
- * @property {Object} id - Styling for identifiers.
- * @property {number} id.fg - Foreground color code for identifiers (36).
- * @property {Object} stack - Styling for stack traces (empty object).
- * @property {Object} timestamp - Styling for timestamps (empty object).
- * @property {Object} message - Styling for different types of messages.
- * @property {Object} message.error - Styling for error messages.
- * @property {number} message.error.fg - Foreground color code for error messages (31).
- * @property {Object} method - Styling for method names (empty object).
- * @property {Object} logLevel - Styling for different log levels.
- * @property {Object} logLevel.error - Styling for error level logs.
- * @property {number} logLevel.error.fg - Foreground color code for error level logs (31).
- * @property {string[]} logLevel.error.style - Style attributes for error level logs (["bold"]).
- * @property {Object} logLevel.info - Styling for info level logs (empty object).
- * @property {Object} logLevel.verbose - Styling for verbose level logs (empty object).
- * @property {Object} logLevel.debug - Styling for debug level logs.
- * @property {number} logLevel.debug.fg - Foreground color code for debug level logs (33).
- * @const DefaultTheme
+ * @const {Theme} DefaultTheme
  * @memberOf module:Logging
  */
 export const DefaultTheme: Theme = {
@@ -171,20 +152,9 @@ export const DefaultTheme: Theme = {
 };
 
 /**
- * @description Default configuration for logging.
+ * @description The default configuration for logging.
  * @summary Defines the default settings for the logging system, including verbosity, log level, styling, and timestamp format.
- * @const DefaultLoggingConfig
- * @typedef {LoggingConfig} DefaultLoggingConfig
- * @property {number} verbose - Verbosity level (0).
- * @property {LogLevel} level - Default log level (LogLevel.info).
- * @property {boolean} logLevel - Whether to display log level in output (true).
- * @property {LoggingMode} mode - Output format mode (LoggingMode.RAW).
- * @property {boolean} style - Whether to apply styling to log output (false).
- * @property {string} separator - Separator between log components (" - ").
- * @property {boolean} timestamp - Whether to include timestamps in log messages (true).
- * @property {string} timestampFormat - Format for timestamps ("HH:mm:ss.SSS").
- * @property {boolean} context - Whether to include context information in log messages (true).
- * @property {Theme} theme - The theme to use for styling log messages (DefaultTheme).
+ * @const {LoggingConfig} DefaultLoggingConfig
  * @memberOf module:Logging
  */
 export const DefaultLoggingConfig: LoggingConfig = {

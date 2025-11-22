@@ -1,11 +1,11 @@
 /**
- * @description Snapshot of a recorded lap interval.
- * @summary Captures the lap index, optional label, elapsed milliseconds for the lap, and cumulative elapsed time since the stopwatch started.
- * @typedef {Object} Lap
- * @property {number} index - Zero-based lap order.
- * @property {string} [label] - Optional label describing the lap.
- * @property {number} ms - Duration of the lap in milliseconds.
- * @property {number} totalMs - Total elapsed time when the lap was recorded.
+ * @description A snapshot of a recorded lap interval.
+ * @summary This captures the lap index, an optional label, the elapsed milliseconds for the lap, and the cumulative elapsed time since the stopwatch started.
+ * @typedef {object} Lap
+ * @property {number} index - The zero-based lap order.
+ * @property {string} [label] - An optional label that describes the lap.
+ * @property {number} ms - The duration of the lap in milliseconds.
+ * @property {number} totalMs - The total elapsed time when the lap was recorded.
  * @memberOf module:Logging
  */
 export type Lap = {
@@ -42,16 +42,18 @@ function safeNow(): NowFn {
 }
 
 /**
- * @description High-resolution clock accessor returning milliseconds.
- * @summary Chooses the most precise timer available in the current runtime, preferring `performance.now` or `process.hrtime.bigint`.
- * @return {number} Milliseconds elapsed according to the best available clock.
+ * @description A high-resolution clock accessor that returns milliseconds.
+ * @summary This function chooses the most precise timer available in the current runtime, preferring `performance.now` or `process.hrtime.bigint`.
+ * @return {number} The milliseconds that have elapsed, according to the best available clock.
+ * @function now
+ * @memberOf module:Logging
  */
 export const now = safeNow();
 
 /**
- * @description High-resolution stopwatch with pause, resume, and lap tracking.
- * @summary Tracks elapsed time using the highest precision timer available, supports pausing, resuming, and recording labeled laps for diagnostics and benchmarking.
- * @param {boolean} [autoStart=false] - When true, the stopwatch starts immediately upon construction.
+ * @description A high-resolution stopwatch with pause, resume, and lap tracking.
+ * @summary This class tracks elapsed time using the highest precision timer available. It supports pausing, resuming, and recording labeled laps for diagnostics and benchmarking.
+ * @param {boolean} [autoStart=false] - When `true`, the stopwatch starts immediately upon construction.
  * @class StopWatch
  * @example
  * const sw = new StopWatch(true);
@@ -88,17 +90,17 @@ export class StopWatch {
 
   /**
    * @description Indicates whether the stopwatch is actively running.
-   * @summary Returns `true` when timing is in progress and `false` when paused or stopped.
-   * @return {boolean} Current running state.
+   * @summary This method returns `true` when timing is in progress, and `false` when it is paused or stopped.
+   * @return {boolean} The current running state.
    */
   get running(): boolean {
     return this._running;
   }
 
   /**
-   * @description Elapsed time captured by the stopwatch.
-   * @summary Computes the total elapsed time in milliseconds, including the current session if running.
-   * @return {number} Milliseconds elapsed since the stopwatch started.
+   * @description The elapsed time that has been captured by the stopwatch.
+   * @summary This method computes the total elapsed time in milliseconds, including the current session if it is running.
+   * @return {number} The milliseconds that have elapsed since the stopwatch started.
    */
   get elapsedMs(): number {
     if (!this._running || this._startMs == null) return this._elapsedMs;
@@ -107,8 +109,8 @@ export class StopWatch {
 
   /**
    * @description Starts timing if the stopwatch is not already running.
-   * @summary Records the current timestamp and transitions the stopwatch into the running state.
-   * @return {this} Fluent reference to the stopwatch.
+   * @summary This method records the current timestamp and transitions the stopwatch into the running state.
+   * @return {this} A fluent reference to the stopwatch.
    */
   start(): this {
     if (!this._running) {
@@ -119,9 +121,9 @@ export class StopWatch {
   }
 
   /**
-   * @description Pauses timing and accumulates elapsed milliseconds.
-   * @summary Captures the partial duration, updates the accumulator, and keeps the stopwatch ready to resume later.
-   * @return {this} Fluent reference to the stopwatch.
+   * @description Pauses timing and accumulates the elapsed milliseconds.
+   * @summary This method captures the partial duration, updates the accumulator, and keeps the stopwatch ready to resume later.
+   * @return {this} A fluent reference to the stopwatch.
    */
   pause(): this {
     if (this._running && this._startMs != null) {
@@ -134,8 +136,8 @@ export class StopWatch {
 
   /**
    * @description Resumes timing after a pause.
-   * @summary Captures a fresh start timestamp while keeping previous elapsed time intact.
-   * @return {this} Fluent reference to the stopwatch.
+   * @summary This method captures a fresh start timestamp, while keeping the previous elapsed time intact.
+   * @return {this} A fluent reference to the stopwatch.
    */
   resume(): this {
     if (!this._running) {
@@ -147,8 +149,8 @@ export class StopWatch {
 
   /**
    * @description Stops timing and returns the total elapsed milliseconds.
-   * @summary Invokes {@link StopWatch.pause} to consolidate elapsed time, leaving the stopwatch in a non-running state.
-   * @return {number} Milliseconds accumulated across all runs.
+   * @summary This method invokes {@link StopWatch.pause} to consolidate the elapsed time, and leaves the stopwatch in a non-running state.
+   * @return {number} The milliseconds that have accumulated across all runs.
    */
   stop(): number {
     this.pause();
@@ -156,9 +158,9 @@ export class StopWatch {
   }
 
   /**
-   * @description Resets the stopwatch state while optionally continuing to run.
-   * @summary Clears elapsed time and lap history, preserving whether the stopwatch should continue ticking.
-   * @return {this} Fluent reference to the stopwatch.
+   * @description Resets the stopwatch state, while optionally continuing to run.
+   * @summary This method clears the elapsed time and lap history, and preserves whether the stopwatch should continue ticking.
+   * @return {this} A fluent reference to the stopwatch.
    */
   reset(): this {
     const wasRunning = this._running;
@@ -170,10 +172,10 @@ export class StopWatch {
   }
 
   /**
-   * @description Records a lap split since the stopwatch started or since the previous lap.
-   * @summary Stores the lap metadata, updates cumulative tracking, and returns the newly created {@link Lap}.
-   * @param {string} [label] - Optional label describing the lap.
-   * @return {Lap} Lap snapshot capturing incremental and cumulative timings.
+   * @description Records a lap split since the stopwatch started, or since the previous lap.
+   * @summary This method stores the lap metadata, updates the cumulative tracking, and returns the newly created {@link Lap}.
+   * @param {string} [label] - An optional label that describes the lap.
+   * @return {Lap} A lap snapshot that captures incremental and cumulative timings.
    */
   lap(label?: string): Lap {
     const total = this.elapsedMs;
@@ -190,8 +192,8 @@ export class StopWatch {
   }
   /**
    * @description Retrieves the recorded lap history.
-   * @summary Returns the internal lap array as a read-only view to prevent external mutation.
-   * @return {Lap[]} Laps captured by the stopwatch.
+   * @summary This method returns the internal lap array as a read-only view to prevent external mutation.
+   * @return {Array<Lap>} The laps that have been captured by the stopwatch.
    */
   get laps(): readonly Lap[] {
     return this._laps;
@@ -199,8 +201,8 @@ export class StopWatch {
 
   /**
    * @description Formats the elapsed time in a human-readable representation.
-   * @summary Uses {@link formatMs} to produce an `hh:mm:ss.mmm` string for display and logging.
-   * @return {string} Elapsed time formatted for presentation.
+   * @summary This method uses {@link formatMs} to produce an `hh:mm:ss.mmm` string for display and logging.
+   * @return {string} The elapsed time, formatted for presentation.
    */
   toString(): string {
     return formatMs(this.elapsedMs);
@@ -208,8 +210,8 @@ export class StopWatch {
 
   /**
    * @description Serializes the stopwatch state.
-   * @summary Provides a JSON-friendly snapshot including running state, elapsed time, and lap details.
-   * @return {{running: boolean, elapsedMs: number, laps: Lap[]}} Serializable stopwatch representation.
+   * @summary This method provides a JSON-friendly snapshot that includes the running state, elapsed time, and lap details.
+   * @return {{running: boolean, elapsedMs: number, laps: Lap[]}} A serializable stopwatch representation.
    */
   toJSON() {
     return {
@@ -221,9 +223,9 @@ export class StopWatch {
 }
 /**
  * @description Formats milliseconds into `hh:mm:ss.mmm`.
- * @summary Breaks the duration into hours, minutes, seconds, and milliseconds, returning a zero-padded string.
- * @param {number} ms - Milliseconds to format.
- * @return {string} Formatted duration string.
+ * @summary This function breaks the duration into hours, minutes, seconds, and milliseconds, and returns a zero-padded string.
+ * @param {number} ms - The milliseconds to format.
+ * @return {string} The formatted duration string.
  * @function formatMs
  * @memberOf module:Logging
  * @mermaid

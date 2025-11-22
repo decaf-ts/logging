@@ -5,12 +5,10 @@ import { Logging, MiniLogger } from "../logging";
 import { LogLevel } from "../constants";
 
 /**
- * @description A logger implementation using Winston
- * @summary WinstonLogger extends MiniLogger to provide logging functionality using the Winston library.
- * It configures Winston with appropriate transports and formats based on the logging configuration.
- * @param {string} cont - The context (typically class name) this logger is associated with
- * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings
- * @param {Transport[]|Transport} [transports] - Winston transports to use for logging
+ * @description A logger implementation that uses Winston.
+ * @summary This class extends {@link MiniLogger} to provide logging functionality using the Winston library. It configures Winston with the appropriate transports and formats based on the logging configuration.
+ * @param {string} [cont] - The context (typically the class name) that this logger is associated with.
+ * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings.
  * @class WinstonLogger
  * @example
  * // Create a Winston logger for a class
@@ -56,11 +54,11 @@ export class WinstonLogger extends MiniLogger implements Logger {
   }
 
   /**
-   * @description Logs a message with the specified log level using Winston
-   * @summary Overrides the base log method to use Winston for logging
-   * @param {LogLevel} level - The log level of the message
-   * @param {StringLike | Error} msg - The message to be logged or an Error object
-   * @param {Error} [error] - Optional stack trace to include in the log
+   * @description Logs a message with the specified log level using Winston.
+   * @summary This method overrides the base log method to use Winston for logging.
+   * @param {LogLevel} level - The log level of the message.
+   * @param {(StringLike|Error)} msg - The message to be logged or an Error object.
+   * @param {Error} [error] - An optional stack trace to include in the log.
    * @return {void}
    */
   protected override log(
@@ -79,14 +77,13 @@ export class WinstonLogger extends MiniLogger implements Logger {
 }
 
 /**
- * @description Factory function for creating Winston loggers
- * @summary A LoggerFactory implementation that creates WinstonLogger instances
+ * @description A factory function for creating Winston loggers.
+ * @summary This is a {@link LoggerFactory} implementation that creates {@link WinstonLogger} instances.
+ * @param {string} [context] - The context (typically the class name) for the logger.
+ * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings.
+ * @param {...any} _args - Additional arguments to pass to the WinstonLogger constructor.
+ * @return {WinstonLogger} A new WinstonLogger instance.
  * @const WinstonFactory
- * @type {LoggerFactory}
- * @param {string} context - The context (typically class name) for the logger
- * @param {Partial<LoggingConfig>} [conf] - Optional configuration to override global settings
- * @param {...any} args - Additional arguments to pass to the WinstonLogger constructor
- * @return {WinstonLogger} A new WinstonLogger instance
  * @memberOf module:Logging
  */
 export const WinstonFactory: LoggerFactory = (

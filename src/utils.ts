@@ -1,3 +1,11 @@
+/**
+ * @description Checks if a value is a class.
+ * @summary This function determines if the given value is a class constructor.
+ * @param {unknown} value - The value to check.
+ * @return {boolean} `true` if the value is a class, `false` otherwise.
+ * @function isClass
+ * @memberOf module:Logging
+ */
 export function isClass(
   value: unknown
 ): value is abstract new (...args: any[]) => any {
@@ -31,12 +39,30 @@ export function isClass(
   return names.length > 0;
 }
 
+/**
+ * @description Checks if a value is a function.
+ * @summary This function determines if the given value is a function, but not a class.
+ * @template T
+ * @param {unknown} value - The value to check.
+ * @return {boolean} `true` if the value is a function, `false` otherwise.
+ * @function isFunction
+ * @memberOf module:Logging
+ */
 export function isFunction<T extends (...args: any[]) => unknown>(
   value: unknown
 ): value is T {
   return typeof value === "function" && !isClass(value);
 }
 
+/**
+ * @description Checks if a value is a method.
+ * @summary This function determines if the given value is a method.
+ * @template T
+ * @param {unknown} value - The value to check.
+ * @return {boolean} `true` if the value is a method, `false` otherwise.
+ * @function isMethod
+ * @memberOf module:Logging
+ */
 export function isMethod<T extends (...args: any[]) => unknown>(
   value: unknown
 ): value is T {
@@ -46,6 +72,15 @@ export function isMethod<T extends (...args: any[]) => unknown>(
   return !descriptor || descriptor.value === undefined;
 }
 
+/**
+ * @description Checks if a value is an instance of a class.
+ * @summary This function determines if the given value is an instance of a class.
+ * @template T
+ * @param {unknown} value - The value to check.
+ * @return {boolean} `true` if the value is an instance of a class, `false` otherwise.
+ * @function isInstance
+ * @memberOf module:Logging
+ */
 export function isInstance<T extends object>(value: unknown): value is T {
   if (value === null || typeof value !== "object") return false;
 
@@ -56,6 +91,14 @@ export function isInstance<T extends object>(value: unknown): value is T {
   return isClass(ctor);
 }
 
+/**
+ * @description Gets the name of an object.
+ * @summary This function returns the name of the given object, which can be a class, an instance of a class, a function, or a primitive value.
+ * @param {unknown} value - The value to get the name of.
+ * @return {string} The name of the object.
+ * @function getObjectName
+ * @memberOf module:Logging
+ */
 export function getObjectName(value: unknown): string {
   if (value === null) return "null";
   if (value === undefined) return "undefined";
