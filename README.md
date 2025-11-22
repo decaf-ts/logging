@@ -3,11 +3,10 @@
 
 # Logging Library (decaf-ts/logging)
 
-A small, flexible TypeScript logging library designed for framework-agnostic projects. It provides:
-- Context-aware loggers with hierarchical contexts (class.method) via MiniLogger and the static Logging facade.
-- Configurable output (level filtering, verbosity, separators, timestamps) and optional ANSI styling/theming.
-- Simple method decorators (log/debug/info/verbose/silly) to instrument class methods without boilerplate.
-- Extensibility through a pluggable LoggerFactory (e.g., WinstonLogger) while keeping a minimal default runtime.
+Decaf’s logging toolkit keeps one fast MiniLogger at the core while exposing adapters, filters, and utilities that fit both browser and Node.js runtimes:
+- Configure once through `Logging.setConfig` or the `Environment` accumulator and let impersonated child loggers inherit overrides without allocations.
+- Apply filter chains, transports, and adapter-specific features (Pino, Winston, custom factories) through the shared `LoggingConfig` contract.
+- Instrument classes using decorators, `LoggedClass`, and `Logging.because` while StopWatch, text/time utilities, and environment helpers round out the diagnostics surface.
 
 ![Licence](https://img.shields.io/github/license/decaf-ts/logging.svg?style=plastic)
 ![GitHub language count](https://img.shields.io/github/languages/count/decaf-ts/logging?style=plastic)
@@ -38,7 +37,7 @@ A small, flexible TypeScript logging library designed for framework-agnostic pro
 
 Documentation available [here](https://decaf-ts.github.io/logging/)
 
-Minimal size: 56.5 KB kb gzipped
+Minimal size: 5.9 KB kb gzipped
 
 
 # Logging Library — Detailed Description
@@ -118,232 +117,360 @@ Intended usage
 
 # How to Use the Logging Library
 
-This guide provides concise, non-redundant examples for each public API. Examples are inspired by the package’s unit tests and reflect real usage.
+All snippets import from `@decaf-ts/logging` (swap to a relative path when working inside this repo). Each item below contains a short description, an optional sequence diagram for complex flows, and runnable TypeScript code.
 
-Note: Replace the import path with your actual package name. In this monorepo, tests import from "../../src".
+## 1. Bootstrapping Global Configuration
+Description: Initialize `Logging` once (or hydrate `LoggedEnvironment`) to define levels, formatting, colors, transports, and app identifiers that downstream impersonated loggers inherit without per-call overhead.
 
-- import { ... } from "@your-scope/logging" // typical
-- import { ... } from "../../src" // inside this repo while developing
-
-
-Basic setup and global logging via Logging
-Description: Configure global logging and write messages through the static facade, similar to unit tests that verify console output and level filtering.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as App
+    participant Env as LoggedEnvironment
+    participant Logging as Logging.setConfig
+    participant Root as MiniLogger (root)
+    App->>Env: Environment.accumulate(defaults)
+    Env-->>App: Env proxy (app name, theme, format)
+    App->>Logging: setConfig({ level, format, transports })
+    Logging->>Root: ensureRoot() memoizes MiniLogger
+```
 
 ```ts
-import { Logging, LogLevel } from "@decaf-ts/logging";
+import { Logging, LogLevel, DefaultLoggingConfig, LoggedEnvironment } from "@decaf-ts/logging";
 
-// Set global configuration
-Logging.setConfig({
-  level: LogLevel.debug, // allow debug and above
-  style: false,          // plain output (tests use both styled and themeless)
-  timestamp: false,      // omit timestamp for simplicity in this example
+// seed the environment before configuring Logging.
+LoggedEnvironment.accumulate({
+  app: "InventoryAPI",
+  logging: { separator: "•" },
 });
 
-// Log using the global logger
-Logging.info("Application started");
-Logging.debug("Debug details");
-Logging.error("Something went wrong");
+Logging.setConfig({
+  ...DefaultLoggingConfig,
+  level: LogLevel.debug,
+  verbose: 2,
+  style: true,
+  format: "raw",
+});
 
-// Verbosity-controlled logs (silly delegates to verbose internally)
-Logging.setConfig({ verbose: 2 });
-Logging.silly("Extra details at verbosity 1");      // emitted when verbose >= 1
-Logging.verbose("Even more details", 2);            // only with verbose >= 2
+Logging.info("Boot complete");
+Logging.verbose("Dependency graph built", 1);
+Logging.silly("Deep diagnostics", 3); // ignored because verbose < 3
 ```
 
+## 2. Impersonation & Proxy Performance
+Description: ONE `MiniLogger` instance powers every context. Calls to `.for(...)` return lightweight proxies that temporarily override context/config without allocating new drivers, so a hot path can derive thousands of child loggers without GC churn.
 
-Create a class-scoped logger and child method logger
-Description: Create a logger bound to a specific context (class) and derive a child logger for a method, matching patterns used in tests.
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as App
+    participant Logging as Logging.for(...)
+    participant Root as MiniLogger (root)
+    participant Proxy as Logger Proxy
+    App->>Logging: Logging.for("OrderService")
+    Logging->>Root: ensureRoot() reuse
+    Root-->>Proxy: Proxy bound to ["OrderService"]
+    Proxy->>Proxy: `.for("create")` extends context
+    Proxy-->>App: Proxy emits create log (no new logger)
+```
 
 ```ts
+import { Logging, LogLevel, type LoggingConfig } from "@decaf-ts/logging";
+
+Logging.setConfig({ level: LogLevel.info });
+const logger = Logging.for("OrderService");
+
+function runScenario(overrides?: Partial<LoggingConfig>) {
+  const scoped = logger.for("createOrUpdate", overrides);
+  scoped.info("Validating payload");
+  scoped.for("db").debug("Executing UPSERT..."); // reuses the same proxy target
+  scoped.clear(); // resets context/config so the proxy can serve the next call
+}
+
+runScenario({ correlationId: "req-1" });
+runScenario({ correlationId: "req-2", style: false });
+```
+
+## 3. Filtering Sensitive Data
+Description: Attach `PatternFilter` or custom filters via `LoggingConfig.filters` to redact PII/passwords before formatting. Filters run on the message string after it was rendered in RAW format; JSON output serializes the already-filtered content, so sensitive values disappear in both outputs.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as App
+    participant Proxy as Logger Proxy
+    participant Filter as PatternFilter
+    participant Console as Transport
+    App->>Proxy: log("password=secret")
+    Proxy->>Filter: filter(config, message, context)
+    Filter-->>Proxy: "password=***"
+    Proxy->>Console: emit RAW or JSON string
+```
+
+```ts
+import { Logging, LogLevel, PatternFilter, type LoggingConfig } from "@decaf-ts/logging";
+
+class PiiFilter extends PatternFilter {
+  constructor() {
+    super(/(password|ssn)=([^&\s]+)/gi, (_full, key) => `${key}=***`);
+  }
+}
+
+const filters: LoggingConfig["filters"] = [new PiiFilter()];
+Logging.setConfig({
+  level: LogLevel.debug,
+  filters,
+  format: "raw",
+});
+
+const logger = Logging.for("SignupFlow");
+logger.info("Attempt password=abc123&email=user@example.com"); // prints password=***
+
+Logging.setConfig({ format: "json" });
+logger.info("ssn=123-45-6789"); // JSON payload contains ssn=*** already
+```
+
+## 4. Transports & Custom Destinations
+Description: Supply writable streams via `LoggingConfig.transports` when using adapters (Pino/Winston) to branch logs to files, sockets, or monitoring systems. Each adapter inspects `transports` and builds either a native transport (Winston) or Pino multistream.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as App
+    participant Logging as Logging.setFactory
+    participant Adapter as Adapter Logger
+    participant Transport as DestinationStream
+    App->>Logging: setFactory(WinstonFactory)
+    App->>Adapter: Logging.for("Gateway", { transports })
+    Adapter->>Transport: write(formatted line)
+```
+
+```ts
+import fs from "node:fs";
 import { Logging, LogLevel } from "@decaf-ts/logging";
+import { WinstonFactory } from "@decaf-ts/logging/winston/winston";
+import Transport from "winston-transport";
 
-Logging.setConfig({ level: LogLevel.debug });
-
-// A class-scoped logger
-const classLogger = Logging.for("UserService");
-classLogger.info("Fetching users");
-
-// A child logger for a specific method with temporary config overrides
-const methodLogger = classLogger.for("list", { style: false });
-methodLogger.debug("Querying repository...");
-```
-
-
-MiniLogger: direct use and per-instance config
-Description: Instantiate MiniLogger directly (the default implementation behind Logging.setFactory). Tests create MiniLogger with and without custom config.
-
-```ts
-import { MiniLogger, LogLevel, type LoggingConfig } from "@decaf-ts/logging";
-
-const logger = new MiniLogger("TestContext");
-logger.info("Info from MiniLogger");
-
-// With custom configuration
-const custom: Partial<LoggingConfig> = { level: LogLevel.debug, verbose: 2 };
-const customLogger = new MiniLogger("TestContext", custom);
-customLogger.debug("Debug with custom level");
-
-// Child logger with correlation id
-const traced = customLogger.for("run", { correlationId: "req-123" });
-traced.info("Tracing this operation");
-```
-
-
-Decorators: log, debug, info, verbose, silly
-Description: Instrument methods to log calls and optional benchmarks. Tests validate decorator behavior for call and completion messages.
-
-```ts
-import { log, debug, info as infoDecor, verbose as verboseDecor, silly as sillyDecor, LogLevel, Logging } from "@decaf-ts/logging";
-
-// Configure logging for demo
-Logging.setConfig({ level: LogLevel.debug, style: false, timestamp: false });
-
-class AccountService {
-  @log(LogLevel.info) // logs method call with args
-  create(name: string) {
-    return { id: "1", name };
-  }
-
-  @debug(true) // logs call and completion time at debug level
-  rebuildIndex() {
-    // heavy work...
-    return true;
-  }
-
-  @info() // convenience wrapper for info level
-  enable() {
-    return true;
-  }
-
-  @verbose(1, true) // verbose with verbosity threshold and benchmark
-  syncAll() {
-    return Promise.resolve("ok");
-  }
-
-  @silly() // very chatty, only emitted when verbose allows
-  ping() {
-    return "pong";
+class AuditTransport extends Transport {
+  log(info: any, callback: () => void) {
+    fs.appendFileSync("audit.log", `${info.message}\n`);
+    callback();
   }
 }
 
-const svc = new AccountService();
-svc.create("Alice");
-svc.rebuildIndex();
-svc.enable();
-await svc.syncAll();
-svc.ping();
-```
-
-
-LoggedClass: zero-boilerplate logging inside classes
-Description: Extend LoggedClass to gain a protected this.log with the correct context (class name). Tests use Logging.for to build similar context.
-
-```ts
-import { LoggedClass } from "@your-scope/logging";
-
-class UserRepository extends LoggedClass {
-  findById(id: string) {
-    this.log.info(`Finding ${id}`);
-    return { id };
-  }
-}
-
-const repo = new UserRepository();
-repo.findById("42");
-```
-
-
-Winston integration: swap the logger factory
-Description: Route all logging through WinstonLogger by installing WinstonFactory. This mirrors the optional adapter in src/winston.
-
-```ts
-import { Logging } from "@your-scope/logging";
-import { WinstonFactory } from "@your-scope/logging/winston/winston";
-
-// Install Winston as the logger factory
 Logging.setFactory(WinstonFactory);
+const auditLogger = Logging.for("AuditTrail", {
+  level: LogLevel.info,
+  transports: [new AuditTransport()],
+});
 
-// Now any logger created will use Winston under the hood
-const log = Logging.for("ApiGateway");
-log.info("Gateway started");
+auditLogger.info("policy=PASSWORD_RESET user=u-9 timestamp=...");
 ```
 
-
-Theming and styling with Logging.theme and config
-Description: Enable style and customize theme to colorize parts of the log (tests check styled output patterns).
+## 5. Pino & Winston Native Features
+Description: Use `PinoLogger` and `WinstonLogger` directly (or via `Logging.setFactory`) to access adapter-only functions such as `child()`, `flush()`, or Pino/Winston-specific levels while still honoring the shared `LoggingConfig`.
 
 ```ts
-import { Logging, LogLevel, DefaultTheme, type Theme } from "@your-scope/logging";
+import pino from "pino";
+import { Logging, LogLevel } from "@decaf-ts/logging";
+import { PinoLogger, PinoFactory } from "@decaf-ts/logging/pino/pino";
+import { WinstonLogger } from "@decaf-ts/logging/winston/winston";
 
-// Enable styling globally
-Logging.setConfig({ style: true, timestamp: true, context: false });
+// Pino: reuse an existing driver and call child()
+const sink = pino({ level: "trace", name: "Api" });
+const pinoLogger = new PinoLogger("Api", { level: LogLevel.debug }, sink);
+pinoLogger.child({ context: "handler" }).info("Child context respects config");
+pinoLogger.flush?.();
 
-// Optionally override theme: make debug level yellow (fg:33) and error red+bold
-const theme: Theme = {
-  ...DefaultTheme,
-  logLevel: {
-    ...DefaultTheme.logLevel,
-    debug: { fg: 33 },
-    error: { fg: 31, style: ["bold"] },
-  },
-};
+// Register the adapter globally so Logging.for uses it
+Logging.setFactory(PinoFactory);
+Logging.for("BatchJob").debug("Runs through native Pino now");
 
-// Apply at runtime by passing to Logging.theme where needed (MiniLogger does this internally)
-const styled = Logging.theme("debug", "logLevel", LogLevel.debug, theme);
-
-// Regular logging picks up style=true and formats output accordingly
-Logging.debug("This is a styled debug message");
+// Winston: pass custom transports or formats through LoggingConfig
+const winstonLogger = new WinstonLogger("Worker", {
+  transports: [
+    new (WinstonLogger as any).prototype.winston.transports.Console(), // or custom
+  ],
+  correlationId: "cid-1",
+});
+winstonLogger.error("Failure");
 ```
 
+## 6. Environment Accumulator & Runtime Overrides
+Description: `Environment.accumulate` builds a proxy whose properties resolve to runtime ENV variables (Node or browser) with helpers such as `keys`, `get`, and `orThrow`. Extend the shape by calling `accumulate` repeatedly; an empty string marks required values.
 
-Factory basics and because(reason, id)
-Description: Create ad-hoc, labeled loggers and use factory semantics.
-
-```ts
-import { Logging } from "@your-scope/logging";
-
-// Ad-hoc logger labeled with a reason and optional id (handy for correlation)
-const jobLog = Logging.because("reindex", "job-77");
-jobLog.info("Starting reindex");
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as App
+    participant Env as Environment.accumulate
+    participant Proxy as Env Proxy
+    participant Runtime as process.env/ENV
+    App->>Env: accumulate({ service: { host: "", port: 8080 } })
+    Env-->>Proxy: proxy w/ compose-toString keys
+    App->>Proxy: proxy.service.host
+    Proxy->>Runtime: check SERVICE__HOST
+    Runtime-->>Proxy: "api.internal"
+    Proxy-->>App: returns runtime override or default
 ```
 
+```ts
+import { Environment, LoggedEnvironment } from "@decaf-ts/logging/environment";
 
-Types: Logger and LoggingConfig in your code
-Description: Use the library’s types for better APIs.
+// Extend the singleton shape; string "" means "required"
+const Config = Environment.accumulate({
+  service: { host: "", port: 8080 },
+  logging: LoggedEnvironment,
+});
+
+console.log(String((Config as any).service.host)); // SERVICE__HOST
+console.log(Environment.keys()); // ["SERVICE", "LOGGING", ...]
+
+// Fail fast when required env is missing or empty
+const runtime = Config.orThrow();
+const serviceHost = runtime.service.host; // throws if missing at runtime
+
+// Programmatic lookups
+const verbose = Environment.get("logging.verbose");
+```
+
+## 7. LoggedClass for Drop-in Contextual Logging
+Description: Extend `LoggedClass` to gain a protected `this.log` that’s already scoped to the subclass and works with decorators, impersonation, and adapters.
 
 ```ts
-import type { Logger, LoggingConfig } from "@your-scope/logging";
+import { LoggedClass, Logging, LogLevel } from "@decaf-ts/logging";
 
-export interface ServiceDeps {
-  log: Logger;
-  config?: Partial<LoggingConfig>;
-}
+Logging.setConfig({ level: LogLevel.info });
 
-export class PaymentService {
-  constructor(private deps: ServiceDeps) {}
-  charge(amount: number) {
-    this.deps.log.info(`Charging ${amount}`);
+class EmailService extends LoggedClass {
+  async send(to: string, template: string) {
+    this.log.info(`Dispatching template=${template} to ${to}`);
+    return true;
   }
 }
+
+const svc = new EmailService();
+await svc.send("user@example.com", "welcome");
 ```
 
+## 8. StopWatch for Benchmarking
+Description: `StopWatch` uses the highest resolution clock available (browser `performance.now`, Node `process.hrtime.bigint`, or `Date.now`) to measure laps, pause/resume, and report JSON snapshots—useful for the `@benchmark` decorator or manual instrumentation.
 
-## Coding Principles
+```ts
+import { StopWatch } from "@decaf-ts/logging/time";
 
-- group similar functionality in folders (analog to namespaces but without any namespace declaration)
-- one class per file;
-- one interface per file (unless interface is just used as a type);
-- group types as other interfaces in a types.ts file per folder;
-- group constants or enums in a constants.ts file per folder;
-- group decorators in a decorators.ts file per folder;
-- always import from the specific file, never from a folder or index file (exceptions for dependencies on other packages);
-- prefer the usage of established design patters where applicable:
-  - Singleton (can be an anti-pattern. use with care);
-  - factory;
-  - observer;
-  - strategy;
-  - builder;
-  - etc;
+const sw = new StopWatch(true);
+await new Promise((r) => setTimeout(r, 15));
+sw.lap("load config");
+sw.pause();
+
+await new Promise((r) => setTimeout(r, 5)); // paused time ignored
+sw.resume();
+await new Promise((r) => setTimeout(r, 10));
+const lap = sw.lap("connect db");
+console.log(lap.ms, lap.totalMs, sw.toString());
+console.log(JSON.stringify(sw));
+```
+
+## 9. Decorators & Advanced Instrumentation
+Description: Use the stock decorators (`@log`, `@debug`, `@info`, `@verbose`, `@silly`, `@benchmark`, `@final`) or extend `@log` to emit structured entry/exit details. Decorators work with `LoggedClass` instances and plain classes alike.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Caller as Caller
+    participant Decorator as @log
+    participant Method as Original Method
+    participant Logger as Logger Proxy
+    Caller->>Decorator: invoke decorated method
+    Decorator->>Logger: log(entryMessage(args))
+    Decorator->>Method: Reflect.apply(...)
+    Method-->>Decorator: result / Promise
+    Decorator->>Logger: log(exitMessage or benchmark)
+```
+
+```ts
+import {
+  log,
+  debug,
+  info,
+  silly,
+  verbose,
+  benchmark,
+  LogLevel,
+  LoggedClass,
+} from "@decaf-ts/logging";
+
+class CustomLogDecorator {
+  static payload(label: string) {
+    return log(
+      LogLevel.info,
+      0,
+      (...args) => `${label}: ${JSON.stringify(args)}`,
+      (err, result) =>
+        err ? `${label} failed: ${err.message}` : `${label} ok: ${result}`
+    );
+  }
+}
+
+class BillingService extends LoggedClass {
+  @CustomLogDecorator.payload("charge")
+  @benchmark()
+  async charge(userId: string, amount: number) {
+    if (amount <= 0) throw new Error("invalid amount");
+    return `charged:${userId}:${amount}`;
+  }
+
+  @debug()
+  rebuildIndex() {}
+
+  @info()
+  activate() {}
+
+  @silly()
+  ping() {}
+
+  @verbose(1)
+  sync() {}
+}
+
+const svc = new BillingService();
+await svc.charge("u-1", 25);
+```
+
+## 10. Utility Modules (text, time, utils, web)
+Description: Helper functions complement logging by formatting identifiers, generating ENV keys, and detecting runtimes.
+
+```ts
+import {
+  padEnd,
+  patchPlaceholders,
+  sf,
+  toCamelCase,
+  toENVFormat,
+  toSnakeCase,
+  toKebabCase,
+  toPascalCase,
+} from "@decaf-ts/logging/text";
+import { formatMs, now } from "@decaf-ts/logging/time";
+import { getObjectName, isClass, isFunction, isInstance } from "@decaf-ts/logging/utils";
+import { isBrowser } from "@decaf-ts/logging/web";
+
+const padded = padEnd("id", 5, "_");               // "id___"
+const greeting = patchPlaceholders("Hello ${name}", { name: "Ada" });
+const formatted = sf("{0}-{name}", "A", { name: "B" });
+const snake = toSnakeCase("HelloWorld Test");      // "hello_world_test"
+const envKey = toENVFormat("service.host");        // "SERVICE_HOST"
+const camel = toCamelCase("hello world");
+const pascal = toPascalCase("hello world");
+const kebab = toKebabCase("Hello World");
+
+const duration = formatMs(now() - now()); // hh:mm:ss.mmm string
+const typeName = getObjectName(new (class Repo {})());
+const runtimeIsBrowser = isBrowser();
+const plainFn = () => true;
+console.log(isFunction(plainFn), isClass(class A {}), isInstance({})); // type guards
+```
 
 
 ### Related

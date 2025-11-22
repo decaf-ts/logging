@@ -53,7 +53,7 @@
     "repo:tests": "npm run codex -- \"$(cat ./workdocs/ai/bulk-tests.md)\nbase_path is ./ and coverage is 95%\"",
     "repo:notes": "npm run codex -- \"$(cat ./workdocs/ai/release-notes.md)\nbase_path is ./\"",
     "repo:readme": "npm run codex -- \"$(cat ./workdocs/ai/update-readme.md)\nbase_path is ./\"",
-    "repo:pr": "npm run repo:doc && npm run repo:tests && npm run repo:readme",
+    "repo:pr": "npm run repo:doc && npm run repo:tests && npm run repo:notes && npm run repo:readme",
     "codex": "codex -s workspace-write exec"
   },
   "repository": {
