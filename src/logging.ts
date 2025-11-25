@@ -14,7 +14,7 @@ import { sf } from "./text";
 import { LoggedEnvironment } from "./environment";
 import { getObjectName, isClass, isFunction, isInstance } from "./utils";
 
-const ROOT_CONTEXT_SYMBOL = Symbol("MiniLoggerRootContext");
+export const ROOT_CONTEXT_SYMBOL = Symbol("MiniLoggerRootContext");
 
 /**
  * @description A minimal logger implementation.
