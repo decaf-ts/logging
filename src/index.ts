@@ -9,6 +9,7 @@ export * from "./time";
 export * from "./types";
 export * from "./web";
 export * from "./utils";
+export * from "styled-string-builder";
 
 /**
  * @module Logging
