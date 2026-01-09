@@ -8,14 +8,21 @@ import { Logging, MiniLogger } from "../logging";
 import { Logger, LoggerFactory, LoggingConfig, StringLike } from "../types";
 import { LogLevel } from "../constants";
 
-type PinoLogMethod = "trace" | "debug" | "info" | "warn" | "error" | "fatal";
+type PinoLogMethod =
+  | "trace"
+  | "debug"
+  | "info"
+  | "warn"
+  | "error"
+  | "verbose"
+  | "fatal";
 
 const LogLevelToPino: Record<LogLevel, PinoLogMethod> = {
   [LogLevel.benchmark]: "info",
   [LogLevel.error]: "error",
   [LogLevel.warn]: "warn",
   [LogLevel.info]: "info",
-  [LogLevel.verbose]: "debug",
+  [LogLevel.verbose]: "info",
   [LogLevel.debug]: "debug",
   [LogLevel.trace]: "trace",
   [LogLevel.silly]: "trace",
@@ -55,9 +62,7 @@ const buildPinoOptions = (
   };
   if (!options.level) options.level = toPinoLevel(config.level);
   if (!options.name) options.name = context;
-  options.timestamp = config.timestamp
-    ? () => new Date().toISOString()
-    : false;
+  options.timestamp = config.timestamp ? () => new Date().toISOString() : false;
   return options;
 };
 
@@ -102,7 +107,11 @@ export class PinoLogger extends MiniLogger implements Logger {
     }
 
     const globalConfig = Logging.getConfig();
-    const config = Object.assign({}, globalConfig, this.conf || {}) as LoggingConfig<DestinationStream>;
+    const config = Object.assign(
+      {},
+      globalConfig,
+      this.conf || {}
+    ) as LoggingConfig<DestinationStream>;
 
     const separator =
       (config.contextSeparator as string) ||
@@ -125,7 +134,7 @@ export class PinoLogger extends MiniLogger implements Logger {
   ): void {
     const formatted = this.createLog(level, msg, error);
     const methodName = toPinoLevel(level);
-    const emitter = this.pino[methodName];
+    const emitter = this.pino[methodName as keyof typeof this.pino];
 
     if (typeof emitter === "function") {
       (emitter as (payload: unknown) => void).call(this.pino, formatted);

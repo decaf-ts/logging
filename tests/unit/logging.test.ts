@@ -35,8 +35,7 @@ jest.mock("styled-string-builder", () => {
 
 const rootFactory = (context?: string, conf?: Partial<LoggingConfig>) => {
   const base =
-    typeof LoggedEnvironment.app === "string" &&
-    LoggedEnvironment.app?.length
+    typeof LoggedEnvironment.app === "string" && LoggedEnvironment.app?.length
       ? [LoggedEnvironment.app as string]
       : [];
   return new MiniLogger(context, conf, base);
@@ -393,8 +392,8 @@ describe("MiniLogger", () => {
       Logging.setConfig({ level: LogLevel.verbose });
       // Access the protected log method using type assertion
       (logger as any).log(LogLevel.verbose, "Test verbose message");
-      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test verbose message")
       );
     });
@@ -449,8 +448,8 @@ describe("MiniLogger", () => {
     it("should log verbose messages if verbosity is sufficient", () => {
       Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       logger.verbose("Test verbose message", 1);
-      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test verbose message")
       );
     });
@@ -655,8 +654,8 @@ describe("Logging", () => {
     it("should log verbose messages", () => {
       Logging.setConfig({ verbose: 1, level: LogLevel.verbose });
       Logging.verbose("Test verbose message", 1);
-      expect(consoleDebugSpy).toHaveBeenCalledTimes(1);
-      expect(consoleDebugSpy).toHaveBeenCalledWith(
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test verbose message")
       );
     });

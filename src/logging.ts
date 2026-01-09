@@ -313,9 +313,9 @@ export class MiniLogger implements Logger {
         method = console.log;
         break;
       case LogLevel.info:
+      case LogLevel.verbose:
         method = console.log;
         break;
-      case LogLevel.verbose:
       case LogLevel.debug:
         method = console.debug;
         break;
