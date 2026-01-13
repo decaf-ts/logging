@@ -90,7 +90,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  silly(msg: StringLike, meta?: LogMeta): void;
+  silly(msg: StringLike, verbosity?: number | LogMeta, meta?: LogMeta): void;
 
   /**
    * @description Logs developer trace messages.
@@ -127,11 +127,7 @@ export interface Logger
    * @param {Error} [e] - Optional secondary error or cause.
    * @return {void}
    */
-  error(
-    msg: StringLike | Error,
-    error?: Error | LogMeta,
-    meta?: LogMeta
-  ): void;
+  error(msg: StringLike | Error, error?: Error | LogMeta, meta?: LogMeta): void;
 
   /**
    * @description Logs a debug message.

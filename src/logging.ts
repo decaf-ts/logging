@@ -312,6 +312,7 @@ export class MiniLogger implements Logger {
   private formatMeta(meta: LogMeta): string {
     try {
       return JSON.stringify(meta);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err: unknown) {
       return String(meta);
     }
