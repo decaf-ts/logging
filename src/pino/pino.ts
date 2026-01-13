@@ -5,7 +5,13 @@ import pino, {
   multistream,
 } from "pino";
 import { Logging, MiniLogger } from "../logging";
-import { Logger, LoggerFactory, LoggingConfig, StringLike } from "../types";
+import {
+  Logger,
+  LoggerFactory,
+  LogMeta,
+  LoggingConfig,
+  StringLike,
+} from "../types";
 import { LogLevel } from "../constants";
 
 type PinoLogMethod =
@@ -130,9 +136,10 @@ export class PinoLogger extends MiniLogger implements Logger {
   protected override log(
     level: LogLevel,
     msg: StringLike | Error,
-    error?: Error
+    error?: Error,
+    meta?: LogMeta
   ): void {
-    const formatted = this.createLog(level, msg, error);
+    const formatted = this.createLog(level, msg, error, meta);
     const methodName = toPinoLevel(level);
     const emitter = this.pino[methodName as keyof typeof this.pino];
 
@@ -149,13 +156,13 @@ export class PinoLogger extends MiniLogger implements Logger {
     }
   }
 
-  fatal(msg: StringLike | Error, error?: Error): void {
-    const formatted = this.createLog(LogLevel.error, msg, error);
+  fatal(msg: StringLike | Error, error?: Error, meta?: LogMeta): void {
+    const formatted = this.createLog(LogLevel.error, msg, error, meta);
     const fatal = (this.pino as any).fatal;
     if (typeof fatal === "function") {
       (fatal as (payload: unknown) => void).call(this.pino, formatted);
     } else {
-      this.error(msg, error);
+      this.error(msg, error, meta);
     }
   }
 

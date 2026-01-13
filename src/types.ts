@@ -9,6 +9,8 @@ import { LoggingMode, LogLevel } from "./constants";
  */
 export type StringLike = string | { toString: () => string };
 
+export type LogMeta = Record<string, unknown>;
+
 /**
  * @description A generic function signature for loosely typed callbacks.
  * @summary This type covers variadic functions where the arguments and return types are not constrained, which enables the logging layer to accept any callable.
@@ -80,7 +82,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  benchmark(msg: StringLike): void;
+  benchmark(msg: StringLike, meta?: LogMeta): void;
 
   /**
    * @description Logs a `way too verbose` or a silly message.
@@ -88,7 +90,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  silly(msg: StringLike): void;
+  silly(msg: StringLike, meta?: LogMeta): void;
 
   /**
    * @description Logs developer trace messages.
@@ -96,7 +98,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  trace(msg: StringLike): void;
+  trace(msg: StringLike, meta?: LogMeta): void;
   /**
    * @description Logs a verbose message.
    * @summary Writes diagnostic output governed by the configured verbosity threshold.
@@ -104,7 +106,11 @@ export interface Logger
    * @param {number} [verbosity] - Verbosity level required for the message to pass through.
    * @return {void}
    */
-  verbose(msg: StringLike, verbosity?: number): void;
+  verbose(
+    msg: StringLike,
+    verbosityOrMeta?: number | LogMeta,
+    meta?: LogMeta
+  ): void;
 
   /**
    * @description Logs an info message.
@@ -112,7 +118,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  info(msg: StringLike): void;
+  info(msg: StringLike, meta?: LogMeta): void;
 
   /**
    * @description Logs an error message.
@@ -121,7 +127,11 @@ export interface Logger
    * @param {Error} [e] - Optional secondary error or cause.
    * @return {void}
    */
-  error(msg: StringLike | Error, e?: Error): void;
+  error(
+    msg: StringLike | Error,
+    error?: Error | LogMeta,
+    meta?: LogMeta
+  ): void;
 
   /**
    * @description Logs a debug message.
@@ -129,7 +139,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  debug(msg: StringLike): void;
+  debug(msg: StringLike, meta?: LogMeta): void;
 
   /**
    * @description Logs a debug message.
@@ -137,7 +147,7 @@ export interface Logger
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */
-  warn(msg: StringLike): void;
+  warn(msg: StringLike, meta?: LogMeta): void;
 
   /**
    * @description Creates a new logger for a specific method or context.
@@ -236,6 +246,7 @@ export type LoggingConfig<TRANSPORT = object> = {
   timestamp?: boolean;
   timestampFormat?: string;
   context?: boolean;
+  meta?: boolean;
   theme?: Theme;
   format: LoggingMode;
   pattern: string;

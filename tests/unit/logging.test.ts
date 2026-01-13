@@ -1,10 +1,12 @@
 import * as styledString from "styled-string-builder";
 import {
   DefaultLoggingConfig,
+  LogLevel,
+  LoggingMode,
+  LogMeta,
   MiniLogger,
   Logging,
   LoggingConfig,
-  LogLevel,
   Theme,
   LoggedEnvironment,
 } from "../../src";
@@ -223,6 +225,24 @@ describe("MiniLogger", () => {
         "TestContext",
       ]);
     });
+
+    it("respects meta visibility overrides from child loggers", () => {
+      const metaPayload: LogMeta = { requestId: "abc" };
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        format: LoggingMode.RAW,
+        pattern: "{message}",
+        meta: true,
+      });
+      const child = logger.for("metaChild", { meta: false });
+      const logString = (child as any).createLog(
+        LogLevel.info,
+        "meta message",
+        undefined,
+        metaPayload
+      );
+      expect(logString).not.toContain(JSON.stringify(metaPayload));
+    });
   });
 
   describe("clear", () => {
@@ -367,6 +387,59 @@ describe("MiniLogger", () => {
 
       (LoggedEnvironment as any).app = prev;
     });
+
+    it("appends metadata when meta output is enabled in raw mode", () => {
+      const metaPayload: LogMeta = { requestId: "abc" };
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        format: LoggingMode.RAW,
+        pattern: "{message}",
+        meta: true,
+      });
+      const logString = (logger as any).createLog(
+        LogLevel.info,
+        "raw meta",
+        undefined,
+        metaPayload
+      );
+      expect(logString).toBe(
+        `raw meta ${JSON.stringify(metaPayload)}`
+      );
+    });
+
+    it("includes metadata in json output when enabled", () => {
+      const metaPayload: LogMeta = { requestId: "xyz" };
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        format: LoggingMode.JSON,
+        meta: true,
+      });
+      const logString = (logger as any).createLog(
+        LogLevel.info,
+        "json meta",
+        undefined,
+        metaPayload
+      );
+      const parsed = JSON.parse(logString);
+      expect(parsed.meta).toEqual(metaPayload);
+    });
+
+    it("does not emit metadata when the meta flag is disabled", () => {
+      const metaPayload: LogMeta = { requestId: "abc" };
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        format: LoggingMode.RAW,
+        pattern: "{message}",
+        meta: false,
+      });
+      const logString = (logger as any).createLog(
+        LogLevel.info,
+        "silent meta",
+        undefined,
+        metaPayload
+      );
+      expect(logString).not.toContain(JSON.stringify(metaPayload));
+    });
   });
 
   describe("log", () => {
@@ -459,6 +532,24 @@ describe("MiniLogger", () => {
       logger.verbose("Test verbose message", 1);
       expect(consoleDebugSpy).not.toHaveBeenCalled();
     });
+
+    it("includes metadata when provided as the second argument", () => {
+      const metaPayload: LogMeta = { requestId: "abc" };
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose, meta: true });
+      logger.verbose("Meta payload", metaPayload);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
+      );
+    });
+
+    it("includes metadata when provided alongside verbosity", () => {
+      const metaPayload: LogMeta = { requestId: "xyz" };
+      Logging.setConfig({ verbose: 1, level: LogLevel.verbose, meta: true });
+      logger.verbose("Meta payload", 0, metaPayload);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
+      );
+    });
   });
 
   describe("info", () => {
@@ -497,6 +588,23 @@ describe("MiniLogger", () => {
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test error object")
+      );
+    });
+
+    it("includes metadata when provided without an Error instance", () => {
+      const metaPayload: LogMeta = { requestId: "meta" };
+      logger.error("Meta entry", metaPayload);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
+      );
+    });
+
+    it("includes metadata when provided alongside an Error", () => {
+      const metaPayload: LogMeta = { requestId: "meta" };
+      const err = new Error("boom");
+      logger.error("Meta entry", err, metaPayload);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
       );
     });
   });
@@ -697,7 +805,10 @@ describe("Logging", () => {
 
       Logging.warn("Test warn message");
 
-      expect(stubLogger.warn).toHaveBeenCalledWith("Test warn message");
+      expect(stubLogger.warn).toHaveBeenCalledWith(
+        "Test warn message",
+        undefined
+      );
 
       (Logging as any).global = originalGlobal;
     });
@@ -711,7 +822,10 @@ describe("Logging", () => {
 
       Logging.trace("trace payload");
 
-      expect(stubLogger.trace).toHaveBeenCalledWith("trace payload");
+      expect(stubLogger.trace).toHaveBeenCalledWith(
+        "trace payload",
+        undefined
+      );
 
       (Logging as any).global = originalGlobal;
     });
@@ -721,6 +835,24 @@ describe("Logging", () => {
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Test error message")
+      );
+    });
+
+    it("propagates metadata when verbose is called with metadata", () => {
+      const metaPayload: LogMeta = { requestId: "logging-meta" };
+      Logging.setConfig({ level: LogLevel.verbose, verbose: 1, meta: true });
+      Logging.verbose("Meta verbose", metaPayload);
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
+      );
+    });
+
+    it("propagates metadata when error is called with metadata and an Error", () => {
+      const metaPayload: LogMeta = { requestId: "logging-error" };
+      const err = new Error("boom");
+      Logging.error("Meta error", err, metaPayload);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining(JSON.stringify(metaPayload))
       );
     });
   });
@@ -771,7 +903,7 @@ describe("Logging", () => {
     expect(() => Logging.benchmark("payload")).toThrow(
       "benchmark not implemented"
     );
-    expect(fakeLogger.benchmark).toHaveBeenCalledWith("payload");
+    expect(fakeLogger.benchmark).toHaveBeenCalledWith("payload", undefined);
 
     (Logging as any)._factory = originalFactory;
     (Logging as any).global = originalGlobal;

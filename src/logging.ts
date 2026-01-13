@@ -2,6 +2,7 @@ import {
   LoggerFactory,
   LoggingConfig,
   LoggingContext,
+  LogMeta,
   StringLike,
   Theme,
   ThemeOption,
@@ -196,7 +197,8 @@ export class MiniLogger implements Logger {
   protected createLog(
     level: LogLevel,
     message: StringLike | Error,
-    error?: Error
+    error?: Error,
+    meta?: LogMeta
   ): string {
     const log: Record<
       | "timestamp"
@@ -206,8 +208,9 @@ export class MiniLogger implements Logger {
       | "message"
       | "separator"
       | "stack"
-      | "app",
-      string
+      | "app"
+      | "meta",
+      string | LogMeta
     > = {} as any;
     const style = this.config("style");
     const separator = this.config("separator");
@@ -266,6 +269,14 @@ export class MiniLogger implements Logger {
         ? message
         : (message as Error).message;
     log.message = msg;
+    const showMeta = Boolean(this.config("meta"));
+    const metaPayload = showMeta && meta ? meta : undefined;
+    const metaString = metaPayload ? this.formatMeta(metaPayload) : undefined;
+
+    if (metaPayload) {
+      log.meta = metaPayload;
+    }
+
     if (error || message instanceof Error) {
       const stack = style
         ? Logging.theme(
@@ -280,8 +291,8 @@ export class MiniLogger implements Logger {
     switch (this.config("format")) {
       case "json":
         return JSON.stringify(log);
-      case "raw":
-        return (this.config("pattern") as string)
+      case "raw": {
+        const generated = (this.config("pattern") as string)
           .split(" ")
           .map((s) => {
             if (!s.match(/\{.*?}/g)) return s;
@@ -291,8 +302,18 @@ export class MiniLogger implements Logger {
           })
           .filter((s) => s)
           .join(" ");
+        return metaString ? `${generated} ${metaString}` : generated;
+      }
       default:
         throw new Error(`Unsupported logging format: ${this.config("format")}`);
+    }
+  }
+
+  private formatMeta(meta: LogMeta): string {
+    try {
+      return JSON.stringify(meta);
+    } catch (err: unknown) {
+      return String(meta);
     }
   }
 
@@ -304,7 +325,12 @@ export class MiniLogger implements Logger {
    * @param {Error} [error] - Optional stack trace to include in the log.
    * @return {void}
    */
-  protected log(level: LogLevel, msg: StringLike | Error, error?: Error): void {
+  protected log(
+    level: LogLevel,
+    msg: StringLike | Error,
+    error?: Error,
+    meta?: LogMeta
+  ): void {
     const confLvl = this.config("level") as LogLevel;
     if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
     let method;
@@ -334,17 +360,18 @@ export class MiniLogger implements Logger {
       default:
         throw new Error("Invalid log level");
     }
-    method(this.createLog(level, msg, error));
+    method(this.createLog(level, msg, error, meta));
   }
 
   /**
    * @description Logs a message at the benchmark level.
    * @summary Logs a message at the benchmark level if the current verbosity setting allows it.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  benchmark(msg: StringLike): void {
-    this.log(LogLevel.benchmark, msg);
+  benchmark(msg: StringLike, meta?: LogMeta): void {
+    this.log(LogLevel.benchmark, msg, undefined, meta);
   }
 
   /**
@@ -352,11 +379,19 @@ export class MiniLogger implements Logger {
    * @summary Logs a message at the silly level if the current verbosity setting allows it.
    * @param {StringLike} msg - The message to be logged.
    * @param {number} [verbosity=0] - The verbosity level of the message.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  silly(msg: StringLike, verbosity: number = 0): void {
+  silly(
+    msg: StringLike,
+    verbosityOrMeta: number | LogMeta = 0,
+    meta?: LogMeta
+  ): void {
+    const verbosity = typeof verbosityOrMeta === "number" ? verbosityOrMeta : 0;
+    const payloadMeta =
+      typeof verbosityOrMeta === "number" ? meta : verbosityOrMeta;
     if ((this.config("verbose") as number) >= verbosity)
-      this.log(LogLevel.silly, msg);
+      this.log(LogLevel.silly, msg, undefined, payloadMeta);
   }
 
   /**
@@ -364,62 +399,83 @@ export class MiniLogger implements Logger {
    * @summary Logs a message at the verbose level if the current verbosity setting allows it.
    * @param {StringLike} msg - The message to be logged.
    * @param {number} [verbosity=0] - The verbosity level of the message.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  verbose(msg: StringLike, verbosity: number = 0): void {
+  verbose(
+    msg: StringLike,
+    verbosityOrMeta: number | LogMeta = 0,
+    meta?: LogMeta
+  ): void {
+    const verbosity = typeof verbosityOrMeta === "number" ? verbosityOrMeta : 0;
+    const payloadMeta =
+      typeof verbosityOrMeta === "number" ? meta : verbosityOrMeta;
     if ((this.config("verbose") as number) >= verbosity)
-      this.log(LogLevel.verbose, msg);
+      this.log(LogLevel.verbose, msg, undefined, payloadMeta);
   }
 
   /**
    * @description Logs a message at the info level.
    * @summary Logs a message at the info level for general application information.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  info(msg: StringLike): void {
-    this.log(LogLevel.info, msg);
+  info(msg: StringLike, meta?: LogMeta): void {
+    this.log(LogLevel.info, msg, undefined, meta);
   }
 
   /**
    * @description Logs a message at the debug level.
    * @summary Logs a message at the debug level for detailed troubleshooting information.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  debug(msg: StringLike): void {
-    this.log(LogLevel.debug, msg);
+  debug(msg: StringLike, meta?: LogMeta): void {
+    this.log(LogLevel.debug, msg, undefined, meta);
   }
 
   /**
    * @description Logs a message at the error level.
    * @summary Logs a message at the error level for errors and exceptions.
    * @param {StringLike | Error} msg - The message to be logged or an Error object.
-   * @param {Error} [e] - Optional error to include in the log.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
    * @return {void}
    */
-  error(msg: StringLike | Error, e?: Error): void {
-    this.log(LogLevel.error, msg, e);
+  error(msg: StringLike | Error, e?: Error | LogMeta, meta?: LogMeta): void {
+    let errorCandidate: Error | undefined;
+    let payloadMeta: LogMeta | undefined;
+    if (e instanceof Error) {
+      errorCandidate = e;
+      payloadMeta = meta;
+    } else {
+      payloadMeta = e;
+    }
+    this.log(LogLevel.error, msg, errorCandidate, payloadMeta);
   }
 
   /**
    * @description Logs a message at the warning level.
    * @summary Logs a message at the warning level for potential issues.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  warn(msg: StringLike): void {
-    this.log(LogLevel.warn, msg);
+  warn(msg: StringLike, meta?: LogMeta): void {
+    this.log(LogLevel.warn, msg, undefined, meta);
   }
 
   /**
    * @description Logs a message at the trace level.
    * @summary Logs a message at the trace level for tracing code execution.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  trace(msg: StringLike): void {
-    this.log(LogLevel.trace, msg);
+  trace(msg: StringLike, meta?: LogMeta): void {
+    this.log(LogLevel.trace, msg, undefined, meta);
   }
 
   /**
@@ -581,82 +637,103 @@ export class Logging {
    * @description Logs a verbose message.
    * @summary Delegates the verbose logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
-   * @param {number} [verbosity=0] - The verbosity level of the message.
+   * @param {number|object} [verbosity] - The verbosity level or metadata object.
+   * @param {object} [meta] - Optional metadata applied when a verbosity level is provided.
    * @return {void}
    */
-  static verbose(msg: StringLike, verbosity: number = 0): void {
-    return this.get().verbose(msg, verbosity);
+  static verbose(
+    msg: StringLike,
+    verbosityOrMeta: number | LogMeta = 0,
+    meta?: LogMeta
+  ): void {
+    return this.get().verbose(msg, verbosityOrMeta, meta);
   }
 
   /**
    * @description Logs an info message.
    * @summary Delegates the info logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  static info(msg: StringLike): void {
-    return this.get().info(msg);
+  static info(msg: StringLike, meta?: LogMeta): void {
+    return this.get().info(msg, meta);
   }
 
   /**
    * @description Logs a trace message.
    * @summary Delegates the trace logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  static trace(msg: StringLike): void {
-    return this.get().trace(msg);
+  static trace(msg: StringLike, meta?: LogMeta): void {
+    return this.get().trace(msg, meta);
   }
 
   /**
    * @description Logs a debug message.
    * @summary Delegates the debug logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  static debug(msg: StringLike): void {
-    return this.get().debug(msg);
+  static debug(msg: StringLike, meta?: LogMeta): void {
+    return this.get().debug(msg, meta);
   }
 
   /**
    * @description Logs a benchmark message.
    * @summary Delegates the benchmark logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  static benchmark(msg: StringLike): void {
-    return this.get().benchmark(msg);
+  static benchmark(msg: StringLike, meta?: LogMeta): void {
+    return this.get().benchmark(msg, meta);
   }
 
   /**
    * @description Logs a silly message.
    * @summary Delegates the silly logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {number|object} [verbosity] - The verbosity level or metadata object.
+   * @param {object} [meta] - Optional metadata applied when a verbosity level is provided.
    * @return {void}
    */
-  static silly(msg: StringLike): void {
-    return this.get().silly(msg);
+  static silly(
+    msg: StringLike,
+    verbosityOrMeta: number | LogMeta = 0,
+    meta?: LogMeta
+  ): void {
+    return this.get().silly(msg, verbosityOrMeta, meta);
   }
 
   /**
    * @description Logs a warning message.
    * @summary Delegates the warning logging to the global logger instance.
    * @param {StringLike} msg - The message to be logged.
+   * @param {object} [meta] - Optional metadata to include with the entry.
    * @return {void}
    */
-  static warn(msg: StringLike): void {
-    return this.get().warn(msg);
+  static warn(msg: StringLike, meta?: LogMeta): void {
+    return this.get().warn(msg, meta);
   }
 
   /**
    * @description Logs an error message.
    * @summary Delegates the error logging to the global logger instance.
    * @param {StringLike | Error} msg - The message to be logged.
-   * @param {Error} [e] - Optional error to include in the log.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
    * @return {void}
    */
-  static error(msg: StringLike | Error, e?: Error): void {
-    return this.get().error(msg, e);
+  static error(
+    msg: StringLike | Error,
+    e?: Error | LogMeta,
+    meta?: LogMeta
+  ): void {
+    return this.get().error(msg, e, meta);
   }
 
   /**

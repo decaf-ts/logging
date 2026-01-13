@@ -577,4 +577,19 @@ describe("PinoLogger", () => {
     expect(format).toBeDefined();
     expect(logEntry?.message).toContain("INFO|Compat|message");
   });
+
+  it("appends metadata to log output when configured", () => {
+    const metaPayload = { traceId: "meta" };
+    Logging.setConfig({
+      ...DefaultLoggingConfig,
+      format: LoggingMode.RAW,
+      pattern: "{message}",
+      meta: true,
+    });
+    const logger = new PinoLogger("Ctx");
+    logger.info("payload", metaPayload);
+    const pinoInstance = getPinoInstances()[0];
+    const logged = pinoInstance?.__calls.info.at(-1);
+    expect(logged).toContain(JSON.stringify(metaPayload));
+  });
 });

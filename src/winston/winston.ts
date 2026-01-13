@@ -1,6 +1,12 @@
 import winston, { LogEntry, LoggerOptions } from "winston";
 import Transport from "winston-transport";
-import { Logger, LoggerFactory, LoggingConfig, StringLike } from "../types";
+import {
+  Logger,
+  LoggerFactory,
+  LogMeta,
+  LoggingConfig,
+  StringLike,
+} from "../types";
 import { Logging, MiniLogger } from "../logging";
 import { LogLevel } from "../constants";
 
@@ -64,11 +70,12 @@ export class WinstonLogger extends MiniLogger implements Logger {
   protected override log(
     level: LogLevel,
     msg: StringLike | Error,
-    error?: Error
+    error?: Error,
+    meta?: LogMeta
   ) {
     const logData: LogEntry = {
       level: level,
-      message: this.createLog(level, msg, error),
+      message: this.createLog(level, msg, error, meta),
     };
     if (this.config("correlationId"))
       logData["correlationId"] = this.config("correlationId");

@@ -1,4 +1,4 @@
-import { DefaultLoggingConfig, Logging } from "../../src";
+import { DefaultLoggingConfig, Logging, LoggingMode } from "../../src";
 import {
   WinstonFactory,
   WinstonLogger,
@@ -97,5 +97,19 @@ describe("WinstonLogger (unit)", () => {
 
   it("factory returns WinstonLogger instances", () => {
     expect(WinstonFactory("Ctx")).toBeInstanceOf(WinstonLogger);
+  });
+
+  it("appends metadata to log entries when configured", () => {
+    const payload = { traceId: "meta" };
+    Logging.setConfig({
+      ...DefaultLoggingConfig,
+      format: LoggingMode.RAW,
+      pattern: "{message}",
+      meta: true,
+    });
+    const logger = new WinstonLogger("Ctx");
+    logger.info("message", payload);
+    const logEntry = logSpy.mock.calls.at(-1)?.[0] as { message: string };
+    expect(logEntry?.message).toContain(JSON.stringify(payload));
   });
 });

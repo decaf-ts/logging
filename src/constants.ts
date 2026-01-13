@@ -168,6 +168,7 @@ export const DefaultLoggingConfig: LoggingConfig = {
   timestamp: true,
   timestampFormat: "HH:mm:ss.SSS",
   context: true,
+  meta: true,
   format: LoggingMode.RAW,
   pattern:
     "{level} [{timestamp}] {app} {context} {separator} {message} {stack}",
