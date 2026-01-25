@@ -1,3 +1,8 @@
+/**
+ * @module Logging
+ * @description A comprehensive and versatile logging toolkit for both browser and Node.js environments.
+ * @summary This module provides a complete logging solution, exposing {@link Logging} and {@link MiniLogger} for runtime logging. It also includes decorators like {@link log} for method instrumentation, and various utilities such as {@link PatternFilter}, {@link StopWatch}, and {@link LoggedEnvironment} to help build configurable and theme-aware log pipelines.
+ */
 export * from "./filters";
 export * from "./constants";
 export * from "./decorators";
@@ -10,12 +15,6 @@ export * from "./types";
 export * from "./web";
 export * from "./utils";
 export * from "styled-string-builder";
-
-/**
- * @module Logging
- * @description A comprehensive and versatile logging toolkit for both browser and Node.js environments.
- * @summary This module provides a complete logging solution, exposing {@link Logging} and {@link MiniLogger} for runtime logging. It also includes decorators like {@link log} for method instrumentation, and various utilities such as {@link PatternFilter}, {@link StopWatch}, and {@link LoggedEnvironment} to help build configurable and theme-aware log pipelines.
- */
 
 /**
  * @description Current package version string.
