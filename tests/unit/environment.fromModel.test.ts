@@ -20,24 +20,23 @@ describe("Environment.proxy", () => {
     const env = Environment.accumulate({ service: { host: "", port: 0 } });
 
     expect((env as any).service.host).toBeUndefined();
-    expect(String((env as any).service.port)).toBe(
-      ["SERVICE", "PORT"].join(ENV_PATH_DELIMITER)
-    );
+    expect(env.service.port).toBe(0);
   });
 
   it("supports template string coercion for any depth", () => {
     const env = Environment.accumulate({ a: { b: { c: 1 } } });
     expect(`${(env as any).a}`).toBe("A");
     expect(`${(env as any).a.b}`).toBe("A__B");
-    expect(`${(env as any).a.b.c}`).toBe("A__B__C");
+    expect(env.a.b.c).toBe(1);
+    expect(typeof env.a.b.c).toBe("number");
   });
 
   it("supports explicit toString() and valueOf() coercion", () => {
     const env = Environment.accumulate({ x: { y: true } });
     expect(((env as any).x as any).toString()).toBe("X");
-    expect(((env as any).x.y as any).toString()).toBe("X__Y");
     // valueOf should also return the composed key
     expect(((env as any).x as any).valueOf()).toBe("X");
+    expect(env.x.y).toBe(true);
   });
 
   it("getOwnPropertyDescriptor returns undefined when key not in model", () => {
@@ -84,6 +83,12 @@ describe("Environment.proxy", () => {
     }
   });
 
+  it("parses numeric value regardless", () => {
+    const env = Environment.accumulate({ service2: { port: 0 } });
+    expect(env.service2.port).toBe(0);
+    expect(typeof env.service2.port).toBe("number");
+  });
+
   it("parses boolean overrides from ENV when returning proxy leaves", () => {
     const envKey = "SERVICE__ENABLED";
     const previous = process.env[envKey];
@@ -106,9 +111,13 @@ describe("Environment.proxy", () => {
 
     expect((env as any).top).toBeUndefined();
     expect((env as any).nested.leaf).toBeUndefined();
-    // ensure other non-undefined leaf still composes
-    expect(String((env as any).nested.other)).toBe(
-      ["NESTED", "OTHER"].join(ENV_PATH_DELIMITER)
-    );
+    expect(env.nested.other).toBe(1);
+    expect(typeof env.nested.other).toBe("number");
+  });
+
+  it("parses boolean value regardless", () => {
+    const env = Environment.accumulate({ service3: { port: true } });
+    expect(env.service3.port).toBe(true);
+    expect(typeof env.service3.port).toBe("boolean");
   });
 });

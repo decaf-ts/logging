@@ -151,7 +151,7 @@ describe("Environment", () => {
     const env = Environment.accumulate({ service: { host: "localhost" } });
     const service = (env as any).service;
     expect(`${service}`).toBe("SERVICE");
-    expect(`${service.host}`).toBe("SERVICE__HOST");
+    expect(service.host).toBe("localhost");
   });
 
   it("Environment.get returns accumulated value by key path", () => {

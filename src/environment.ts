@@ -402,13 +402,18 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           return Environment.parseRuntimeValue(envValue);
 
         // Otherwise, if the model has an object at this path, keep drilling with a proxy
-        const isNextObject = nextModel && typeof nextModel === "object";
+        const isNextObject =
+          nextModel &&
+          typeof nextModel === "object" &&
+          !Array.isArray(nextModel);
         if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
 
-        // If the model marks this leaf as an empty string, treat as undefined (no proxy)
         if (hasProp && nextModel === "") return undefined;
-        // If the model explicitly contains the property with value undefined, treat as undefined (no proxy)
         if (hasProp && typeof nextModel === "undefined") return undefined;
+
+        if (hasProp) {
+          return Environment.parseRuntimeValue(nextModel);
+        }
 
         // Always return a proxy for further path composition when no ENV value;
         // do not surface primitive model defaults here (this API is for key composition).
