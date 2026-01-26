@@ -125,8 +125,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     if (typeof val !== "string") return val;
     if (val === "true") return true;
     if (val === "false") return false;
-    const result = parseFloat(val);
-    if (!Number.isNaN(result)) return result;
+    const trimmed = val.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+      return Number(trimmed);
+    }
     return val;
   }
 

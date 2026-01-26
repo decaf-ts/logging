@@ -120,4 +120,37 @@ describe("Environment.proxy", () => {
     expect(env.service3.port).toBe(true);
     expect(typeof env.service3.port).toBe("boolean");
   });
+
+  it("handles custom stuff", () => {
+    const env = Environment.accumulate({
+      tls: {
+        image:
+          "dregistry.pdmfc.com/pdmfcsa/ptp-infrastructure:fabric-ca-clean-latest",
+        port: 7000,
+        test: false,
+        operationsAddress: "127.0.0.1:8010",
+        csrHosts:
+          "0.0.0.0,localhost,127.0.0.1,pharmaledgerassoc-tls,*.pharmaledgerassoc.org",
+        user: "pharmaledgerassoc.tls",
+        secret: "SomeRandomPassword",
+      },
+    });
+
+    expect(typeof env.tls.user).toBe("string");
+    expect(env.tls.user).toBe("pharmaledgerassoc.tls");
+    expect(typeof env.tls.secret).toBe("string");
+    expect(env.tls.secret).toBe("SomeRandomPassword");
+    expect(typeof env.tls.csrHosts).toBe("string");
+    expect(env.tls.csrHosts).toBe(
+      "0.0.0.0,localhost,127.0.0.1,pharmaledgerassoc-tls,*.pharmaledgerassoc.org"
+    );
+    expect(typeof env.tls.port).toBe("number");
+    expect(env.tls.port).toBe(7000);
+    expect(typeof env.tls.test).toBe("boolean");
+    expect(env.tls.test).toBe(false);
+
+    process.env["TLS__PORT"] = "5000";
+    expect(typeof env.tls.port).toBe("number");
+    expect(env.tls.port).toBe(5000);
+  });
 });
