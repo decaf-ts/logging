@@ -118,11 +118,15 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @return {unknown} The parsed value, converted to a boolean or number, or left as-is.
    */
   protected parseEnvValue(val: unknown) {
+    return Environment.parseRuntimeValue(val);
+  }
+
+  private static parseRuntimeValue(val: unknown) {
     if (typeof val !== "string") return val;
     if (val === "true") return true;
     if (val === "false") return false;
     const result = parseFloat(val);
-    if (!isNaN(result)) return result;
+    if (!Number.isNaN(result)) return result;
     return val;
   }
 
@@ -394,7 +398,8 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
 
         // If an ENV value exists for this path, return it directly
         const envValue = readEnv(composedKey);
-        if (typeof envValue !== "undefined") return envValue;
+        if (typeof envValue !== "undefined")
+          return Environment.parseRuntimeValue(envValue);
 
         // Otherwise, if the model has an object at this path, keep drilling with a proxy
         const isNextObject = nextModel && typeof nextModel === "object";

@@ -47,7 +47,7 @@ Decaf’s logging toolkit keeps one fast MiniLogger at the core while exposing a
 
 Documentation available [here](https://decaf-ts.github.io/logging/)
 
-Minimal size: 6 KB kb gzipped
+Minimal size: 6.1 KB kb gzipped
 
 
 # Logging Library — Detailed Description

@@ -70,6 +70,34 @@ describe("Environment.proxy", () => {
     expect(env.service.config.allow).toBe("allow");
   });
 
+  it("parses numeric overrides from ENV when returning proxy leaves", () => {
+    const envKey = "SERVICE__PORT";
+    const previous = process.env[envKey];
+    process.env[envKey] = "3";
+    try {
+      const env = Environment.accumulate({ service: { port: 0 } });
+      expect(env.service.port).toBe(3);
+      expect(typeof env.service.port).toBe("number");
+    } finally {
+      if (typeof previous === "undefined") delete process.env[envKey];
+      else process.env[envKey] = previous;
+    }
+  });
+
+  it("parses boolean overrides from ENV when returning proxy leaves", () => {
+    const envKey = "SERVICE__ENABLED";
+    const previous = process.env[envKey];
+    process.env[envKey] = "true";
+    try {
+      const env = Environment.accumulate({ service: { enabled: false } });
+      expect(env.service.enabled).toBe(true);
+      expect(typeof env.service.enabled).toBe("boolean");
+    } finally {
+      if (typeof previous === "undefined") delete process.env[envKey];
+      else process.env[envKey] = previous;
+    }
+  });
+
   it("treats explicitly undefined model leaves as undefined (no proxy) at any depth", () => {
     const env = Environment.accumulate({
       top: undefined,
