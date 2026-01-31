@@ -2,6 +2,7 @@ import {
   LoggerFactory,
   LoggingConfig,
   LoggingContext,
+  LoggingFilter,
   LogMeta,
   StringLike,
   Theme,
@@ -181,9 +182,50 @@ export class MiniLogger implements Logger {
             }
           };
         }
-        return result;
-      },
-    }) as this;
+      return result;
+    },
+  }) as this;
+}
+
+  protected getConfigSnapshot(): LoggingConfig {
+    return {
+      ...Logging.getConfig(),
+      ...(this.conf || {}),
+    } as LoggingConfig;
+  }
+
+  protected getContextSegments(): string[] {
+    if (Array.isArray(this.context)) return [...this.context];
+    if (typeof this.context === "string" && this.context) return [this.context];
+    return [];
+  }
+
+  protected resolveFilters(config: LoggingConfig): LoggingFilter[] {
+    const candidate = config.filters;
+    if (!Array.isArray(candidate)) return [];
+    return candidate.filter(
+      (entry): entry is LoggingFilter =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof (entry as LoggingFilter).filter === "function"
+    );
+  }
+
+  protected applyFilters(
+    message: string,
+    context: string[],
+    config: LoggingConfig
+  ): string {
+    const filters = this.resolveFilters(config);
+    if (!filters.length) return message;
+    return filters.reduce((current, filter) => {
+      try {
+        const next = filter.filter(config, current, [...context]);
+        return typeof next === "string" ? next : current;
+      } catch {
+        return current;
+      }
+    }, message);
   }
 
   /**
@@ -259,19 +301,25 @@ export class MiniLogger implements Logger {
       }
     }
 
+    const configSnapshot = this.getConfigSnapshot();
+    const contextSegments = this.getContextSegments();
+    const rawMessage =
+      typeof message === "string" ? message : (message as Error).message;
+    const filteredMessage = this.applyFilters(
+      rawMessage,
+      contextSegments,
+      configSnapshot
+    );
     const msg: string = style
-      ? Logging.theme(
-          typeof message === "string" ? message : (message as Error).message,
-          "message",
-          level
-        )
-      : typeof message === "string"
-        ? message
-        : (message as Error).message;
+      ? Logging.theme(filteredMessage, "message", level)
+      : filteredMessage;
     log.message = msg;
     const showMeta = Boolean(this.config("meta"));
     const metaPayload = showMeta && meta ? meta : undefined;
     const metaString = metaPayload ? this.formatMeta(metaPayload) : undefined;
+    const filteredMetaString = metaString
+      ? this.applyFilters(metaString, contextSegments, configSnapshot)
+      : undefined;
 
     if (metaPayload) {
       log.meta = metaPayload;
@@ -285,7 +333,11 @@ export class MiniLogger implements Logger {
             level
           )
         : error?.stack || "";
-      log.stack = ` | ${(error || (message as Error)).message} - Stack trace:\n${stack}`;
+      const stackLabel =
+        typeof message === "string"
+          ? filteredMessage
+          : (error || (message as Error)).message;
+      log.stack = ` | ${stackLabel} - Stack trace:\n${stack}`;
     }
 
     switch (this.config("format")) {
@@ -302,7 +354,9 @@ export class MiniLogger implements Logger {
           })
           .filter((s) => s)
           .join(" ");
-        return metaString ? `${generated} ${metaString}` : generated;
+        return filteredMetaString
+          ? `${generated} ${filteredMetaString}`
+          : generated;
       }
       default:
         throw new Error(`Unsupported logging format: ${this.config("format")}`);

@@ -7,6 +7,7 @@ import {
   MiniLogger,
   Logging,
   LoggingConfig,
+  PatternFilter,
   Theme,
   LoggedEnvironment,
 } from "../../src";
@@ -439,6 +440,49 @@ describe("MiniLogger", () => {
         metaPayload
       );
       expect(logString).not.toContain(JSON.stringify(metaPayload));
+    });
+  });
+
+  describe("filters", () => {
+    afterEach(() => {
+      Logging.setConfig({ ...DefaultLoggingConfig, filters: undefined });
+    });
+
+    it("applies configured filters before emitting output", () => {
+      const passwordFilter = new PatternFilter(
+        /password:\s*\w+/i,
+        "password: ********"
+      );
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        filters: [passwordFilter],
+      });
+
+      logger.info("User logged in with password: secret");
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+      const emitted = consoleLogSpy.mock.calls[0][0] as string;
+      expect(emitted).toContain("password: ********");
+      expect(emitted).not.toContain("password: secret");
+    });
+
+    it("filters metadata string after stringify before attaching output", () => {
+      const metaFilter = new PatternFilter(
+        /"requestId":"[^"]+"/,
+        '"requestId":"[filtered]"'
+      );
+      Logging.setConfig({
+        ...DefaultLoggingConfig,
+        format: LoggingMode.RAW,
+        pattern: "{message}",
+        meta: true,
+        filters: [metaFilter],
+      });
+
+      logger.info("payload", { requestId: "abc123" });
+      expect(consoleLogSpy).toHaveBeenCalledTimes(1);
+      const emitted = consoleLogSpy.mock.calls[0][0] as string;
+      expect(emitted).toContain('"requestId":"[filtered]"');
+      expect(emitted).not.toContain("abc123");
     });
   });
 
