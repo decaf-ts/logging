@@ -96,6 +96,6 @@
   },
   "optionalDependencies": {
     "pino": "^10.1.0",
-    "winston": "^3.17.0"
+    "winston": "^3.19.0"
   }
 }
