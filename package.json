@@ -95,7 +95,7 @@
     "typed-object-accumulator": "latest"
   },
   "optionalDependencies": {
-    "pino": "^10.1.0",
+    "pino": "^10.2.0",
     "winston": "^3.17.0"
   }
 }
