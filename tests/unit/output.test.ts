@@ -24,7 +24,7 @@ describe("Logging", () => {
     it("logs an info message properly", () => {
       const consoleMock = jest.spyOn(console, "log");
       logger.info("This is a test message");
-      expect(consoleMock).toBeCalledTimes(1);
+      expect(consoleMock).toHaveBeenCalledTimes(1);
       expect(consoleMock).toHaveBeenCalledWith(
         "INFO testing - This is a test message"
       );
@@ -49,7 +49,7 @@ describe("Logging", () => {
     it("logs an info message properly", () => {
       const consoleMock = jest.spyOn(console, "log");
       logger.info("This is a test message");
-      expect(consoleMock).toBeCalledTimes(1);
+      expect(consoleMock).toHaveBeenCalledTimes(1);
       expect(consoleMock).toHaveBeenCalledWith(
         expect.stringMatching(/INFO.*?\s-\sThis\sis\sa\stest\smessage$/g)
       );
@@ -58,7 +58,7 @@ describe("Logging", () => {
     it("logs an debug message properly", () => {
       const consoleMock = jest.spyOn(console, "debug");
       logger.debug("This is a debug message");
-      expect(consoleMock).toBeCalledTimes(1);
+      expect(consoleMock).toHaveBeenCalledTimes(1);
       // expect(consoleMock).toHaveBeenCalledWith(
       //   expect.stringMatching(
       //     // eslint-disable-next-line no-control-regex
@@ -70,7 +70,7 @@ describe("Logging", () => {
     it("logs an error message properly", () => {
       const consoleMock = jest.spyOn(console, "error");
       logger.error("This is a error message");
-      expect(consoleMock).toBeCalledTimes(1);
+      expect(consoleMock).toHaveBeenCalledTimes(1);
       // expect(consoleMock).toHaveBeenCalledWith(
       //   expect.stringMatching(
       //     // eslint-disable-next-line no-control-regex

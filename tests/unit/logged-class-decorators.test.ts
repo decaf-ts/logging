@@ -69,7 +69,7 @@ describe("decorators logged classes unit", () => {
     }
     const s = new Logged2();
     expect(s.a(false)).toBe(1);
-    expect(logMock).toBeCalledTimes(2);
+    expect(logMock).toHaveBeenCalledTimes(2);
     expect(logMock).toHaveBeenNthCalledWith(
       1,
       expect.stringContaining("called with false")
@@ -77,7 +77,7 @@ describe("decorators logged classes unit", () => {
     expect(logMock).toHaveBeenNthCalledWith(2, expect.stringContaining("1"));
 
     expect(() => s.a(true)).toThrow();
-    expect(logMock).toBeCalledTimes(3);
+    expect(logMock).toHaveBeenCalledTimes(3);
     expect(logMock).toHaveBeenNthCalledWith(
       3,
       expect.stringContaining("called with true")
