@@ -345,5 +345,18 @@ describe("Environment", () => {
 
       expect((env.orThrow() as any)[symbol]).toBeUndefined();
     });
+
+    it("uses vars with numbers", () => {
+      const env = Environment.accumulate({
+        oauth2: "some crap",
+        oauth2ProxyCookieSecret: "sfsfsdf",
+      });
+
+      process.env["OAUTH2"] = "other crap";
+      process.env["OAUTH2_PROXY_COOKIE_SECRET"] = "other crap";
+
+      expect(env.oauth2).toEqual("other crap");
+      expect(env.oauth2ProxyCookieSecret).toEqual("other crap");
+    });
   });
 });
