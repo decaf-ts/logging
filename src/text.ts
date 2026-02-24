@@ -119,7 +119,7 @@ export function toENVFormat(text: string): string {
  */
 export function toSnakeCase(text: string): string {
   return text
-    .replace(/([a-z])([A-Z])/g, "$1_$2")
+    .replace(/([a-z\d])([A-Z])/g, "$1_$2")
     .replace(/[\s-]+/g, "_")
     .toLowerCase();
 }
