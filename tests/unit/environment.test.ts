@@ -349,14 +349,29 @@ describe("Environment", () => {
     it("uses vars with numbers", () => {
       const env = Environment.accumulate({
         oauth2: "some crap",
+        oath3: {
+          oauth2ProxyCookieSecret: "sfsfsdf",
+          oauthProxy2CookieSecret: "sasdasdf",
+          oauthProxyCookie2Secret: "sasasdasdf",
+          oauthProxyCookieSecret2: "sasasdasdasdasdasdf",
+        },
         oauth2ProxyCookieSecret: "sfsfsdf",
+        oauthProxy2CookieSecret: "sasdasdf",
+        oauthProxyCookie2Secret: "sasasdasdf",
+        oauthProxyCookieSecret2: "sasasdasdasdasdasdf",
       });
 
       process.env["OAUTH2"] = "other crap";
       process.env["OAUTH2_PROXY_COOKIE_SECRET"] = "other crap";
+      process.env["OAUTH_PROXY2_COOKIE_SECRET"] = "other crap";
+      process.env["OAUTH_PROXY_COOKIE2_SECRET"] = "other crap";
+      process.env["OAUTH_PROXY_COOKIE_SECRET2"] = "other crap";
 
       expect(env.oauth2).toEqual("other crap");
       expect(env.oauth2ProxyCookieSecret).toEqual("other crap");
+      expect(env.oauthProxy2CookieSecret).toEqual("other crap");
+      expect(env.oauthProxyCookie2Secret).toEqual("other crap");
+      expect(env.oauthProxyCookieSecret2).toEqual("other crap");
     });
   });
 });
