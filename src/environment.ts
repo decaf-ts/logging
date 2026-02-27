@@ -173,8 +173,14 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
+    const segmentNeedsFormat = (segment: string) =>
+      /^[a-z][a-zA-Z0-9]*$/.test(segment);
     const buildKey = (path: string[]) =>
-      path.map((segment) => toENVFormat(segment)).join(ENV_PATH_DELIMITER);
+      path
+        .map((segment) =>
+          segmentNeedsFormat(segment) ? toENVFormat(segment) : segment
+        )
+        .join(ENV_PATH_DELIMITER);
     const readRuntime = (key: string) => Environment.readRuntimeEnv(key);
     const parseRuntime = (raw: unknown) =>
       typeof raw !== "undefined" ? this.parseEnvValue(raw) : undefined;
@@ -365,8 +371,14 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @return {any} A proxy that resolves environment values or composes additional proxies for deeper paths.
    */
   private static buildEnvProxy(current: any, path: string[]): any {
+    const segmentNeedsFormat = (segment: string) =>
+      /^[a-z][a-zA-Z0-9]*$/.test(segment);
     const buildKey = (p: string[]) =>
-      p.map((seg) => toENVFormat(seg)).join(ENV_PATH_DELIMITER);
+      p
+        .map((seg) =>
+          segmentNeedsFormat(seg) ? toENVFormat(seg) : seg
+        )
+        .join(ENV_PATH_DELIMITER);
 
     // Helper to read from the active environment given a composed key
     const readEnv = (key: string): unknown => {
@@ -436,7 +448,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       },
     };
 
-        const target = Array.isArray(current) ? [] : ({} as any);
+    const target = Array.isArray(current) ? [] : ({} as any);
     return new Proxy(target, handler);
   }
 

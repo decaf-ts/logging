@@ -361,6 +361,20 @@ describe("Environment", () => {
       expect(env.orThrow().arrayHolder.list[3].child).toBe("value4");
     });
 
+    it("supports hard coded env string", () => {
+      const env = Environment.accumulate({
+        arrayHolder: {
+          TestSOMETHING: [{ child: "value" }],
+        },
+      });
+
+      expect(env.orThrow().arrayHolder.TestSOMETHING[0].child).toBe("value");
+      process.env[`ARRAY_HOLDER__TestSOMETHING__0__CHILD`] = "overwritten";
+      expect(env.orThrow().arrayHolder.TestSOMETHING[0].child).toBe(
+        "overwritten"
+      );
+    });
+
     it("supports array elements through orThrow proxies", () => {
       const env = Environment.accumulate({
         arrayHolder: {
