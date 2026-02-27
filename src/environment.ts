@@ -186,6 +186,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       const handler: ProxyHandler<any> = {
         get(_target, prop) {
           if (typeof prop !== "string") return undefined;
+          if (Array.isArray(model) && prop === "length") return model.length;
           const nextPath = [...path, prop];
           const envKey = buildKey(nextPath);
           const runtimeRaw = readRuntime(envKey);
@@ -206,11 +207,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (typeof modelValue === "undefined") return undefined;
           if (modelValue === "") throw missing(envKey);
 
-          if (
-            modelValue &&
-            typeof modelValue === "object" &&
-            !Array.isArray(modelValue)
-          ) {
+          if (modelValue && typeof modelValue === "object") {
             return createNestedProxy(modelValue, nextPath);
           }
 
@@ -230,7 +227,8 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           return undefined;
         },
       };
-      return new Proxy({}, handler);
+      const target = Array.isArray(model) ? [] : {};
+      return new Proxy(target, handler);
     };
 
     const handler: ProxyHandler<any> = {
@@ -255,11 +253,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         }
 
         const modelValue = modelRoot[prop];
-        if (
-          modelValue &&
-          typeof modelValue === "object" &&
-          !Array.isArray(modelValue)
-        ) {
+        if (modelValue && typeof modelValue === "object") {
           return createNestedProxy(modelValue, [prop]);
         }
 
@@ -379,6 +373,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       return Environment.readRuntimeEnv(key);
     };
 
+    const arrayIndexPattern = /^[0-9]+$/;
+    const isArrayIndex = (prop: string | symbol): prop is string =>
+      typeof prop === "string" && arrayIndexPattern.test(prop);
+
     const handler: ProxyHandler<any> = {
       get(_target, prop: string | symbol) {
         if (prop === Symbol.toPrimitive) {
@@ -392,9 +390,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         }
         if (typeof prop === "symbol") return undefined;
 
-        const hasProp =
-          !!current && Object.prototype.hasOwnProperty.call(current, prop);
-        const nextModel = hasProp ? (current as any)[prop] : undefined;
+        if (Array.isArray(current) && prop === "length") return current.length;
         const nextPath = [...path, prop];
         const composedKey = buildKey(nextPath);
 
@@ -403,11 +399,18 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         if (typeof envValue !== "undefined")
           return Environment.parseRuntimeValue(envValue);
 
-        // Otherwise, if the model has an object at this path, keep drilling with a proxy
-        const isNextObject =
-          nextModel &&
-          typeof nextModel === "object" &&
-          !Array.isArray(nextModel);
+        const hasProp =
+          !!current && Object.prototype.hasOwnProperty.call(current, prop);
+        const nextModel = hasProp ? (current as any)[prop] : undefined;
+
+        if (Array.isArray(current) && isArrayIndex(prop)) {
+          if (!hasProp) return undefined;
+          if (nextModel && typeof nextModel === "object")
+            return Environment.buildEnvProxy(nextModel, nextPath);
+          return Environment.parseRuntimeValue(nextModel);
+        }
+
+        const isNextObject = nextModel && typeof nextModel === "object";
         if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
 
         if (hasProp && nextModel === "") return undefined;
@@ -433,7 +436,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       },
     };
 
-    const target = {} as any;
+        const target = Array.isArray(current) ? [] : ({} as any);
     return new Proxy(target, handler);
   }
 

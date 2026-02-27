@@ -1,6 +1,9 @@
 import { ObjectAccumulator } from "typed-object-accumulator";
 import { isBrowser } from "../../src/web";
 import { Environment } from "../../src/environment";
+
+const originalProcess = globalThis.process;
+
 jest.mock("../../src/web");
 
 describe("Environment", () => {
@@ -8,6 +11,7 @@ describe("Environment", () => {
     jest.resetAllMocks();
     jest.restoreAllMocks();
     jest.clearAllMocks();
+    globalThis.process = originalProcess;
   });
 
   it("Should return the existing instance when calling instance() multiple times", () => {
@@ -337,6 +341,72 @@ describe("Environment", () => {
       expect(
         Object.getOwnPropertyDescriptor(nested, "missing")
       ).toBeUndefined();
+    });
+
+    it("supports array elements through orThrow proxies", () => {
+      const env = Environment.accumulate({
+        arrayHolder: {
+          list: [
+            { child: "value" },
+            { child: "value2" },
+            { child: "value3" },
+            { child: "value4" },
+          ],
+        },
+      });
+
+      expect(env.orThrow().arrayHolder.list[0].child).toBe("value");
+      expect(env.orThrow().arrayHolder.list[1].child).toBe("value2");
+      expect(env.orThrow().arrayHolder.list[2].child).toBe("value3");
+      expect(env.orThrow().arrayHolder.list[3].child).toBe("value4");
+    });
+
+    it("supports array elements through orThrow proxies", () => {
+      const env = Environment.accumulate({
+        arrayHolder: {
+          list: [{ child: { child: [{ child: "value2" }] } }],
+        },
+      });
+
+      expect(env.arrayHolder.list[0].child.child[0].child).toBe("value2");
+      expect(env.arrayHolder.list[0].child.child).toBeInstanceOf(Array);
+      expect(env.orThrow().arrayHolder.list[0].child.child[0].child).toBe(
+        "value2"
+      );
+
+      const overrideKey = "ARRAY_HOLDER__LIST__0__CHILD__CHILD__0__CHILD";
+      const previousOverride = process.env[overrideKey];
+      try {
+        process.env[overrideKey] = "overwritten";
+        expect(env.arrayHolder.list[0].child.child[0].child).toBe(
+          "overwritten"
+        );
+        expect(env.orThrow().arrayHolder.list[0].child.child[0].child).toBe(
+          "overwritten"
+        );
+      } finally {
+        if (typeof previousOverride === "undefined") {
+          delete process.env[overrideKey];
+        } else {
+          process.env[overrideKey] = previousOverride;
+        }
+      }
+
+      expect(
+        () => env.orThrow().arrayHolder.list[0].child.child[0].child2
+      ).toThrow();
+    });
+
+    it("throws when accessing missing array indexes via orThrow", () => {
+      const env = Environment.accumulate({
+        arrayHolder: {
+          list: [{ child: "value" }],
+        },
+      });
+
+      expect(() => env.orThrow().arrayHolder.list[1]).toThrow(
+        "Environment variable ARRAY_HOLDER__LIST__1 is required but was undefined."
+      );
     });
 
     it("falls back to base handler for symbol property access", () => {

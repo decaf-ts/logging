@@ -121,6 +121,23 @@ describe("Environment.proxy", () => {
     expect(typeof env.service3.port).toBe("boolean");
   });
 
+  it("supports nested arrays with key composition and returns undefined for missing indexes", () => {
+    const env = Environment.accumulate({
+      parent: {
+        list: [
+          { child: "first" },
+          { child: "second" },
+        ],
+      },
+    });
+
+    expect(env.parent.list[0].child).toBe("first");
+    expect(env.parent.list[1].child).toBe("second");
+    expect(String((env as any).parent.list[0])).toBe("PARENT__LIST__0");
+    expect(String((env as any).parent.list)).toBe("PARENT__LIST");
+    expect((env as any).parent.list[2]).toBeUndefined();
+  });
+
   it("handles custom stuff", () => {
     const env = Environment.accumulate({
       tls: {
