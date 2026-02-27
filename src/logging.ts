@@ -182,10 +182,10 @@ export class MiniLogger implements Logger {
             }
           };
         }
-      return result;
-    },
-  }) as this;
-}
+        return result;
+      },
+    }) as this;
+  }
 
   protected getConfigSnapshot(): LoggingConfig {
     return {
@@ -201,7 +201,7 @@ export class MiniLogger implements Logger {
   }
 
   protected resolveFilters(config: LoggingConfig): LoggingFilter[] {
-    const candidate = config.filters;
+    const candidate = config.filters || [];
     if (!Array.isArray(candidate)) return [];
     return candidate.filter(
       (entry): entry is LoggingFilter =>

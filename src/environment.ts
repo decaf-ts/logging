@@ -175,7 +175,6 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
-    const readRuntime = (key: string) => Environment.readRuntimeEnv(key);
     const parseRuntime = (raw: unknown) =>
       typeof raw !== "undefined" ? this.parseEnvValue(raw) : undefined;
 
@@ -188,8 +187,8 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (typeof prop !== "string") return undefined;
           if (Array.isArray(model) && prop === "length") return model.length;
           const nextPath = [...path, prop];
-          const envKey = Environment.buildEnvKey(nextPath);
-          const runtimeRaw = readRuntime(envKey);
+          const { key: envKey, value: runtimeRaw } =
+            Environment.readRuntimeForPath(nextPath);
           if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
             throw missing(envKey, true);
           const runtimeValue = parseRuntime(runtimeRaw);
@@ -241,8 +240,8 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         );
         if (!hasModelProp) return Reflect.get(target, prop, receiver);
 
-        const envKey = Environment.buildEnvKey([prop]);
-        const runtimeRaw = readRuntime(envKey);
+        const { key: envKey, value: runtimeRaw } =
+          Environment.readRuntimeForPath([prop]);
         if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
           throw missing(envKey, true);
         const runtimeValue = parseRuntime(runtimeRaw);
@@ -369,6 +368,26 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       .join(ENV_PATH_DELIMITER);
   }
 
+  private static buildRawKey(path: string[]) {
+    return path.join(ENV_PATH_DELIMITER);
+  }
+
+  private static readRuntimeForPath(path: string[]) {
+    const formattedKey = Environment.buildEnvKey(path);
+    const rawKey = Environment.buildRawKey(path);
+    const runtimeFormatted = Environment.readRuntimeEnv(formattedKey);
+    if (typeof runtimeFormatted !== "undefined") {
+      return { key: formattedKey, value: runtimeFormatted };
+    }
+    if (rawKey !== formattedKey) {
+      const runtimeRaw = Environment.readRuntimeEnv(rawKey);
+      if (typeof runtimeRaw !== "undefined") {
+        return { key: rawKey, value: runtimeRaw };
+      }
+    }
+    return { key: formattedKey, value: undefined };
+  }
+
   /**
    * @description Builds a proxy that composes environment keys for nested properties.
    * @summary This allows chained property access to emit uppercase ENV identifiers, while honoring existing runtime overrides.
@@ -401,9 +420,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         if (Array.isArray(current) && prop === "length") return current.length;
         const nextPath = [...path, prop];
         const composedKey = Environment.buildEnvKey(nextPath);
+        const rawKey = Environment.buildRawKey(nextPath);
 
         // If an ENV value exists for this path, return it directly
-        const envValue = readEnv(composedKey);
+        let envValue = readEnv(composedKey);
+        if (typeof envValue === "undefined" && rawKey !== composedKey) {
+          envValue = readEnv(rawKey);
+        }
         if (typeof envValue !== "undefined")
           return Environment.parseRuntimeValue(envValue);
 
