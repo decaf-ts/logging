@@ -369,7 +369,7 @@ describe("Environment", () => {
       });
 
       expect(env.orThrow().arrayHolder.TestSOMETHING[0].child).toBe("value");
-      process.env[`ARRAY_HOLDER__TestSOMETHING__0__CHILD`] = "overwritten";
+      process.env[`ARRAY_HOLDER__TESTSOMETHING__0__CHILD`] = "overwritten";
       expect(env.orThrow().arrayHolder.TestSOMETHING[0].child).toBe(
         "overwritten"
       );

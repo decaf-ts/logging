@@ -60,6 +60,8 @@ export type AccumulatedEnvironment<T extends object = any> =
 const EmptyValue = Symbol("EnvironmentEmpty");
 const ModelSymbol = Symbol("EnvironmentModel");
 
+const camelCasePattern = /^[a-z][a-zA-Z0-9]*$/;
+
 export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
    * @static
@@ -173,14 +175,6 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
-    const segmentNeedsFormat = (segment: string) =>
-      /^[a-z][a-zA-Z0-9]*$/.test(segment);
-    const buildKey = (path: string[]) =>
-      path
-        .map((segment) =>
-          segmentNeedsFormat(segment) ? toENVFormat(segment) : segment
-        )
-        .join(ENV_PATH_DELIMITER);
     const readRuntime = (key: string) => Environment.readRuntimeEnv(key);
     const parseRuntime = (raw: unknown) =>
       typeof raw !== "undefined" ? this.parseEnvValue(raw) : undefined;
@@ -194,7 +188,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (typeof prop !== "string") return undefined;
           if (Array.isArray(model) && prop === "length") return model.length;
           const nextPath = [...path, prop];
-          const envKey = buildKey(nextPath);
+          const envKey = Environment.buildEnvKey(nextPath);
           const runtimeRaw = readRuntime(envKey);
           if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
             throw missing(envKey, true);
@@ -247,7 +241,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         );
         if (!hasModelProp) return Reflect.get(target, prop, receiver);
 
-        const envKey = buildKey([prop]);
+        const envKey = Environment.buildEnvKey([prop]);
         const runtimeRaw = readRuntime(envKey);
         if (typeof runtimeRaw === "string" && runtimeRaw.length === 0)
           throw missing(envKey, true);
@@ -363,6 +357,18 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return Environment._instance.get(key);
   }
 
+  private static formatEnvSegment(segment: string) {
+    return camelCasePattern.test(segment)
+      ? toENVFormat(segment)
+      : segment.toUpperCase();
+  }
+
+  private static buildEnvKey(path: string[]) {
+    return path
+      .map((segment) => Environment.formatEnvSegment(segment))
+      .join(ENV_PATH_DELIMITER);
+  }
+
   /**
    * @description Builds a proxy that composes environment keys for nested properties.
    * @summary This allows chained property access to emit uppercase ENV identifiers, while honoring existing runtime overrides.
@@ -371,16 +377,6 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @return {any} A proxy that resolves environment values or composes additional proxies for deeper paths.
    */
   private static buildEnvProxy(current: any, path: string[]): any {
-    const segmentNeedsFormat = (segment: string) =>
-      /^[a-z][a-zA-Z0-9]*$/.test(segment);
-    const buildKey = (p: string[]) =>
-      p
-        .map((seg) =>
-          segmentNeedsFormat(seg) ? toENVFormat(seg) : seg
-        )
-        .join(ENV_PATH_DELIMITER);
-
-    // Helper to read from the active environment given a composed key
     const readEnv = (key: string): unknown => {
       return Environment.readRuntimeEnv(key);
     };
@@ -392,19 +388,19 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     const handler: ProxyHandler<any> = {
       get(_target, prop: string | symbol) {
         if (prop === Symbol.toPrimitive) {
-          return () => buildKey(path);
+          return () => Environment.buildEnvKey(path);
         }
         if (prop === "toString") {
-          return () => buildKey(path);
+          return () => Environment.buildEnvKey(path);
         }
         if (prop === "valueOf") {
-          return () => buildKey(path);
+          return () => Environment.buildEnvKey(path);
         }
         if (typeof prop === "symbol") return undefined;
 
         if (Array.isArray(current) && prop === "length") return current.length;
         const nextPath = [...path, prop];
-        const composedKey = buildKey(nextPath);
+        const composedKey = Environment.buildEnvKey(nextPath);
 
         // If an ENV value exists for this path, return it directly
         const envValue = readEnv(composedKey);
