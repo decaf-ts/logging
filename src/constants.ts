@@ -163,6 +163,7 @@ export const DefaultLoggingConfig: LoggingConfig = {
   level: LogLevel.info,
   logLevel: true,
   style: false,
+  filters: [],
   contextSeparator: ".",
   separator: "-",
   timestamp: true,

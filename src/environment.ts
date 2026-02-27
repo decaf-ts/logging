@@ -149,6 +149,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           const fromEnv = this.fromEnv(k);
           if (typeof fromEnv !== "undefined") return fromEnv;
           if (v && typeof v === "object") {
+            if (Array.isArray(v)) return v;
             return Environment.buildEnvProxy(v as any, [k]);
           }
           // If the model provides an empty string, mark with EmptyValue so instance proxy can return undefined without enabling key composition
@@ -541,7 +542,7 @@ export const LoggedEnvironment = Environment.accumulate(
       env:
         (isBrowser() && (globalThis as any)[BrowserEnvKey]
           ? (globalThis as any)[BrowserEnvKey]["NODE_ENV"]
-        : (globalThis as any).process.env["NODE_ENV"]) || "development",
+          : (globalThis as any).process.env["NODE_ENV"]) || "development",
     }
   )
 );

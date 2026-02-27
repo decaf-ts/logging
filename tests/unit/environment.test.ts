@@ -375,6 +375,16 @@ describe("Environment", () => {
       );
     });
 
+    it("supports hard coded env string", () => {
+      const env = Environment.accumulate({
+        arrayHolder: {
+          TestSOMETHING: undefined,
+        },
+      });
+
+      expect(env.arrayHolder.TestSOMETHING).toBe(undefined);
+    });
+
     it("supports array elements through orThrow proxies", () => {
       const env = Environment.accumulate({
         arrayHolder: {
