@@ -385,6 +385,53 @@ describe("Environment", () => {
       expect(env.arrayHolder.TestSOMETHING).toBe(undefined);
     });
 
+    it("supports conplex scenarios", () => {
+      const env = Environment.accumulate({
+        fabric: {
+          mspMap: {
+            PdmassocMSP: [
+              {
+                endpoint: "localhost:7050",
+                alias: "-peer-0",
+                tlsCert: "./docker/docker-data/pla-peer-0-tls.pem",
+              },
+              {
+                endpoint: "localhost:7051",
+                alias: "-peer-1",
+                tlsCert: "./docker/docker-data/pla-peer-1-tls.pem",
+              },
+              {
+                endpoint: "localhost:7052",
+                alias: "-peer-2",
+                tlsCert: "./docker/docker-data/pla-peer-2-tls.pem",
+              },
+            ],
+          },
+        },
+      });
+
+      expect(env.fabric.mspMap.PdmassocMSP[1].endpoint).toBe("localhost:7051");
+      expect(env.fabric.mspMap.PdmassocMSP[1].alias).toBe("-peer-1");
+      expect(env.fabric.mspMap.PdmassocMSP[1].tlsCert).toBe(
+        "./docker/docker-data/pla-peer-1-tls.pem"
+      );
+
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__0__ALIAS"] = "changed2";
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__0__ENDPOINT"] = "changed";
+      expect(env.fabric.mspMap.PdmassocMSP[0].endpoint).toBe("changed");
+      expect(env.fabric.mspMap.PdmassocMSP[0].alias).toBe("changed2");
+
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__1__ALIAS"] = "changed2";
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__1__ENDPOINT"] = "changed";
+      expect(env.fabric.mspMap.PdmassocMSP[1].endpoint).toBe("changed");
+      expect(env.fabric.mspMap.PdmassocMSP[1].alias).toBe("changed2");
+
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__2__ALIAS"] = "changed2";
+      process.env["FABRIC__MSP_MAP__PDMASSOCMSP__2__ENDPOINT"] = "changed";
+      expect(env.fabric.mspMap.PdmassocMSP[2].endpoint).toBe("changed");
+      expect(env.fabric.mspMap.PdmassocMSP[2].alias).toBe("changed2");
+    });
+
     it("supports array elements through orThrow proxies", () => {
       const env = Environment.accumulate({
         arrayHolder: {
