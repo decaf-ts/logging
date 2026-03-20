@@ -10,6 +10,7 @@ import {
   PatternFilter,
   Theme,
   LoggedEnvironment,
+  logParameterRegistry,
 } from "../../src";
 
 // Mock the styled-string library
@@ -440,6 +441,30 @@ describe("MiniLogger", () => {
         metaPayload
       );
       expect(logString).not.toContain(JSON.stringify(metaPayload));
+    });
+  });
+
+  describe("logParameterRegistry", () => {
+    it("renders registered parameters referenced by the pattern", () => {
+      const descriptor = {
+        key: "ip",
+        render: () => "127.0.0.1",
+      };
+      logParameterRegistry.register(descriptor);
+      try {
+        Logging.setConfig({
+          ...DefaultLoggingConfig,
+          pattern: "{level} {ip} {message}",
+        });
+        const logString = (logger as any).createLog(
+          LogLevel.info,
+          "custom parameter"
+        );
+        expect(logString).toContain("127.0.0.1");
+      } finally {
+        logParameterRegistry.unregister("ip");
+        Logging.setConfig({ ...DefaultLoggingConfig });
+      }
     });
   });
 

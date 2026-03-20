@@ -12,7 +12,12 @@ import {
 } from "./types";
 import { ColorizeOptions, style, StyledString } from "styled-string-builder";
 import { DefaultTheme, LogLevel, NumericLogLevels } from "./constants";
-import { sf } from "./text";
+import {
+  compileLogPattern,
+  logParameterRegistry,
+  LogParameterPayload,
+  renderPattern,
+} from "./logParameters";
 import { LoggedEnvironment } from "./environment";
 import { getObjectName, isClass, isFunction, isInstance } from "./utils";
 
@@ -56,10 +61,11 @@ export class MiniLogger implements Logger {
     (this as any)[ROOT_CONTEXT_SYMBOL] = [...this.baseContext];
   }
 
-  protected config(
-    key: keyof LoggingConfig
-  ): LoggingConfig[keyof LoggingConfig] {
-    if (this.conf && key in this.conf) return this.conf[key];
+  protected config<K extends keyof LoggingConfig>(
+    key: K
+  ): LoggingConfig[K] {
+    if (this.conf && key in this.conf)
+      return this.conf[key] as LoggingConfig[K];
     return Logging.getConfig()[key];
   }
 
@@ -242,121 +248,101 @@ export class MiniLogger implements Logger {
     error?: Error,
     meta?: LogMeta
   ): string {
-    const log: Record<
-      | "timestamp"
-      | "level"
-      | "context"
-      | "correlationId"
-      | "message"
-      | "separator"
-      | "stack"
-      | "app"
-      | "meta",
-      string | LogMeta
-    > = {} as any;
-    const style = this.config("style");
+    const styleEnabled = Boolean(this.config("style"));
     const separator = this.config("separator");
     const app = Logging.getConfig().app;
-    if (app) log.app = style ? Logging.theme(app as string, "app", level) : app;
-
-    if (separator)
-      log.separator = style
-        ? Logging.theme(separator as string, "separator", level)
-        : (separator as string);
-
-    if (this.config("timestamp")) {
-      const date = new Date().toISOString();
-      const timestamp = style ? Logging.theme(date, "timestamp", level) : date;
-      log.timestamp = timestamp;
-    }
-
-    if (this.config("logLevel")) {
-      const lvl: string = style
-        ? Logging.theme(level, "logLevel", level)
-        : level;
-      log.level = lvl.toUpperCase();
-    }
-
-    if (this.config("context")) {
-      const contextSegments = Array.isArray(this.context)
-        ? this.context
-        : typeof this.context === "string" && this.context
-          ? [this.context]
-          : [];
-      if (contextSegments.length) {
-        const joined = contextSegments.join(
-          (this.config("contextSeparator") as string) || "."
-        );
-        const context = style ? Logging.theme(joined, "class", level) : joined;
-        log.context = context;
-      }
-    }
-
-    if (this.config("correlationId")) {
-      {
-        const id: string = style
-          ? Logging.theme(this.config("correlationId")!.toString(), "id", level)
-          : this.config("correlationId")!.toString();
-        log.correlationId = id;
-      }
-    }
-
+    const timestamp = this.config("timestamp") ? new Date().toISOString() : undefined;
     const configSnapshot = this.getConfigSnapshot();
     const contextSegments = this.getContextSegments();
     const rawMessage =
-      typeof message === "string" ? message : (message as Error).message;
+      typeof message === "string"
+        ? message
+        : message instanceof Error
+          ? message.message
+          : String(message);
     const filteredMessage = this.applyFilters(
       rawMessage,
       contextSegments,
       configSnapshot
     );
-    const msg: string = style
-      ? Logging.theme(filteredMessage, "message", level)
-      : filteredMessage;
-    log.message = msg;
     const showMeta = Boolean(this.config("meta"));
     const metaPayload = showMeta && meta ? meta : undefined;
     const metaString = metaPayload ? this.formatMeta(metaPayload) : undefined;
     const filteredMetaString = metaString
       ? this.applyFilters(metaString, contextSegments, configSnapshot)
       : undefined;
+    const correlationIdValue = this.config("correlationId");
+    const correlationId =
+      correlationIdValue !== undefined && correlationIdValue !== null
+        ? String(correlationIdValue)
+        : undefined;
 
-    if (metaPayload) {
-      log.meta = metaPayload;
-    }
-
+    let stack: string | undefined;
+    let stackLabel: string | undefined;
     if (error || message instanceof Error) {
-      const stack = style
-        ? Logging.theme(
-            (error?.stack || (message as Error).stack) as string,
-            "stack",
-            level
-          )
-        : error?.stack || "";
-      const stackLabel =
-        typeof message === "string"
-          ? filteredMessage
-          : (error || (message as Error)).message;
-      log.stack = ` | ${stackLabel} - Stack trace:\n${stack}`;
+      const candidate = error || (message as Error);
+      if (candidate.stack) {
+        stackLabel =
+          typeof message === "string" ? filteredMessage : candidate.message;
+        const styledStack = styleEnabled
+          ? Logging.theme(candidate.stack, "stack", level)
+          : candidate.stack;
+        stack = ` | ${stackLabel} - Stack trace:\n${styledStack}`;
+      }
     }
+
+    const applyTheme = (value: string, type: string) =>
+      styleEnabled ? Logging.theme(value, type as any, level) : value;
+
+    const payload: LogParameterPayload = {
+      config: configSnapshot,
+      level,
+      context: contextSegments,
+      timestamp,
+      app: typeof app === "string" && app.length ? app : undefined,
+      separator,
+      correlationId,
+      rawMessage,
+      filteredMessage,
+      meta: metaPayload,
+      metaString: filteredMetaString,
+      stack,
+      stackLabel,
+      applyTheme,
+    };
+
+    const configuredPattern = this.config("pattern");
+    const defaultPattern = configSnapshot.pattern || "";
+    const pattern = configuredPattern.length ? configuredPattern : defaultPattern;
+    const definition = compileLogPattern(pattern);
+    const rendered = logParameterRegistry.render(payload, definition.keys);
 
     switch (this.config("format")) {
-      case "json":
-        return JSON.stringify(log);
+      case "json": {
+        const jsonValues = logParameterRegistry.render(
+          payload,
+          logParameterRegistry.keys()
+        );
+        const logEntry: Record<string, string | LogMeta> = {};
+        Object.entries(jsonValues).forEach(([key, value]) => {
+          if (key === "meta") return;
+          logEntry[key] = value;
+        });
+        if (payload.meta) {
+          logEntry.meta = payload.meta;
+        }
+        return JSON.stringify(logEntry);
+      }
       case "raw": {
-        const generated = (this.config("pattern") as string)
-          .split(" ")
-          .map((s) => {
-            if (!s.match(/\{.*?}/g)) return s;
-            const formattedS = sf(s, log);
-            if (formattedS !== s) return formattedS;
-            return undefined;
-          })
-          .filter((s) => s)
-          .join(" ");
-        return filteredMetaString
-          ? `${generated} ${filteredMetaString}`
-          : generated;
+        let generated = this.normalizePatternSpacing(
+          renderPattern(definition, rendered)
+        );
+        if (!definition.includesMeta && filteredMetaString) {
+          generated = generated
+            ? `${generated} ${filteredMetaString}`
+            : filteredMetaString!;
+        }
+        return generated;
       }
       default:
         throw new Error(`Unsupported logging format: ${this.config("format")}`);
@@ -370,6 +356,12 @@ export class MiniLogger implements Logger {
     } catch (err: unknown) {
       return String(meta);
     }
+  }
+
+  protected normalizePatternSpacing(value: string): string {
+    return value
+      .replace(/[ \t]{2,}/g, " ")
+      .replace(/^[ \t]+|[ \t]+$/g, "");
   }
 
   /**

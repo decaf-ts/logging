@@ -9,6 +9,7 @@ export * from "./decorators";
 export * from "./environment";
 export * from "./LoggedClass";
 export * from "./logging";
+export * from "./logParameters";
 export * from "./text";
 export * from "./time";
 export * from "./types";
