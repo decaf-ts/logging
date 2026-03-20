@@ -54,7 +54,7 @@ export type LogPatternDefinition = {
   includesMeta: boolean;
 };
 
-class LogParameterRegistry {
+export class LogParameterRegistry {
   private readonly descriptors = new Map<string, LogParameterDescriptor>();
 
   register(descriptor: LogParameterDescriptor) {
@@ -79,17 +79,12 @@ class LogParameterRegistry {
       seen.add(key);
       const descriptor = this.descriptors.get(key);
       if (!descriptor) return;
-      if (
-        descriptor.shouldInclude &&
-        !descriptor.shouldInclude(payload)
-      ) {
+      if (descriptor.shouldInclude && !descriptor.shouldInclude(payload)) {
         return;
       }
       const raw = descriptor.render(payload);
       if (raw === undefined) return;
-      const styled = descriptor.style
-        ? descriptor.style(raw, payload)
-        : raw;
+      const styled = descriptor.style ? descriptor.style(raw, payload) : raw;
       rendered[key] = styled;
     });
     return rendered;
@@ -298,14 +293,10 @@ const registerDefault = () => {
     .register({
       key: "context",
       shouldInclude(payload) {
-        return (
-          payload.config.context !== false &&
-          payload.context.length > 0
-        );
+        return payload.config.context !== false && payload.context.length > 0;
       },
       render(payload) {
-        const separator =
-          payload.config.contextSeparator || ".";
+        const separator = payload.config.contextSeparator || ".";
         return payload.context.join(separator);
       },
       style(rendered, payload) {

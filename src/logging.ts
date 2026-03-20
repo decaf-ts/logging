@@ -61,9 +61,7 @@ export class MiniLogger implements Logger {
     (this as any)[ROOT_CONTEXT_SYMBOL] = [...this.baseContext];
   }
 
-  protected config<K extends keyof LoggingConfig>(
-    key: K
-  ): LoggingConfig[K] {
+  protected config<K extends keyof LoggingConfig>(key: K): LoggingConfig[K] {
     if (this.conf && key in this.conf)
       return this.conf[key] as LoggingConfig[K];
     return Logging.getConfig()[key];
@@ -251,7 +249,9 @@ export class MiniLogger implements Logger {
     const styleEnabled = Boolean(this.config("style"));
     const separator = this.config("separator");
     const app = Logging.getConfig().app;
-    const timestamp = this.config("timestamp") ? new Date().toISOString() : undefined;
+    const timestamp = this.config("timestamp")
+      ? new Date().toISOString()
+      : undefined;
     const configSnapshot = this.getConfigSnapshot();
     const contextSegments = this.getContextSegments();
     const rawMessage =
@@ -313,7 +313,9 @@ export class MiniLogger implements Logger {
 
     const configuredPattern = this.config("pattern");
     const defaultPattern = configSnapshot.pattern || "";
-    const pattern = configuredPattern.length ? configuredPattern : defaultPattern;
+    const pattern = configuredPattern.length
+      ? configuredPattern
+      : defaultPattern;
     const definition = compileLogPattern(pattern);
     const rendered = logParameterRegistry.render(payload, definition.keys);
 
@@ -359,9 +361,7 @@ export class MiniLogger implements Logger {
   }
 
   protected normalizePatternSpacing(value: string): string {
-    return value
-      .replace(/[ \t]{2,}/g, " ")
-      .replace(/^[ \t]+|[ \t]+$/g, "");
+    return value.replace(/[ \t]{2,}/g, " ").replace(/^[ \t]+|[ \t]+$/g, "");
   }
 
   /**
@@ -979,4 +979,7 @@ export class Logging {
       return acc;
     }, text);
   }
+
+  static register = logParameterRegistry.register;
+  static unregister = logParameterRegistry.unregister;
 }
