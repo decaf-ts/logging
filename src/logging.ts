@@ -17,6 +17,7 @@ import {
   logParameterRegistry,
   LogParameterPayload,
   renderPattern,
+  LogParameterDescriptor,
 } from "./logParameters";
 import { LoggedEnvironment } from "./environment";
 import { getObjectName, isClass, isFunction, isInstance } from "./utils";
@@ -980,6 +981,10 @@ export class Logging {
     }, text);
   }
 
-  static register = logParameterRegistry.register;
-  static unregister = logParameterRegistry.unregister;
+  static register(descriptor: LogParameterDescriptor) {
+    return logParameterRegistry.register(descriptor);
+  }
+  static unregister(key: string) {
+    return logParameterRegistry.unregister(key);
+  }
 }
