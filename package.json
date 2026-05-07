@@ -5,22 +5,25 @@
   "type": "module",
   "exports": {
     ".": {
-      "require": "./lib/index.cjs",
+      "types": "./lib/types/index.d.ts",
       "import": "./lib/esm/index.js",
-      "types": "./lib/index.d.ts"
+      "require": "./lib/cjs/index.cjs",
+      "default": "./lib/esm/index.js"
     },
     "./winston": {
-      "require": "./lib/winston/index.cjs",
+      "types": "./lib/types/winston/index.d.ts",
       "import": "./lib/esm/winston/index.js",
-      "types": "./lib/winston/index.d.ts"
+      "require": "./lib/cjs/winston/index.cjs",
+      "default": "./lib/esm/winston/index.js"
     },
     "./pino": {
-      "require": "./lib/pino/index.cjs",
+      "types": "./lib/types/pino/index.d.ts",
       "import": "./lib/esm/pino/index.js",
-      "types": "./lib/pino/index.d.ts"
+      "require": "./lib/cjs/pino/index.cjs",
+      "default": "./lib/esm/pino/index.js"
     }
   },
-  "types": "lib/index.d.ts",
+  "types": "./lib/types/index.d.ts",
   "scripts": {
     "do-install": "NPM_TOKEN=$(cat .npmtoken) npm install",
     "update-dependencies": "PREFIX=\"decaf-ts\"; npm ls | grep \"$PREFIX\" | awk -F/ '{print $NF}' | sed 's/@.*//' | xargs -I package npm update @\"$PREFIX\"/package",
@@ -88,7 +91,7 @@
   },
   "homepage": "https://github.com/decaf-ts/logging#readme",
   "devDependencies": {
-    "@decaf-ts/utils": "^0.11.11",
+    "@decaf-ts/utils": "latest",
     "@types/jest": "^30.0.0"
   },
   "dependencies": {
@@ -99,8 +102,7 @@
     "pino": "^10.1.0",
     "winston": "^3.17.0"
   },
-  "overrides": {
-    "minimatch": "^10.2.2",
-    "test-exclude": "7.0.1"
-  }
+  "main": "./lib/cjs/index.cjs",
+  "module": "./lib/esm/index.js",
+  "sideEffects": false
 }
