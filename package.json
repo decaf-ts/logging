@@ -5,25 +5,40 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./lib/types/index.d.ts",
-      "import": "./lib/esm/index.js",
-      "require": "./lib/cjs/index.cjs",
+      "import": {
+        "types": "./lib/types/index.d.mts",
+        "default": "./lib/esm/index.js"
+      },
+      "require": {
+        "types": "./lib/types/index.d.cts",
+        "default": "./lib/cjs/index.cjs"
+      },
       "default": "./lib/esm/index.js"
     },
     "./winston": {
-      "types": "./lib/types/winston/index.d.ts",
-      "import": "./lib/esm/winston/index.js",
-      "require": "./lib/cjs/winston/index.cjs",
+      "import": {
+        "types": "./lib/types/winston/index.d.mts",
+        "default": "./lib/esm/winston/index.js"
+      },
+      "require": {
+        "types": "./lib/types/winston/index.d.cts",
+        "default": "./lib/cjs/winston/index.cjs"
+      },
       "default": "./lib/esm/winston/index.js"
     },
     "./pino": {
-      "types": "./lib/types/pino/index.d.ts",
-      "import": "./lib/esm/pino/index.js",
-      "require": "./lib/cjs/pino/index.cjs",
+      "import": {
+        "types": "./lib/types/pino/index.d.mts",
+        "default": "./lib/esm/pino/index.js"
+      },
+      "require": {
+        "types": "./lib/types/pino/index.d.cts",
+        "default": "./lib/cjs/pino/index.cjs"
+      },
       "default": "./lib/esm/pino/index.js"
     }
   },
-  "types": "./lib/types/index.d.ts",
+  "types": "./lib/types/index.d.mts",
   "scripts": {
     "do-install": "NPM_TOKEN=$(cat .npmtoken) npm install",
     "update-dependencies": "PREFIX=\"decaf-ts\"; npm ls | grep \"$PREFIX\" | awk -F/ '{print $NF}' | sed 's/@.*//' | xargs -I package npm update @\"$PREFIX\"/package",
