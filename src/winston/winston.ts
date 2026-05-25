@@ -10,6 +10,21 @@ import {
 import { Logging, MiniLogger } from "../logging";
 import { LogLevel } from "../constants";
 
+type WinstonLogMethod = "error" | "warn" | "info" | "verbose" | "debug" | "silly";
+
+const LogLevelToWinston: Record<LogLevel, WinstonLogMethod> = {
+  [LogLevel.benchmark]: "info",
+  [LogLevel.fatal]: "error",
+  [LogLevel.critical]: "error",
+  [LogLevel.error]: "error",
+  [LogLevel.warn]: "warn",
+  [LogLevel.info]: "info",
+  [LogLevel.verbose]: "verbose",
+  [LogLevel.debug]: "debug",
+  [LogLevel.trace]: "silly",
+  [LogLevel.silly]: "silly",
+};
+
 /**
  * @description A logger implementation that uses Winston.
  * @summary This class extends {@link MiniLogger} to provide logging functionality using the Winston library. It configures Winston with the appropriate transports and formats based on the logging configuration.
@@ -73,8 +88,9 @@ export class WinstonLogger extends MiniLogger implements Logger {
     error?: Error,
     meta?: LogMeta
   ) {
+    const winstonLevel = LogLevelToWinston[level] ?? "info";
     const logData: LogEntry = {
-      level: level,
+      level: winstonLevel,
       message: this.createLog(level, msg, error, meta),
     };
     if (this.config("correlationId"))

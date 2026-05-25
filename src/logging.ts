@@ -386,15 +386,17 @@ export class MiniLogger implements Logger {
       case LogLevel.benchmark:
         method = console.log;
         break;
+      case LogLevel.fatal:
+      case LogLevel.critical:
+      case LogLevel.error:
+        method = console.error;
+        break;
       case LogLevel.info:
       case LogLevel.verbose:
         method = console.log;
         break;
       case LogLevel.debug:
         method = console.debug;
-        break;
-      case LogLevel.error:
-        method = console.error;
         break;
       case LogLevel.trace:
         method = console.trace;
@@ -420,6 +422,50 @@ export class MiniLogger implements Logger {
    */
   benchmark(msg: StringLike, meta?: LogMeta): void {
     this.log(LogLevel.benchmark, msg, undefined, meta);
+  }
+
+  /**
+   * @description Logs a message at the fatal level.
+   * @summary Logs a message at the fatal level for unrecoverable failures.
+   * @param {StringLike | Error} msg - The message to be logged or an Error object.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
+   * @return {void}
+   */
+  fatal(msg: StringLike | Error, e?: Error | LogMeta, meta?: LogMeta): void {
+    let errorCandidate: Error | undefined;
+    let payloadMeta: LogMeta | undefined;
+    if (e instanceof Error) {
+      errorCandidate = e;
+      payloadMeta = meta;
+    } else {
+      payloadMeta = e;
+    }
+    this.log(LogLevel.fatal, msg, errorCandidate, payloadMeta);
+  }
+
+  /**
+   * @description Logs a message at the critical level.
+   * @summary Logs a message at the critical level for severe failures that need immediate attention.
+   * @param {StringLike | Error} msg - The message to be logged or an Error object.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
+   * @return {void}
+   */
+  critical(
+    msg: StringLike | Error,
+    e?: Error | LogMeta,
+    meta?: LogMeta
+  ): void {
+    let errorCandidate: Error | undefined;
+    let payloadMeta: LogMeta | undefined;
+    if (e instanceof Error) {
+      errorCandidate = e;
+      payloadMeta = meta;
+    } else {
+      payloadMeta = e;
+    }
+    this.log(LogLevel.critical, msg, errorCandidate, payloadMeta);
   }
 
   /**
@@ -739,6 +785,38 @@ export class Logging {
    */
   static benchmark(msg: StringLike, meta?: LogMeta): void {
     return this.get().benchmark(msg, meta);
+  }
+
+  /**
+   * @description Logs a fatal message.
+   * @summary Delegates the fatal logging to the global logger instance.
+   * @param {StringLike | Error} msg - The message to be logged.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
+   * @return {void}
+   */
+  static fatal(
+    msg: StringLike | Error,
+    e?: Error | LogMeta,
+    meta?: LogMeta
+  ): void {
+    return this.get().fatal(msg, e, meta);
+  }
+
+  /**
+   * @description Logs a critical message.
+   * @summary Delegates the critical logging to the global logger instance.
+   * @param {StringLike | Error} msg - The message to be logged.
+   * @param {Error|object} [e] - Optional error or metadata to include in the log.
+   * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
+   * @return {void}
+   */
+  static critical(
+    msg: StringLike | Error,
+    e?: Error | LogMeta,
+    meta?: LogMeta
+  ): void {
+    return this.get().critical(msg, e, meta);
   }
 
   /**

@@ -30,6 +30,44 @@ describe("Logging core (integration)", () => {
     expect(Logging.getConfig().verbose).toBe(3);
   });
 
+  it("supports fatal and critical levels on MiniLogger and the Logging facade", () => {
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {
+      return undefined;
+    });
+
+    try {
+      const logger = new MiniLogger("Ctx", {
+        level: LogLevel.trace,
+        style: false,
+        timestamp: false,
+        format: "raw",
+        pattern: "{level}|{context}|{message}{stack}",
+      });
+
+      expect(typeof logger.fatal).toBe("function");
+      expect(typeof logger.critical).toBe("function");
+      expect(typeof Logging.fatal).toBe("function");
+      expect(typeof Logging.critical).toBe("function");
+
+      logger.fatal("fatal issue");
+      logger.critical("critical issue");
+      Logging.fatal("fatal facade");
+      Logging.critical("critical facade");
+
+      const output = errorSpy.mock.calls.map(([line]) => String(line));
+      expect(output.some((line) => line.includes("fatal issue"))).toBe(true);
+      expect(output.some((line) => line.includes("critical issue"))).toBe(
+        true
+      );
+      expect(output.some((line) => line.includes("fatal facade"))).toBe(true);
+      expect(output.some((line) => line.includes("critical facade"))).toBe(
+        true
+      );
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
   it("for() with method name extends context and remains callable", () => {
     const base = new MiniLogger("Ctx");
     const child = base.for("method", { level: LogLevel.error });

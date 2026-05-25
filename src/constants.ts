@@ -34,6 +34,10 @@ export const DefaultPlaceholderWrappers = ["${", "}"];
 export enum LogLevel {
   /** @description Benchmark events that capture performance metrics. */
   benchmark = "benchmark",
+  /** @description Fatal events that indicate the process cannot continue. */
+  fatal = "fatal",
+  /** @description Critical events that require immediate attention. */
+  critical = "critical",
   /** @description Error events that indicate failures requiring attention. */
   error = "error",
   /** @description Warning events that may indicate issues. */
@@ -55,6 +59,8 @@ export enum LogLevel {
  * @summary This provides a numeric representation of log levels for comparison and filtering.
  * @typedef {object} NumericLogLevelsShape
  * @property {number} benchmark - The numeric value for the benchmark level (0).
+ * @property {number} fatal - The numeric value for the fatal level (1).
+ * @property {number} critical - The numeric value for the critical level (2).
  * @property {number} error - The numeric value for the error level (3).
  * @property {number} warn - The numeric value for the warn level (6).
  * @property {number} info - The numeric value for the info level (9).
@@ -73,6 +79,8 @@ export enum LogLevel {
  */
 export const NumericLogLevels = {
   benchmark: 0,
+  fatal: 1,
+  critical: 2,
   error: 3,
   warn: 6,
   info: 9,
@@ -122,6 +130,14 @@ export const DefaultTheme: Theme = {
   logLevel: {
     benchmark: {
       fg: 32,
+      style: ["bold"],
+    },
+    fatal: {
+      fg: 31,
+      style: ["bold"],
+    },
+    critical: {
+      fg: 31,
       style: ["bold"],
     },
     error: {

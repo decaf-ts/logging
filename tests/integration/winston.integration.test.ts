@@ -1,8 +1,21 @@
 import * as winston from "winston";
+import Transport from "winston-transport";
 import { Logging, DefaultLoggingConfig } from "../../src";
 import { WinstonFactory, WinstonLogger } from "../../src/winston/winston";
 
 // No mocks: rely on winston devDependency present in package.json
+
+class MemoryTransport extends Transport {
+  messages: Array<{ level: string; message: string }> = [];
+
+  override log(
+    info: { level: string; message: string },
+    callback: () => void
+  ): void {
+    this.messages.push(info);
+    callback();
+  }
+}
 
 describe("Winston adapter (integration)", () => {
   beforeEach(() => {
@@ -25,6 +38,34 @@ describe("Winston adapter (integration)", () => {
     wl.error("oops");
     wl.verbose("vv", 1);
     wl.silly("ss");
+  });
+
+  it("supports critical and fatal levels with a real Winston transport", () => {
+    const transport = new MemoryTransport();
+    const wl = new WinstonLogger("Severity", { transports: [transport] });
+
+    expect(typeof wl.critical).toBe("function");
+    expect(typeof wl.fatal).toBe("function");
+
+    wl.critical("critical path");
+    wl.fatal("fatal path");
+
+    expect(
+      transport.messages.some((entry) => entry.message.includes("critical path"))
+    ).toBe(true);
+    expect(
+      transport.messages.some((entry) => entry.message.includes("fatal path"))
+    ).toBe(true);
+    expect(
+      transport.messages
+        .filter((entry) => entry.message.includes("critical path"))
+        .every((entry) => entry.level === "error")
+    ).toBe(true);
+    expect(
+      transport.messages
+        .filter((entry) => entry.message.includes("fatal path"))
+        .every((entry) => entry.level === "error")
+    ).toBe(true);
   });
 
   it("creates via WinstonFactory and is instance of WinstonLogger", () => {

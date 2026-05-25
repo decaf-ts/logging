@@ -85,6 +85,30 @@ export interface Logger
   benchmark(msg: StringLike, meta?: LogMeta): void;
 
   /**
+   * @description Logs a fatal message.
+   * @summary Emits the most severe failure events at the `fatal` log level.
+   * @param {StringLike|Error} msg - Message or payload to emit.
+   * @param {Error|LogMeta} [error] - Optional error or metadata to include.
+   * @param {LogMeta} [meta] - Optional metadata when an error object is supplied.
+   * @return {void}
+   */
+  fatal(msg: StringLike | Error, error?: Error | LogMeta, meta?: LogMeta): void;
+
+  /**
+   * @description Logs a critical message.
+   * @summary Emits highly severe failure events at the `critical` log level.
+   * @param {StringLike|Error} msg - Message or payload to emit.
+   * @param {Error|LogMeta} [error] - Optional error or metadata to include.
+   * @param {LogMeta} [meta] - Optional metadata when an error object is supplied.
+   * @return {void}
+   */
+  critical(
+    msg: StringLike | Error,
+    error?: Error | LogMeta,
+    meta?: LogMeta
+  ): void;
+
+  /**
    * @description Logs a `way too verbose` or a silly message.
    * @summary Emits playful or extremely verbose details at the `silly` log level.
    * @param {StringLike} msg - Message or payload to emit.
@@ -94,7 +118,7 @@ export interface Logger
 
   /**
    * @description Logs developer trace messages.
-   * @summary Emits playful or extremely verbose details at the `silly` log level.
+   * @summary Emits detailed execution trace information at the `trace` log level.
    * @param {StringLike} msg - Message or payload to emit.
    * @return {void}
    */

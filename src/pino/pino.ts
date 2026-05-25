@@ -25,6 +25,8 @@ type PinoLogMethod =
 
 const LogLevelToPino: Record<LogLevel, PinoLogMethod> = {
   [LogLevel.benchmark]: "info",
+  [LogLevel.fatal]: "fatal",
+  [LogLevel.critical]: "fatal",
   [LogLevel.error]: "error",
   [LogLevel.warn]: "warn",
   [LogLevel.info]: "info",
@@ -35,7 +37,7 @@ const LogLevelToPino: Record<LogLevel, PinoLogMethod> = {
 };
 
 const PinoToLogLevel: Partial<Record<PinoLogMethod, LogLevel>> = {
-  fatal: LogLevel.error,
+  fatal: LogLevel.fatal,
   error: LogLevel.error,
   warn: LogLevel.warn,
   info: LogLevel.info,
@@ -156,7 +158,7 @@ export class PinoLogger extends MiniLogger implements Logger {
     }
   }
 
-  fatal(msg: StringLike | Error, error?: Error, meta?: LogMeta): void {
+  override fatal(msg: StringLike | Error, error?: Error, meta?: LogMeta): void {
     const formatted = this.createLog(LogLevel.error, msg, error, meta);
     const fatal = (this.pino as any).fatal;
     if (typeof fatal === "function") {

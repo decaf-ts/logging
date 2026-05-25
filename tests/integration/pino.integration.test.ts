@@ -66,6 +66,22 @@ describe("PinoLogger (integration)", () => {
     expect(last).toContain("ERROR|Compat|boom");
   });
 
+  it("supports critical and fatal levels with a real Pino driver", () => {
+    const sink = new MemoryStream();
+    const pinoInstance = pino({ level: "trace", name: "Severity" }, sink);
+    const logger = new PinoLogger("Severity", undefined, pinoInstance);
+
+    expect(typeof logger.critical).toBe("function");
+    expect(typeof logger.fatal).toBe("function");
+
+    logger.critical("critical path");
+    logger.fatal("fatal path");
+
+    const combined = sink.chunks.join("");
+    expect(combined).toContain("critical path");
+    expect(combined).toContain("fatal path");
+  });
+
   it("can be registered globally via Logging.setFactory", () => {
     Logging.setFactory(PinoFactory);
     const sink = new MemoryStream();
