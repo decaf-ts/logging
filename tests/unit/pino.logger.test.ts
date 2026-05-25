@@ -16,20 +16,40 @@ type PinoMockInstance = {
   __calls: Record<string, string[]>;
 };
 
+const customLevels = {
+  benchmark: 100,
+  fatal: 90,
+  critical: 80,
+  error: 70,
+  warn: 60,
+  info: 50,
+  verbose: 40,
+  debug: 30,
+  trace: 20,
+  silly: 10,
+} as const;
+
 const createPinoInstance = (): PinoMockInstance & Record<string, any> => {
   const calls: Record<string, string[]> = {
+    benchmark: [],
+    fatal: [],
+    critical: [],
+    error: [],
+    warn: [],
     trace: [],
     debug: [],
     info: [],
-    warn: [],
-    error: [],
-    fatal: [],
+    verbose: [],
+    silly: [],
   };
 
   const instance: Record<string, any> = {
     level: "info",
     __options: {},
     __calls: calls,
+    benchmark: jest.fn((msg: string) => {
+      calls.benchmark.push(msg);
+    }),
     trace: jest.fn((msg: string) => {
       calls.trace.push(msg);
     }),
@@ -47,6 +67,15 @@ const createPinoInstance = (): PinoMockInstance & Record<string, any> => {
     }),
     fatal: jest.fn((msg: string) => {
       calls.fatal.push(msg);
+    }),
+    critical: jest.fn((msg: string) => {
+      calls.critical.push(msg);
+    }),
+    verbose: jest.fn((msg: string) => {
+      calls.verbose.push(msg);
+    }),
+    silly: jest.fn((msg: string) => {
+      calls.silly.push(msg);
     }),
   };
 
@@ -158,12 +187,16 @@ const buildDriver = (
     {}
 ) => {
   const base: Record<string, any> = {
+    benchmark: jest.fn(),
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    verbose: jest.fn(),
     debug: jest.fn(),
     trace: jest.fn(),
     fatal: jest.fn(),
+    critical: jest.fn(),
+    silly: jest.fn(),
     log: jest.fn(),
     level: "info",
     child: jest.fn().mockImplementation(() => base),
@@ -174,34 +207,43 @@ const buildDriver = (
 
 type OperationMethod =
   | "benchmark"
+  | "fatal"
+  | "critical"
   | "info"
   | "debug"
   | "verbose"
   | "warn"
   | "error"
-  | "trace";
+  | "trace"
+  | "silly";
 
 type ConsoleMethod = "log" | "debug" | "error" | "warn" | "trace";
 
 const methodToConsole: Record<OperationMethod, ConsoleMethod> = {
   benchmark: "log",
+  fatal: "error",
+  critical: "error",
   info: "log",
   debug: "debug",
   verbose: "log",
   warn: "warn",
   error: "error",
   trace: "trace",
+  silly: "debug",
 };
 
 const methodToPino: Record<OperationMethod, keyof PinoMockInstance["__calls"]> =
   {
-    benchmark: "info",
+    benchmark: "benchmark",
+    fatal: "fatal",
+    critical: "critical",
     info: "info",
     debug: "debug",
-    verbose: "info",
+    verbose: "verbose",
     warn: "warn",
     error: "error",
     trace: "trace",
+    silly: "silly",
   };
 
 describe("PinoLogger", () => {
@@ -237,7 +279,12 @@ describe("PinoLogger", () => {
     expect(logger).toBeInstanceOf(PinoLogger);
     expect(pinoFactory).toHaveBeenCalledTimes(1);
     const [options, destination] = pinoFactory.mock.calls[0];
-    expect(options).toMatchObject({ level: "debug", name: "Ctx" });
+    expect(options).toMatchObject({
+      level: "debug",
+      name: "Ctx",
+      customLevels,
+      useOnlyCustomLevels: true,
+    });
     expect(destination).toBeUndefined();
   });
 
@@ -397,7 +444,7 @@ describe("PinoLogger", () => {
 
   it("emits identical messages across MiniLogger, WinstonLogger, and PinoLogger", () => {
     const config: Partial<LoggingConfig> = {
-      level: LogLevel.trace,
+      level: LogLevel.silly,
       verbose: 9,
       timestamp: false,
       style: false,
@@ -408,18 +455,6 @@ describe("PinoLogger", () => {
       format: LoggingMode.RAW,
     };
 
-    const mini = new MiniLogger("Compat", config);
-    const winston = new WinstonLogger("Compat", config);
-    const pinoLogger = new PinoLogger("Compat", config);
-
-    const spies: Record<ConsoleMethod, jest.SpyInstance> = {
-      log: jest.spyOn(console, "log").mockImplementation(() => {}),
-      debug: jest.spyOn(console, "debug").mockImplementation(() => {}),
-      error: jest.spyOn(console, "error").mockImplementation(() => {}),
-      warn: jest.spyOn(console, "warn").mockImplementation(() => {}),
-      trace: jest.spyOn(console, "trace").mockImplementation(() => {}),
-    };
-
     const operations: Array<{
       method: OperationMethod;
       invoke: (logger: MiniLogger) => void;
@@ -427,6 +462,11 @@ describe("PinoLogger", () => {
       {
         method: "benchmark",
         invoke: (logger) => logger.benchmark("Benchmark test"),
+      },
+      { method: "fatal", invoke: (logger) => logger.fatal("Fatal test") },
+      {
+        method: "critical",
+        invoke: (logger) => logger.critical("Critical test"),
       },
       { method: "info", invoke: (logger) => logger.info("Info test") },
       { method: "debug", invoke: (logger) => logger.debug("Debug test") },
@@ -437,30 +477,33 @@ describe("PinoLogger", () => {
       { method: "warn", invoke: (logger) => logger.warn("Warn test") },
       { method: "error", invoke: (logger) => logger.error("Error test") },
       { method: "trace", invoke: (logger) => logger.trace("Trace test") },
+      { method: "silly", invoke: (logger) => logger.silly("Silly test") },
     ];
 
     operations.forEach(({ method, invoke }) => {
+      const miniSpy = jest
+        .spyOn(console, methodToConsole[method])
+        .mockImplementation(() => {});
+      const mini = new MiniLogger("Compat", config);
       invoke(mini);
-      const miniOutput =
-        // @ts-expect-error jest
-        spies[methodToConsole[method]].mock.calls.at(-1)?.[0];
+      const miniOutput = miniSpy.mock.calls.at(-1)?.[0];
+      miniSpy.mockRestore();
 
+      getWinstonLogCalls().length = 0;
+      const winston = new WinstonLogger("Compat", config);
       invoke(winston);
-      // @ts-expect-error jest
       const winstonOutput = getWinstonLogCalls().at(-1)?.message;
 
+      getPinoInstances().length = 0;
+      const pinoLogger = new PinoLogger("Compat", config);
       invoke(pinoLogger);
       const pinoInstance = getPinoInstances()[0];
-      // @ts-expect-error jest
       const pinoOutput = pinoInstance?.__calls[methodToPino[method]].at(-1);
+
       expect(miniOutput).toBeDefined();
       expect(winstonOutput).toEqual(miniOutput);
       expect(pinoOutput).toEqual(miniOutput);
     });
-
-    (Object.values(spies) as jest.SpyInstance[]).forEach((spy) =>
-      spy.mockRestore()
-    );
   });
 
   it("factory produces PinoLogger instances", () => {
@@ -513,23 +556,28 @@ describe("PinoLogger", () => {
     );
   });
 
-  it("delegates fatal calls to error when fatal method is unavailable", () => {
-    const errorSpy = jest.fn();
+  it("falls back to log when a custom-level method is unavailable", () => {
+    const logSpy = jest.fn();
     const driver = buildDriver({
       fatal: undefined,
-      error: errorSpy,
+      log: logSpy,
     });
     const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
     logger.fatal("failure");
-    expect(errorSpy).toHaveBeenCalledWith(expect.any(String));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ level: "fatal", msg: expect.any(String) })
+    );
   });
 
-  it("invokes the fatal method when supported by the driver", () => {
+  it("invokes the custom-level methods when supported by the driver", () => {
     const fatalSpy = jest.fn();
-    const driver = buildDriver({ fatal: fatalSpy });
+    const criticalSpy = jest.fn();
+    const driver = buildDriver({ fatal: fatalSpy, critical: criticalSpy });
     const logger = new PinoLogger("Ctx", undefined, driver as PinoBaseLogger);
     logger.fatal("fatal error");
+    logger.critical("critical error");
     expect(fatalSpy).toHaveBeenCalledWith(expect.any(String));
+    expect(criticalSpy).toHaveBeenCalledWith(expect.any(String));
   });
 
   it("delegates flush to the underlying Pino driver when present", () => {

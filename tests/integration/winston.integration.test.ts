@@ -59,12 +59,12 @@ describe("Winston adapter (integration)", () => {
     expect(
       transport.messages
         .filter((entry) => entry.message.includes("critical path"))
-        .every((entry) => entry.level === "error")
+        .every((entry) => entry.level === "critical")
     ).toBe(true);
     expect(
       transport.messages
         .filter((entry) => entry.message.includes("fatal path"))
-        .every((entry) => entry.level === "error")
+        .every((entry) => entry.level === "fatal")
     ).toBe(true);
   });
 

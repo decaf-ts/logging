@@ -24,6 +24,19 @@ class MemoryStream extends Writable {
   }
 }
 
+const customLevels = {
+  benchmark: 100,
+  fatal: 90,
+  critical: 80,
+  error: 70,
+  warn: 60,
+  info: 50,
+  verbose: 40,
+  debug: 30,
+  trace: 20,
+  silly: 10,
+} as const;
+
 const resetFactory = () =>
   Logging.setFactory((context, conf) => {
     const base =
@@ -55,7 +68,15 @@ describe("PinoLogger (integration)", () => {
 
   it("wraps a real Pino instance and emits formatted messages", () => {
     const sink = new MemoryStream();
-    const pinoInstance = pino({ level: "trace", name: "Compat" }, sink);
+    const pinoInstance = pino(
+      {
+        level: "trace",
+        customLevels,
+        useOnlyCustomLevels: true,
+        name: "Compat",
+      },
+      sink
+    );
     const logger = new PinoLogger("Compat", undefined, pinoInstance);
 
     logger.info("hello");
@@ -68,7 +89,15 @@ describe("PinoLogger (integration)", () => {
 
   it("supports critical and fatal levels with a real Pino driver", () => {
     const sink = new MemoryStream();
-    const pinoInstance = pino({ level: "trace", name: "Severity" }, sink);
+    const pinoInstance = pino(
+      {
+        level: "trace",
+        customLevels,
+        useOnlyCustomLevels: true,
+        name: "Severity",
+      },
+      sink
+    );
     const logger = new PinoLogger("Severity", undefined, pinoInstance);
 
     expect(typeof logger.critical).toBe("function");
@@ -85,7 +114,15 @@ describe("PinoLogger (integration)", () => {
   it("can be registered globally via Logging.setFactory", () => {
     Logging.setFactory(PinoFactory);
     const sink = new MemoryStream();
-    const external = pino({ level: "trace", name: "FactoryCtx" }, sink);
+    const external = pino(
+      {
+        level: "trace",
+        customLevels,
+        useOnlyCustomLevels: true,
+        name: "FactoryCtx",
+      },
+      sink
+    );
     const logger = Logging.for("FactoryCtx", undefined, external);
 
     expect(logger).toBeInstanceOf(PinoLogger);

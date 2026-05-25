@@ -14,43 +14,28 @@ import {
 } from "../types";
 import { LogLevel } from "../constants";
 
-type PinoLogMethod =
-  | "trace"
-  | "debug"
-  | "info"
-  | "warn"
-  | "error"
-  | "verbose"
-  | "fatal";
+type PinoLogMethod = LogLevel;
 
-const LogLevelToPino: Record<LogLevel, PinoLogMethod> = {
-  [LogLevel.benchmark]: "info",
-  [LogLevel.fatal]: "fatal",
-  [LogLevel.critical]: "fatal",
-  [LogLevel.error]: "error",
-  [LogLevel.warn]: "warn",
-  [LogLevel.info]: "info",
-  [LogLevel.verbose]: "info",
-  [LogLevel.debug]: "debug",
-  [LogLevel.trace]: "trace",
-  [LogLevel.silly]: "trace",
+const PinoCustomLevels: Record<LogLevel, number> = {
+  [LogLevel.benchmark]: 100,
+  [LogLevel.fatal]: 90,
+  [LogLevel.critical]: 80,
+  [LogLevel.error]: 70,
+  [LogLevel.warn]: 60,
+  [LogLevel.info]: 50,
+  [LogLevel.verbose]: 40,
+  [LogLevel.debug]: 30,
+  [LogLevel.trace]: 20,
+  [LogLevel.silly]: 10,
 };
 
-const PinoToLogLevel: Partial<Record<PinoLogMethod, LogLevel>> = {
-  fatal: LogLevel.fatal,
-  error: LogLevel.error,
-  warn: LogLevel.warn,
-  info: LogLevel.info,
-  debug: LogLevel.debug,
-  trace: LogLevel.trace,
-};
-
-const toPinoLevel = (level: LogLevel): PinoLogMethod =>
-  LogLevelToPino[level] ?? "info";
+const toPinoLevel = (level?: LogLevel): PinoLogMethod => level ?? LogLevel.info;
 
 const fromPinoLevel = (level?: string): LogLevel | undefined => {
   if (!level) return undefined;
-  return PinoToLogLevel[level as PinoLogMethod];
+  return Object.values(LogLevel).includes(level as LogLevel)
+    ? (level as LogLevel)
+    : undefined;
 };
 
 const joinContext = (segments: string[], separator: string): string => {
@@ -63,10 +48,15 @@ const buildPinoOptions = (
   config: LoggingConfig,
   overrides?: PinoLoggerOptions
 ): PinoLoggerOptions => {
-  const options: PinoLoggerOptions = {
+  const options = {
     level: toPinoLevel(config.level),
     name: context,
+    customLevels: PinoCustomLevels,
+    useOnlyCustomLevels: true,
     ...overrides,
+  } as PinoLoggerOptions & {
+    customLevels: Record<LogLevel, number>;
+    useOnlyCustomLevels: boolean;
   };
   if (!options.level) options.level = toPinoLevel(config.level);
   if (!options.name) options.name = context;
@@ -155,16 +145,6 @@ export class PinoLogger extends MiniLogger implements Logger {
         level: methodName,
         msg: formatted,
       });
-    }
-  }
-
-  override fatal(msg: StringLike | Error, error?: Error, meta?: LogMeta): void {
-    const formatted = this.createLog(LogLevel.error, msg, error, meta);
-    const fatal = (this.pino as any).fatal;
-    if (typeof fatal === "function") {
-      (fatal as (payload: unknown) => void).call(this.pino, formatted);
-    } else {
-      this.error(msg, error, meta);
     }
   }
 

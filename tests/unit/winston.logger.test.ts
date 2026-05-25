@@ -1,8 +1,26 @@
-import { DefaultLoggingConfig, Logging, LoggingMode } from "../../src";
+import {
+  DefaultLoggingConfig,
+  Logging,
+  LoggingMode,
+  LogLevel,
+} from "../../src";
 import {
   WinstonFactory,
   WinstonLogger,
 } from "../../src/winston/winston";
+
+const customLevels = {
+  benchmark: 0,
+  fatal: 1,
+  critical: 2,
+  error: 3,
+  warn: 6,
+  info: 9,
+  verbose: 12,
+  debug: 15,
+  trace: 18,
+  silly: 21,
+} as const;
 
 jest.mock("winston", () => {
   const logSpy = jest.fn();
@@ -65,6 +83,12 @@ describe("WinstonLogger (unit)", () => {
     const [{ transports }] = createLogger.mock.calls.at(-1) ?? [];
     expect(transports).toHaveLength(1);
     expect(transports?.[0]).toBe(consoleCtor.mock.instances[0]);
+  });
+
+  it("passes custom log levels to winston", () => {
+    new WinstonLogger("Ctx", { level: LogLevel.debug });
+    const [{ levels }] = createLogger.mock.calls.at(-1) ?? [];
+    expect(levels).toEqual(customLevels);
   });
 
   it("reuses explicit transports without creating a Console", () => {

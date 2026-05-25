@@ -8,21 +8,19 @@ import {
   StringLike,
 } from "../types";
 import { Logging, MiniLogger } from "../logging";
-import { LogLevel } from "../constants";
+import { LogLevel, NumericLogLevels } from "../constants";
 
-type WinstonLogMethod = "error" | "warn" | "info" | "verbose" | "debug" | "silly";
-
-const LogLevelToWinston: Record<LogLevel, WinstonLogMethod> = {
-  [LogLevel.benchmark]: "info",
-  [LogLevel.fatal]: "error",
-  [LogLevel.critical]: "error",
-  [LogLevel.error]: "error",
-  [LogLevel.warn]: "warn",
-  [LogLevel.info]: "info",
-  [LogLevel.verbose]: "verbose",
-  [LogLevel.debug]: "debug",
-  [LogLevel.trace]: "silly",
-  [LogLevel.silly]: "silly",
+const WinstonLevels: Record<LogLevel, number> = {
+  [LogLevel.benchmark]: NumericLogLevels.benchmark,
+  [LogLevel.fatal]: NumericLogLevels.fatal,
+  [LogLevel.critical]: NumericLogLevels.critical,
+  [LogLevel.error]: NumericLogLevels.error,
+  [LogLevel.warn]: NumericLogLevels.warn,
+  [LogLevel.info]: NumericLogLevels.info,
+  [LogLevel.verbose]: NumericLogLevels.verbose,
+  [LogLevel.debug]: NumericLogLevels.debug,
+  [LogLevel.trace]: NumericLogLevels.trace,
+  [LogLevel.silly]: NumericLogLevels.silly,
 };
 
 /**
@@ -61,11 +59,12 @@ export class WinstonLogger extends MiniLogger implements Logger {
       typeof message === "string" ? message : JSON.stringify(message)
     );
 
-    const winstonConfig: LoggerOptions = {
+    const winstonConfig = {
       level: config.level,
+      levels: WinstonLevels,
       transports,
       format: passThrough,
-    };
+    } as LoggerOptions & { levels: Record<LogLevel, number> };
     this.winston = winston.createLogger(winstonConfig);
   }
 
@@ -88,9 +87,8 @@ export class WinstonLogger extends MiniLogger implements Logger {
     error?: Error,
     meta?: LogMeta
   ) {
-    const winstonLevel = LogLevelToWinston[level] ?? "info";
     const logData: LogEntry = {
-      level: winstonLevel,
+      level,
       message: this.createLog(level, msg, error, meta),
     };
     if (this.config("correlationId"))
