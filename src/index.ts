@@ -7,6 +7,7 @@ export * from "./filters";
 export * from "./constants";
 export * from "./decorators";
 export * from "./environment";
+export * from "./errors";
 export * from "./LoggedClass";
 export * from "./logging";
 export * from "./logParameters";
@@ -41,7 +42,6 @@ export const COMMIT = "##COMMIT##";
  * @const FULL_VERSION
  */
 export const FULL_VERSION = "##FULL_VERSION##";
-
 
 /**
  * @description Current package version string.
