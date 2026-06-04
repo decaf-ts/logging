@@ -83,6 +83,32 @@ describe("Environment.proxy", () => {
     }
   });
 
+  it("parses integers and floats from ENV overrides", () => {
+    const intKey = "SERVICE__PORT";
+    const floatKey = "SERVICE__RATIO";
+    const previousInt = process.env[intKey];
+    const previousFloat = process.env[floatKey];
+    process.env[intKey] = "42";
+    process.env[floatKey] = "3.14";
+
+    try {
+      const env = Environment.accumulate({
+        service: { port: 0, ratio: 0 },
+      });
+
+      expect(env.service.port).toBe(42);
+      expect(env.service.ratio).toBe(3.14);
+      expect(typeof env.service.port).toBe("number");
+      expect(typeof env.service.ratio).toBe("number");
+    } finally {
+      if (typeof previousInt === "undefined") delete process.env[intKey];
+      else process.env[intKey] = previousInt;
+
+      if (typeof previousFloat === "undefined") delete process.env[floatKey];
+      else process.env[floatKey] = previousFloat;
+    }
+  });
+
   it("parses numeric value regardless", () => {
     const env = Environment.accumulate({ service2: { port: 0 } });
     expect(env.service2.port).toBe(0);
@@ -136,6 +162,37 @@ describe("Environment.proxy", () => {
     expect(String((env as any).parent.list[0])).toBe("PARENT__LIST__0");
     expect(String((env as any).parent.list)).toBe("PARENT__LIST");
     expect((env as any).parent.list[2]).toBeUndefined();
+  });
+
+  it("infers array dimensions from runtime overrides beyond the seed model", () => {
+    const envKeys = [
+      "ARRAY_PROP__0__OBJ",
+      "ARRAY_PROP__1__OBJ",
+      "ARRAY_PROP__2__OBJ",
+    ];
+    const previousValues = envKeys.map((key) => process.env[key]);
+    process.env[envKeys[0]] = "zero";
+    process.env[envKeys[1]] = "one";
+    process.env[envKeys[2]] = "two";
+
+    try {
+      const env = Environment.accumulate({
+        arrayProp: [{ obj: "seed" }],
+      });
+
+      expect(env.arrayProp[0].obj).toBe("zero");
+      expect(env.arrayProp[1].obj).toBe("one");
+      expect(env.arrayProp[2].obj).toBe("two");
+      expect(Object.keys(env.arrayProp as any)).toEqual(
+        expect.arrayContaining(["0", "1", "2"])
+      );
+    } finally {
+      envKeys.forEach((key, index) => {
+        const previousValue = previousValues[index];
+        if (typeof previousValue === "undefined") delete process.env[key];
+        else process.env[key] = previousValue;
+      });
+    }
   });
 
   it("handles custom stuff", () => {

@@ -149,7 +149,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           const fromEnv = this.fromEnv(k);
           if (typeof fromEnv !== "undefined") return fromEnv;
           if (v && typeof v === "object") {
-            if (Array.isArray(v)) return v;
+            if (Array.isArray(v)) return Environment.buildEnvProxy(v as any, [k]);
             return Environment.buildEnvProxy(v as any, [k]);
           }
           // If the model provides an empty string, mark with EmptyValue so instance proxy can return undefined without enabling key composition
@@ -187,6 +187,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         get(_target, prop) {
           if (typeof prop !== "string") return undefined;
           if (Array.isArray(model) && prop === "length") return model.length;
+          if (Array.isArray(model) && prop in Array.prototype) {
+            const value = Reflect.get(model, prop, model);
+            return typeof value === "function" ? value.bind(model) : value;
+          }
           const nextPath = [...path, prop];
           const { key: envKey, value: runtimeRaw } =
             Environment.readRuntimeForPath(nextPath);
@@ -389,6 +393,48 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     return { key: formattedKey, value: undefined };
   }
 
+  private static runtimeEnv() {
+    if (isBrowser()) {
+      return (
+        globalThis as typeof globalThis & {
+          [BrowserEnvKey]?: Record<string, unknown>;
+        }
+      )[BrowserEnvKey];
+    }
+
+    return (globalThis as any)?.process?.env as Record<string, unknown> | undefined;
+  }
+
+  private static getRuntimeChildKeys(path: string[]) {
+    const env = Environment.runtimeEnv();
+    if (!env) return [];
+
+    const prefixes = [
+      Environment.buildEnvKey(path),
+      Environment.buildRawKey(path),
+    ];
+    const childKeys = new Set<string>();
+
+    Object.keys(env).forEach((key) => {
+      prefixes.forEach((prefix) => {
+        if (!prefix) return;
+        const fullPrefix = `${prefix}${ENV_PATH_DELIMITER}`;
+        if (key.startsWith(fullPrefix)) {
+          const remainder = key.slice(fullPrefix.length);
+          const childKey = remainder.split(ENV_PATH_DELIMITER)[0];
+          if (childKey) childKeys.add(childKey);
+        }
+      });
+    });
+
+    return [...childKeys];
+  }
+
+  private static hasRuntimePath(path: string[]) {
+    const { value } = Environment.readRuntimeForPath(path);
+    return typeof value !== "undefined" || Environment.getRuntimeChildKeys(path).length > 0;
+  }
+
   /**
    * @description Builds a proxy that composes environment keys for nested properties.
    * @summary This allows chained property access to emit uppercase ENV identifiers, while honoring existing runtime overrides.
@@ -418,6 +464,10 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         }
         if (typeof prop === "symbol") return undefined;
 
+        if (Array.isArray(current) && prop in Array.prototype) {
+          const value = Reflect.get(current, prop, current);
+          return typeof value === "function" ? value.bind(current) : value;
+        }
         if (Array.isArray(current) && prop === "length") return current.length;
         const nextPath = [...path, prop];
         const composedKey = Environment.buildEnvKey(nextPath);
@@ -434,9 +484,14 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         const hasProp =
           !!current && Object.prototype.hasOwnProperty.call(current, prop);
         const nextModel = hasProp ? (current as any)[prop] : undefined;
+        const hasRuntimeDescendant = Environment.hasRuntimePath(nextPath);
 
         if (Array.isArray(current) && isArrayIndex(prop)) {
-          if (!hasProp) return undefined;
+          if (!hasProp) {
+            return hasRuntimeDescendant
+              ? Environment.buildEnvProxy(undefined, nextPath)
+              : undefined;
+          }
           if (nextModel && typeof nextModel === "object")
             return Environment.buildEnvProxy(nextModel, nextPath);
           return Environment.parseRuntimeValue(nextModel);
@@ -452,16 +507,27 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           return Environment.parseRuntimeValue(nextModel);
         }
 
+        if (hasRuntimeDescendant) {
+          return Environment.buildEnvProxy(undefined, nextPath);
+        }
+
         // Always return a proxy for further path composition when no ENV value;
         // do not surface primitive model defaults here (this API is for key composition).
         return Environment.buildEnvProxy(undefined, nextPath);
       },
       ownKeys() {
-        return current ? Reflect.ownKeys(current) : [];
+        const keys = new Set<string | symbol>();
+        if (current) {
+          Reflect.ownKeys(current).forEach((key) => keys.add(key));
+        }
+        Environment.getRuntimeChildKeys(path).forEach((key) => keys.add(key));
+        return [...keys];
       },
       getOwnPropertyDescriptor(_t, p) {
-        if (!current) return undefined as any;
-        if (Object.prototype.hasOwnProperty.call(current, p)) {
+        if (current && Object.prototype.hasOwnProperty.call(current, p)) {
+          return Reflect.getOwnPropertyDescriptor(current, p);
+        }
+        if (typeof p === "string" && Environment.hasRuntimePath([...path, p])) {
           return { enumerable: true, configurable: true } as PropertyDescriptor;
         }
         return undefined as any;
