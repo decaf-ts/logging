@@ -91,6 +91,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     });
   }
 
+  private static isProxyableObject(value: unknown): value is object {
+    if (!value || typeof value !== "object") return false;
+    if (Array.isArray(value)) return true;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  }
+
   /**
    * @description Retrieves a value from the runtime environment.
    * @summary This method handles browser and Node.js environments by normalizing keys and parsing values.
@@ -211,7 +218,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
           if (typeof modelValue === "undefined") return undefined;
           if (modelValue === "") throw missing(envKey);
 
-          if (modelValue && typeof modelValue === "object") {
+          if (Environment.isProxyableObject(modelValue)) {
             return createNestedProxy(modelValue, nextPath);
           }
 
@@ -257,7 +264,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
         }
 
         const modelValue = modelRoot[prop];
-        if (modelValue && typeof modelValue === "object") {
+        if (Environment.isProxyableObject(modelValue)) {
           return createNestedProxy(modelValue, [prop]);
         }
 
@@ -492,13 +499,14 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
               ? Environment.buildEnvProxy(undefined, nextPath)
               : undefined;
           }
-          if (nextModel && typeof nextModel === "object")
+          if (Environment.isProxyableObject(nextModel))
             return Environment.buildEnvProxy(nextModel, nextPath);
           return Environment.parseRuntimeValue(nextModel);
         }
 
         const isNextObject = nextModel && typeof nextModel === "object";
-        if (isNextObject) return Environment.buildEnvProxy(nextModel, nextPath);
+        if (isNextObject && Environment.isProxyableObject(nextModel))
+          return Environment.buildEnvProxy(nextModel, nextPath);
 
         if (hasProp && nextModel === "") return undefined;
         if (hasProp && typeof nextModel === "undefined") return undefined;

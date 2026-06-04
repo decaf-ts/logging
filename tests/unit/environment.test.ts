@@ -181,6 +181,26 @@ describe("Environment", () => {
     expect(Object.getOwnPropertyDescriptor(target, "missing")).toBeUndefined();
   });
 
+  it("stringifies proxies that contain RegExp values without throwing", () => {
+    const target = (Environment as any).buildEnvProxy(
+      {
+        filter: {
+          regexp: /secret/i,
+          replacement: "***",
+        },
+      },
+      ["cfg"]
+    );
+
+    expect(() => JSON.stringify(target)).not.toThrow();
+    expect(JSON.parse(JSON.stringify(target))).toEqual({
+      filter: {
+        regexp: {},
+        replacement: "***",
+      },
+    });
+  });
+
   it("buildEnvProxy reads values from browser ENV storage", () => {
     (isBrowser as jest.Mock).mockReturnValue(true);
     (globalThis as any).ENV = { CFG__URL: "https://example" };
