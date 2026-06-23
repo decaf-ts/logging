@@ -117,6 +117,9 @@
     "pino": "^10.1.0",
     "winston": "^3.17.0"
   },
+  "overrides": {
+    "js-yaml": "^4.2.0"
+  },
   "main": "./lib/cjs/index.cjs",
   "module": "./lib/esm/index.js",
   "sideEffects": false
