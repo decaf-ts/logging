@@ -192,7 +192,22 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     const createNestedProxy = (model: any, path: string[]): any => {
       const handler: ProxyHandler<any> = {
         get(_target, prop) {
-          if (typeof prop !== "string") return undefined;
+          // Mirror buildEnvProxy: handle JS protocol methods so they are
+          // never interpreted as env-var lookups (which would throw here).
+          if (prop === Symbol.toPrimitive)
+            return () => Environment.buildEnvKey(path);
+          if (prop === "toString")
+            return () => Environment.buildEnvKey(path);
+          if (prop === "valueOf")
+            return () => Environment.buildEnvKey(path);
+          if (typeof prop === "symbol") return undefined;
+          // orThrow-specific: these would otherwise fall through to the
+          // missing-env throw below. Return undefined so JSON.stringify
+          // (toJSON) and await (then) ignore the proxy, and constructor
+          // reflects the real prototype.
+          if (prop === "toJSON") return undefined;
+          if (prop === "then") return undefined;
+          if (prop === "constructor") return Object;
           if (Array.isArray(model) && prop === "length") return model.length;
           if (Array.isArray(model) && prop in Array.prototype) {
             const value = Reflect.get(model, prop, model);

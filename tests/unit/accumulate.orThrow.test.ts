@@ -49,4 +49,55 @@ describe("Environment.accumulate preserves orThrow", () => {
     if (typeof prev === "undefined") delete process.env[key];
     else process.env[key] = prev;
   });
+
+  it("orThrow nested proxies survive JSON.stringify (toJSON called internally)", () => {
+    (isBrowser as jest.Mock).mockReturnValue(false);
+
+    const hostKey = "DB__HOST";
+    const prevHost = process.env[hostKey];
+    process.env[hostKey] = "localhost";
+
+    const env = Environment.accumulate({
+      db: { host: "", port: 5432 },
+    });
+
+    // JSON.stringify calls .toJSON() on the proxy internally.
+    // The proxy must not interpret "toJSON" as an env-var lookup
+    // (which would build key "DB__TO_JSON" and throw "required but was undefined").
+    const db = env.orThrow().db;
+    expect(() => JSON.stringify(db)).not.toThrow();
+
+    const parsed = JSON.parse(JSON.stringify(db));
+    expect(parsed.host).toBe("localhost");
+    expect(parsed.port).toBe(5432);
+
+    if (typeof prevHost === "undefined") delete process.env[hostKey];
+    else process.env[hostKey] = prevHost;
+  });
+
+  it("orThrow nested proxies do not interpret well-known methods as env vars", () => {
+    (isBrowser as jest.Mock).mockReturnValue(false);
+
+    const env = Environment.accumulate({
+      server: { host: "0.0.0.0", port: 8080 },
+    });
+
+    const server = env.orThrow().server;
+
+    // `then` is checked by the JS runtime when awaiting a thenable.
+    // If the proxy returns a truthy value, `await` treats it as a Promise.
+    expect(server.then).toBeUndefined();
+
+    // `toJSON` is called by JSON.stringify. Must not throw.
+    expect(() => server.toJSON).not.toThrow();
+
+    // `toString` / `valueOf` / `Symbol.toPrimitive` are used for string
+    // coercion and should return the composed env key (same as buildEnvProxy).
+    expect(server.toString()).toBe("SERVER");
+    expect(server.valueOf()).toBe("SERVER");
+    expect(String(server)).toBe("SERVER");
+
+    // `constructor` should reflect the real prototype, not throw.
+    expect(server.constructor).toBe(Object);
+  });
 });
