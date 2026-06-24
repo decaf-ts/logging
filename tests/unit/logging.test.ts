@@ -248,7 +248,7 @@ describe("MiniLogger", () => {
   });
 
   describe("clear", () => {
-    it("resets proxy context and config overrides", () => {
+    it("resets proxy context but preserves config overrides", () => {
       const child = logger.for("method", { level: LogLevel.debug });
       expect((child as any).context).toEqual(["TestContext", "method"]);
       expect((child as any).config("level")).toBe(LogLevel.debug);
@@ -257,9 +257,7 @@ describe("MiniLogger", () => {
 
       expect(cleared).toBe(child);
       expect((cleared as any).context).toEqual(["TestContext"]);
-      expect((cleared as any).config("level")).toBe(
-        (logger as any).config("level")
-      );
+      expect((cleared as any).config("level")).toBe(LogLevel.debug);
     });
 
     it("resets the base context on the root instance", () => {

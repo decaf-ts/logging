@@ -158,7 +158,6 @@ export class MiniLogger implements Logger {
         if (p === "clear") {
           return () => {
             contextSegments = [...baseContext];
-            childConfig = undefined;
             return receiver;
           };
         }
@@ -452,11 +451,7 @@ export class MiniLogger implements Logger {
    * @param {object} [meta] - Optional metadata to include with the entry when an error is supplied.
    * @return {void}
    */
-  critical(
-    msg: StringLike | Error,
-    e?: Error | LogMeta,
-    meta?: LogMeta
-  ): void {
+  critical(msg: StringLike | Error, e?: Error | LogMeta, meta?: LogMeta): void {
     let errorCandidate: Error | undefined;
     let payloadMeta: LogMeta | undefined;
     if (e instanceof Error) {
