@@ -172,6 +172,25 @@ export class MiniLogger implements Logger {
         }
         if (p === "for") {
           return (...innerArgs: Parameters<MiniLogger["for"]>) => {
+            if (childConfig) {
+              const first = innerArgs[0];
+              const isContextArg =
+                typeof first === "string" ||
+                isClass(first) ||
+                isInstance(first) ||
+                isFunction(first);
+              if (isContextArg) {
+                innerArgs[1] = {
+                  ...childConfig,
+                  ...(innerArgs[1] || {}),
+                } as Partial<LoggingConfig>;
+              } else if (first && typeof first === "object") {
+                innerArgs[0] = {
+                  ...childConfig,
+                  ...(first as object),
+                };
+              }
+            }
             const originalContext = Array.isArray(target.context)
               ? [...target.context]
               : typeof target.context === "string" && target.context
@@ -184,6 +203,15 @@ export class MiniLogger implements Logger {
             } finally {
               target.context = originalContext;
             }
+          };
+        }
+        if (p === "getConfigSnapshot") {
+          return () => {
+            const snapshot = target.getConfigSnapshot();
+            if (childConfig) {
+              Object.assign(snapshot, childConfig);
+            }
+            return snapshot;
           };
         }
         return result;

@@ -245,6 +245,43 @@ describe("MiniLogger", () => {
       );
       expect(logString).not.toContain(JSON.stringify(metaPayload));
     });
+
+    it("preserves config overrides across chained .for() calls (config then context)", () => {
+      const child = logger.for({ level: LogLevel.debug }).for("MyClass");
+      expect((child as any).config("level")).toBe(LogLevel.debug);
+    });
+
+    it("preserves config overrides across chained .for() calls (context then config)", () => {
+      const child = logger.for("MyClass").for({ level: LogLevel.debug });
+      expect((child as any).config("level")).toBe(LogLevel.debug);
+    });
+
+    it("merges config from multiple .for(config) calls in a chain", () => {
+      const child = logger
+        .for({ level: LogLevel.debug })
+        .for({ verbose: 3 })
+        .for("MyClass");
+      expect((child as any).config("level")).toBe(LogLevel.debug);
+      expect((child as any).config("verbose")).toBe(3);
+    });
+
+    it("includes childConfig in getConfigSnapshot()", () => {
+      Logging.setConfig({ ...DefaultLoggingConfig, format: LoggingMode.RAW });
+      const child = logger.for({ correlationId: "abc123" }).for("MyClass");
+      const snapshot = (child as any).getConfigSnapshot();
+      expect(snapshot.correlationId).toBe("abc123");
+    });
+
+    it("includes accumulated childConfig in getConfigSnapshot() after chaining", () => {
+      Logging.setConfig({ ...DefaultLoggingConfig, format: LoggingMode.RAW });
+      const child = logger
+        .for({ correlationId: "abc" })
+        .for({ verbose: 3 })
+        .for("MyClass");
+      const snapshot = (child as any).getConfigSnapshot();
+      expect(snapshot.correlationId).toBe("abc");
+      expect(snapshot.verbose).toBe(3);
+    });
   });
 
   describe("clear", () => {
@@ -306,6 +343,25 @@ describe("MiniLogger", () => {
       const next = cleared.for("Final");
       expect(next).toBeInstanceOf(MiniLogger);
       expect((next as any).context).toEqual(["TestContext", "Final"]);
+    });
+
+    it("preserves config overrides through clear().for() chain", () => {
+      const child = logger.for({ level: LogLevel.debug }).for("MyClass");
+      expect((child as any).config("level")).toBe(LogLevel.debug);
+
+      const cleared = child.clear();
+      expect((cleared as any).config("level")).toBe(LogLevel.debug);
+
+      const next = cleared.for("OtherClass");
+      expect((next as any).config("level")).toBe(LogLevel.debug);
+    });
+
+    it("preserves config overrides in getConfigSnapshot after clear()", () => {
+      Logging.setConfig({ ...DefaultLoggingConfig, format: LoggingMode.RAW });
+      const child = logger.for({ correlationId: "abc" }).for("MyClass");
+      const cleared = child.clear();
+      const snapshot = (cleared as any).getConfigSnapshot();
+      expect(snapshot.correlationId).toBe("abc");
     });
   });
 
