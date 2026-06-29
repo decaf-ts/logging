@@ -19,14 +19,19 @@ export type EnvironmentFactory<T extends object, E extends Environment<T>> = (
   ...args: unknown[]
 ) => E;
 
+type EnvironmentProperties<T extends object> = {
+  [K in keyof T]: T[K];
+};
+
 // Default to `any` so standalone static `Environment.accumulate(...)` calls
 // remain permissive and don't narrow the global singleton's shape.
 export type EnvironmentInstance<T extends object = any> = Environment<T> &
-  T & { orThrow(): EnvironmentInstance<any> };
+  EnvironmentProperties<T> & { orThrow(): EnvironmentInstance<T> };
 
 export type AccumulatedEnvironment<T extends object = any> =
-  EnvironmentInstance<T> &
-    ObjectAccumulator<T> & {
+  Omit<Environment<T>, "accumulate"> &
+    EnvironmentProperties<T> & {
+      orThrow(): EnvironmentInstance<T>;
       accumulate<V extends object>(value: V): AccumulatedEnvironment<T & V>;
     };
 
@@ -177,9 +182,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   /**
    * @description Returns a proxy that enforces required environment variables.
    * @summary Accessing a property that resolves to `undefined` or an empty string when declared in the model will throw an error.
-   * @return {EnvironmentInstance<any>} A proxy of the environment that enforces required variables.
+   * @return {EnvironmentInstance<T>} A proxy of the environment that enforces required variables.
    */
-  orThrow(): EnvironmentInstance<any> {
+  orThrow(): EnvironmentInstance<T> {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const base = this;
     const modelRoot = (base as any)[ModelSymbol] as Record<string, any>;
@@ -294,7 +299,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
       },
     };
 
-    return new Proxy(base, handler) as EnvironmentInstance<any>;
+    return new Proxy(base, handler) as EnvironmentInstance<T>;
   }
 
   /**
@@ -339,10 +344,13 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
   // to the ObjectAccumulator return type which lacks that method.
   public override accumulate<V extends object>(
     value: V
-  ): AccumulatedEnvironment<T & V> {
+  ): T & V & ObjectAccumulator<T & V> & EnvironmentInstance<T & V> {
     // delegate to base behavior to define properties and update internal size
     super.accumulate(value as any);
-    return this as unknown as AccumulatedEnvironment<T & V>;
+    return this as unknown as T &
+      V &
+      ObjectAccumulator<T & V> &
+      EnvironmentInstance<T & V>;
   }
 
   /**
@@ -351,9 +359,9 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
    * @summary This method adds new properties and hides raw descriptors to avoid leaking enumeration semantics.
    * @template V
    * @param {V} value - The object to merge into the environment.
-   * @return {AccumulatedEnvironment<any>} The updated environment reference.
+   * @return {AccumulatedEnvironment<V>} The updated environment reference.
    */
-  static accumulate<V extends object>(value: V): AccumulatedEnvironment<any> {
+  static accumulate<V extends object>(value: V): AccumulatedEnvironment<V> {
     const instance = Environment.instance<Environment<any>>();
     Object.keys(instance as any).forEach((key) => {
       const desc = Object.getOwnPropertyDescriptor(instance as any, key);
@@ -370,7 +378,7 @@ export class Environment<T extends object> extends ObjectAccumulator<T> {
     instance.accumulate(value);
     // Also expose the ObjectAccumulator typing so chained accumulate calls
     // preserve the accumulated type information.
-    return instance as unknown as AccumulatedEnvironment<any>;
+    return instance as unknown as AccumulatedEnvironment<V>;
   }
 
   /**

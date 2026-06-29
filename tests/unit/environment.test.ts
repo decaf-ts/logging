@@ -43,6 +43,32 @@ describe("Environment", () => {
     expect(keys).toContain("anotherKey");
   });
 
+  it("preserves accumulated property types after accumulate()", () => {
+    const env = Environment.accumulate({
+      service: {
+        host: "localhost",
+        port: 8080,
+        nested: {
+          enabled: true,
+        },
+      },
+      retries: 3,
+    });
+
+    const host: string = env.service.host;
+    const port: number = env.service.port;
+    const enabled: boolean = env.service.nested.enabled;
+    const retries: number = env.retries;
+
+    expect(host).toBe("localhost");
+    expect(port).toBe(8080);
+    expect(enabled).toBe(true);
+    expect(retries).toBe(3);
+
+    // @ts-expect-error Environment.accumulate() must not collapse to any.
+    void env.doesNotExist;
+  });
+
   it("Should retrieve environment variables from process.env in Node.js", () => {
     const mockProcessEnv = {
       TEST_VAR: "test_value",

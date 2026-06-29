@@ -11,6 +11,86 @@ describe("Environment.accumulate preserves orThrow", () => {
     jest.clearAllMocks();
   });
 
+  it("preserves types across three chained accumulations and their orThrow proxies", () => {
+    const level1 = Environment.accumulate({ alpha: "one" });
+    const level1Proxy = level1.orThrow();
+    const alpha1: string = level1Proxy.alpha;
+
+    expect(alpha1).toBe("one");
+    expect(level1Proxy.alpha).toBe("one");
+
+    // @ts-expect-error level1Proxy must not collapse to any.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    level1Proxy.beta;
+
+    const level2 = level1.accumulate({ beta: 2 });
+    const level2Proxy = level2.orThrow();
+    const level2TypeCheck: {
+      alpha: string;
+      beta: number;
+    } = level2Proxy;
+    const alpha2: string = level2Proxy.alpha;
+    const beta2: number = level2Proxy.beta;
+
+    expect(alpha2).toBe("one");
+    expect(beta2).toBe(2);
+    expect(level2TypeCheck.alpha).toBe("one");
+    expect(level2TypeCheck.beta).toBe(2);
+    expect(level2Proxy.alpha).toBe("one");
+    expect(level2Proxy.beta).toBe(2);
+
+    // @ts-expect-error level2Proxy must not collapse to any.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    level2Proxy.gamma;
+
+    const level3 = level2.accumulate({ gamma: true });
+    const level3Proxy = level3.orThrow();
+    const level3TypeCheck: {
+      alpha: string;
+      beta: number;
+      gamma: boolean;
+    } = level3Proxy;
+    const alpha3: string = level3Proxy.alpha;
+    const beta3: number = level3Proxy.beta;
+    const gamma3: boolean = level3Proxy.gamma;
+
+    expect(alpha3).toBe("one");
+    expect(beta3).toBe(2);
+    expect(gamma3).toBe(true);
+    expect(level3TypeCheck.alpha).toBe("one");
+    expect(level3TypeCheck.beta).toBe(2);
+    expect(level3TypeCheck.gamma).toBe(true);
+    expect(level3Proxy.alpha).toBe("one");
+    expect(level3Proxy.beta).toBe(2);
+    expect(level3Proxy.gamma).toBe(true);
+
+    // @ts-expect-error level3Proxy must not collapse to any.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    level3Proxy.delta;
+
+    const chainedProxy = Environment.accumulate({ alpha: "one" })
+      .accumulate({ beta: 2 })
+      .accumulate({ gamma: true })
+      .orThrow();
+
+    const chainedTypeCheck: {
+      alpha: string;
+      beta: number;
+      gamma: boolean;
+    } = chainedProxy;
+
+    expect(chainedTypeCheck.alpha).toBe("one");
+    expect(chainedTypeCheck.beta).toBe(2);
+    expect(chainedTypeCheck.gamma).toBe(true);
+    expect(chainedProxy.alpha).toBe("one");
+    expect(chainedProxy.beta).toBe(2);
+    expect(chainedProxy.gamma).toBe(true);
+
+    // @ts-expect-error chainedProxy must not collapse to any.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    chainedProxy.delta;
+  });
+
   it("keeps orThrow after multiple accumulate calls and returns the proxied instance", () => {
     // First accumulation
     const first = Environment.accumulate({ alpha: "one" });
@@ -18,12 +98,13 @@ describe("Environment.accumulate preserves orThrow", () => {
     expect(first.orThrow().alpha).toBe("one");
 
     // Second accumulation
-    const second = Environment.accumulate({ beta: "two" });
+    const second = first.accumulate({ beta: "two" });
     expect(typeof second.orThrow).toBe("function");
+    expect(second.orThrow().alpha).toBe("one");
     expect(second.orThrow().beta).toBe("two");
 
-    // The singleton instance should reflect both values
-    const combined = Environment.accumulate({ gamma: "three" });
+    // The chained singleton instance should reflect all values
+    const combined = second.accumulate({ gamma: "three" });
     expect(combined.orThrow().alpha).toBe("one");
     expect(combined.orThrow().beta).toBe("two");
     expect(combined.orThrow().gamma).toBe("three");
