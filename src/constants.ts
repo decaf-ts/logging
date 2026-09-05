@@ -127,6 +127,10 @@ export const DefaultTheme: Theme = {
     },
   },
   method: {},
+  action: {
+    fg: [18],
+    style: [1, 3],
+  },
   logLevel: {
     benchmark: {
       fg: 32,

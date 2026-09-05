@@ -272,7 +272,9 @@ export class MiniLogger implements Logger {
     level: LogLevel,
     message: StringLike | Error,
     error?: Error,
-    meta?: LogMeta
+    meta?: LogMeta,
+    action?: string,
+    actionCode?: number
   ): string {
     const styleEnabled = Boolean(this.config("style"));
     const separator = this.config("separator");
@@ -307,8 +309,18 @@ export class MiniLogger implements Logger {
 
     let stack: string | undefined;
     let stackLabel: string | undefined;
+    let errorCode: number | undefined;
+    let errorName: string | undefined;
     if (error || message instanceof Error) {
       const candidate = error || (message as Error);
+      const candidateCode = (candidate as { code?: unknown }).code;
+      if (typeof candidateCode === "number") {
+        errorCode = candidateCode;
+      }
+      const candidateName = (candidate as { name?: unknown }).name;
+      if (typeof candidateName === "string" && candidateName.length) {
+        errorName = candidateName;
+      }
       if (candidate.stack) {
         stackLabel =
           typeof message === "string" ? filteredMessage : candidate.message;
@@ -336,6 +348,10 @@ export class MiniLogger implements Logger {
       metaString: filteredMetaString,
       stack,
       stackLabel,
+      action,
+      actionCode,
+      errorCode,
+      errorName,
       applyTheme,
     };
 
@@ -451,7 +467,31 @@ export class MiniLogger implements Logger {
     this.log(LogLevel.benchmark, msg, undefined, meta);
   }
 
-  /**
+  action(
+    action: string,
+    message: StringLike,
+    code?: number,
+    ...rest: any[]
+  ): void {
+    let meta: LogMeta | undefined;
+    if (rest.length && rest[0] && typeof rest[0] === "object") {
+      meta = rest[0] as LogMeta;
+    }
+    this.logAction(action, message, code, meta);
+  }
+
+  protected logAction(
+    action: string,
+    message: StringLike,
+    code?: number,
+    meta?: LogMeta
+  ): void {
+    const rawMessage =
+      typeof message === "string" ? message : String(message);
+    console.log(
+      this.createLog(LogLevel.info, rawMessage, undefined, meta, action, code)
+    );
+  }  /**
    * @description Logs a message at the fatal level.
    * @summary Logs a message at the fatal level for unrecoverable failures.
    * @param {StringLike | Error} msg - The message to be logged or an Error object.
@@ -808,6 +848,15 @@ export class Logging {
    */
   static benchmark(msg: StringLike, meta?: LogMeta): void {
     return this.get().benchmark(msg, meta);
+  }
+
+  static action(
+    action: string,
+    message: StringLike,
+    code?: number,
+    ...rest: any[]
+  ): void {
+    return this.get().action(action, message, code, ...rest);
   }
 
   /**

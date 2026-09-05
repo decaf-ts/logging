@@ -15,6 +15,10 @@ export type LogParameterPayload = {
   metaString?: string;
   stack?: string;
   stackLabel?: string;
+  action?: string;
+  actionCode?: number;
+  errorCode?: number;
+  errorName?: string;
   applyTheme(value: string, type: string): string;
 };
 
@@ -259,10 +263,18 @@ const registerDefault = () => {
     .register({
       key: "level",
       render(payload) {
+        if (payload.action !== undefined) {
+          return payload.actionCode !== undefined
+            ? `${payload.action} - ${payload.actionCode}`
+            : payload.action;
+        }
         if (payload.config.logLevel === false) return undefined;
         return payload.level.toUpperCase();
       },
       style(rendered, payload) {
+        if (payload.action !== undefined) {
+          return payload.applyTheme(rendered, "action");
+        }
         return payload.applyTheme(rendered, "logLevel");
       },
     })
@@ -355,6 +367,52 @@ const registerDefault = () => {
       },
       style(rendered, payload) {
         return payload.applyTheme(rendered, "id");
+      },
+    })
+    .register({
+      key: "action",
+      shouldInclude(payload) {
+        return payload.action !== undefined;
+      },
+      render(payload) {
+        return payload.action;
+      },
+      style(rendered, payload) {
+        return payload.applyTheme(rendered, "action");
+      },
+    })
+    .register({
+      key: "actionCode",
+      shouldInclude(payload) {
+        return payload.actionCode !== undefined;
+      },
+      render(payload) {
+        return payload.actionCode === undefined
+          ? undefined
+          : String(payload.actionCode);
+      },
+      style(rendered, payload) {
+        return payload.applyTheme(rendered, "action");
+      },
+    })
+    .register({
+      key: "errorCode",
+      shouldInclude(payload) {
+        return payload.errorCode !== undefined;
+      },
+      render(payload) {
+        return payload.errorCode === undefined
+          ? undefined
+          : String(payload.errorCode);
+      },
+    })
+    .register({
+      key: "errorName",
+      shouldInclude(payload) {
+        return payload.errorName !== undefined;
+      },
+      render(payload) {
+        return payload.errorName;
       },
     });
 };

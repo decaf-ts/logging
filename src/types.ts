@@ -84,6 +84,8 @@ export interface Logger
    */
   benchmark(msg: StringLike, meta?: LogMeta): void;
 
+  action(action: string, message: StringLike, code?: number, ...rest: any[]): void;
+
   /**
    * @description Logs a fatal message.
    * @summary Emits the most severe failure events at the `fatal` log level.
@@ -337,6 +339,8 @@ export interface Theme {
    * @description Styling for the main message text in the output.
    */
   message: ThemeOption | ThemeOptionByLogLevel;
+
+  action: ThemeOption | ThemeOptionByLogLevel;
 
   /**
    * @description Styling for method names in the output.
