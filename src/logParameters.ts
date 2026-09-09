@@ -3,7 +3,7 @@ import { LogMeta, LoggingConfig } from "./types";
 
 export type LogParameterPayload = {
   config: LoggingConfig;
-  level: LogLevel;
+  level?: LogLevel;
   context: string[];
   timestamp?: string;
   app?: string;
@@ -269,7 +269,7 @@ const registerDefault = () => {
             : payload.action;
         }
         if (payload.config.logLevel === false) return undefined;
-        return payload.level.toUpperCase();
+        return payload.level ? payload.level.toUpperCase() : undefined;
       },
       style(rendered, payload) {
         if (payload.action !== undefined) {
@@ -329,6 +329,9 @@ const registerDefault = () => {
     })
     .register({
       key: "message",
+      shouldInclude(payload) {
+        return payload.action === undefined;
+      },
       render(payload) {
         return payload.filteredMessage;
       },

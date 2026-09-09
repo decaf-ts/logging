@@ -263,13 +263,13 @@ export class MiniLogger implements Logger {
   /**
    * @description Creates a formatted log string.
    * @summary Generates a log string with timestamp, colored log level, context, and message.
-   * @param {LogLevel} level - The log level for this message.
+   * @param {LogLevel} [level] - The log level for this message. Omitted (`undefined`) for action entries, which carry no severity level.
    * @param {StringLike | Error} message - The message to log or an Error object.
    * @param {Error} [error] - Optional error to extract stack trace to include in the log.
    * @return {string} A formatted log string with all components.
    */
   protected createLog(
-    level: LogLevel,
+    level: LogLevel | undefined,
     message: StringLike | Error,
     error?: Error,
     meta?: LogMeta,
@@ -295,7 +295,8 @@ export class MiniLogger implements Logger {
       contextSegments,
       configSnapshot
     );
-    const showMeta = Boolean(this.config("meta"));
+    const isAction = action !== undefined;
+    const showMeta = isAction || Boolean(this.config("meta"));
     const metaPayload = showMeta && meta ? meta : undefined;
     const metaString = metaPayload ? this.formatMeta(metaPayload) : undefined;
     const filteredMetaString = metaString
@@ -409,6 +410,47 @@ export class MiniLogger implements Logger {
   }
 
   /**
+   * @description Resolves the console method used to emit a given log level.
+   * @summary Maps each {@link LogLevel} to the console method that should carry it (error levels to `console.error`, warn to `console.warn`, etc).
+   * @param {LogLevel} level - The log level to resolve a console method for.
+   * @return The console method for that level.
+   */
+  protected methodFor(level: LogLevel): (...args: any[]) => void {
+    switch (level) {
+      case LogLevel.benchmark:
+        return console.log;
+      case LogLevel.fatal:
+      case LogLevel.critical:
+      case LogLevel.error:
+        return console.error;
+      case LogLevel.info:
+      case LogLevel.verbose:
+        return console.log;
+      case LogLevel.debug:
+        return console.debug;
+      case LogLevel.trace:
+        return console.trace;
+      case LogLevel.warn:
+        return console.warn;
+      case LogLevel.silly:
+        return console.debug;
+      default:
+        throw new Error("Invalid log level");
+    }
+  }
+
+  /**
+   * @description Emits an already-formatted log line.
+   * @summary The single place every logging method funnels through to actually write output, so console access stays in one spot.
+   * @param method - The console method to invoke (e.g. `console.log`, `console.error`).
+   * @param {string} formatted - The fully formatted log line, as produced by {@link createLog}.
+   * @return {void}
+   */
+  protected write(method: (...args: any[]) => void, formatted: string): void {
+    method(formatted);
+  }
+
+  /**
    * @description Logs a message with the specified log level.
    * @summary Checks if the message should be logged based on the current log level, then uses the appropriate console method to output the formatted log.
    * @param {LogLevel} level - The log level of the message.
@@ -424,36 +466,7 @@ export class MiniLogger implements Logger {
   ): void {
     const confLvl = this.config("level") as LogLevel;
     if (NumericLogLevels[confLvl] < NumericLogLevels[level]) return;
-    let method;
-    switch (level) {
-      case LogLevel.benchmark:
-        method = console.log;
-        break;
-      case LogLevel.fatal:
-      case LogLevel.critical:
-      case LogLevel.error:
-        method = console.error;
-        break;
-      case LogLevel.info:
-      case LogLevel.verbose:
-        method = console.log;
-        break;
-      case LogLevel.debug:
-        method = console.debug;
-        break;
-      case LogLevel.trace:
-        method = console.trace;
-        break;
-      case LogLevel.warn:
-        method = console.warn;
-        break;
-      case LogLevel.silly:
-        method = console.debug;
-        break;
-      default:
-        throw new Error("Invalid log level");
-    }
-    method(this.createLog(level, msg, error, meta));
+    this.write(this.methodFor(level), this.createLog(level, msg, error, meta));
   }
 
   /**
@@ -467,31 +480,27 @@ export class MiniLogger implements Logger {
     this.log(LogLevel.benchmark, msg, undefined, meta);
   }
 
-  action(
-    action: string,
-    message: StringLike,
-    code?: number,
-    ...rest: any[]
-  ): void {
-    let meta: LogMeta | undefined;
-    if (rest.length && rest[0] && typeof rest[0] === "object") {
-      meta = rest[0] as LogMeta;
-    }
-    this.logAction(action, message, code, meta);
+  /**
+   * @description Logs an action: a discrete, named event carrying its own metadata rather than a severity level or a message.
+   * @summary Action entries are a separate, more controlled channel from the rest of the {@link Logger} API - they carry no message, are not tied to any {@link LogLevel}, and always print regardless of the configured minimum level. The action name (plus its optional numeric code) is rendered where the level would otherwise appear, and the structured meta is always rendered too, regardless of the `meta` display setting. An entry's payload is exactly: the action string, an optional code, and meta - nothing else.
+   * @param {string} action - The action name/identifier.
+   * @param {number} [code] - An optional numeric classification code for the action.
+   * @param {LogMeta} [meta] - Optional structured metadata, always rendered regardless of the `meta` display setting.
+   * @return {void}
+   */
+  action(action: string, meta?: LogMeta): void;
+  action(action: string, code: number, meta?: LogMeta): void;
+  action(action: string, codeOrMeta?: number | LogMeta, meta?: LogMeta): void {
+    const code = typeof codeOrMeta === "number" ? codeOrMeta : undefined;
+    const resolvedMeta =
+      typeof codeOrMeta === "number" ? meta : (codeOrMeta as LogMeta);
+    this.write(
+      console.log,
+      this.createLog(undefined, "", undefined, resolvedMeta, action, code)
+    );
   }
 
-  protected logAction(
-    action: string,
-    message: StringLike,
-    code?: number,
-    meta?: LogMeta
-  ): void {
-    const rawMessage =
-      typeof message === "string" ? message : String(message);
-    console.log(
-      this.createLog(LogLevel.info, rawMessage, undefined, meta, action, code)
-    );
-  }  /**
+  /**
    * @description Logs a message at the fatal level.
    * @summary Logs a message at the fatal level for unrecoverable failures.
    * @param {StringLike | Error} msg - The message to be logged or an Error object.
@@ -850,13 +859,22 @@ export class Logging {
     return this.get().benchmark(msg, meta);
   }
 
+  /**
+   * @description Logs an action.
+   * @summary Delegates the action logging to the global logger instance.
+   * @param {string} action - The action name/identifier.
+   * @param {number} [code] - An optional numeric classification code for the action.
+   * @param {LogMeta} [meta] - Optional structured metadata, always rendered regardless of the `meta` display setting.
+   * @return {void}
+   */
+  static action(action: string, meta?: LogMeta): void;
+  static action(action: string, code: number, meta?: LogMeta): void;
   static action(
     action: string,
-    message: StringLike,
-    code?: number,
-    ...rest: any[]
+    codeOrMeta?: number | LogMeta,
+    meta?: LogMeta
   ): void {
-    return this.get().action(action, message, code, ...rest);
+    return (this.get().action as any)(action, codeOrMeta, meta);
   }
 
   /**
@@ -1031,7 +1049,7 @@ export class Logging {
   static theme(
     text: string,
     type: keyof Theme | keyof LogLevel,
-    loggerLevel: LogLevel,
+    loggerLevel: LogLevel | undefined,
     template: Theme = DefaultTheme
   ) {
     if (!this._config.style) return text;
@@ -1111,8 +1129,9 @@ export class Logging {
 
     const logLevels = Object.assign({}, LogLevel);
     if (Object.keys(individualTheme)[0] in logLevels)
-      actualTheme =
-        (individualTheme as ThemeOptionByLogLevel)[loggerLevel] || {};
+      actualTheme = loggerLevel
+        ? (individualTheme as ThemeOptionByLogLevel)[loggerLevel] || {}
+        : {};
 
     return Object.keys(actualTheme).reduce((acc: string, key: string) => {
       const val = (actualTheme as ThemeOption)[key as keyof ThemeOption];

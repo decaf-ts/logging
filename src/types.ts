@@ -84,7 +84,16 @@ export interface Logger
    */
   benchmark(msg: StringLike, meta?: LogMeta): void;
 
-  action(action: string, message: StringLike, code?: number, ...rest: any[]): void;
+  /**
+   * @description Logs a named action: a discrete event carrying its own metadata rather than a severity level or a message.
+   * @summary Action entries are a separate, more controlled channel from the rest of this interface - they carry no message, are not tied to a {@link LogLevel}, and always print regardless of the configured minimum level. The action name (plus optional numeric code) is rendered where a level would otherwise appear, and `meta` is always rendered too, regardless of the logger's `meta` display setting. An entry's payload is exactly: the action string, an optional code, and meta.
+   * @param {string} action - The action name/identifier.
+   * @param {number} [code] - An optional numeric classification code for the action.
+   * @param {LogMeta} [meta] - Optional structured metadata, always rendered regardless of the `meta` display setting.
+   * @return {void}
+   */
+  action(action: string, meta?: LogMeta): void;
+  action(action: string, code: number, meta?: LogMeta): void;
 
   /**
    * @description Logs a fatal message.
