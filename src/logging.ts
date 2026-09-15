@@ -1074,16 +1074,24 @@ export class Logging {
           if (!Array.isArray(val)) {
             return (f as typeof c.background | typeof c.foreground).call(
               c,
-              value as number
+              val
             );
           }
           switch (val.length) {
             case 1:
               f = isBg ? c.bgColor256 : c.color256;
-              return (f as typeof c.bgColor256 | typeof c.color256)(val[0]);
+              return (f as typeof c.bgColor256 | typeof c.color256).call(
+                c,
+                val[0]
+              );
             case 3:
               f = isBg ? c.bgRgb : c.rgb;
-              return c.rgb(val[0], val[1], val[2]);
+              return (f as typeof c.bgRgb | typeof c.rgb).call(
+                c,
+                val[0],
+                val[1],
+                val[2]
+              );
             default:
               console.error(`Not a valid color option: ${option}`);
               return style(t as string);
