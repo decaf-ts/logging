@@ -59,7 +59,7 @@
     "lint-fix": "eslint --fix .",
     "prepare-pr": "npm run lint-fix && npm run build:prod && npm run coverage && npm run docs",
     "prepare-release": "npm run lint-fix && npm run build:prod && npm run coverage && npm run docs",
-    "release": "./bin/tag-release.sh",
+    "release": "tag-release",
     "clean-publish": "npx clean-publish",
     "drawings": "for FILE in workdocs/drawings/*.drawio; do echo \"converting $FILE to image...\" && docker run --rm -v $(pwd):/data rlespinasse/drawio-export --format png $FILE; done && cp -rf workdocs/drawings/export/* workdocs/resources/",
     "uml": "cd workdocs/uml && for FILE in ./*.puml; do docker run --rm -v $(pwd):/work -w /work miy4/plantuml -DPLANTUML_LIMIT_SIZE=8192 -tpng $FILE; done && cd ../.. && cp -fr workdocs/uml/*.png workdocs/resources/",
@@ -107,7 +107,9 @@
   },
   "homepage": "https://github.com/decaf-ts/logging#readme",
   "devDependencies": {
-    "@decaf-ts/utils": "latest",
+    "@decaf-ts/utils": "^2.0.1",
+    "pino": "^10.1.0",
+    "winston": "^3.17.0",
     "@types/jest": "^30.0.0"
   },
   "dependencies": {
@@ -119,8 +121,13 @@
     "winston": "^3.17.0"
   },
   "overrides": {
-    "test-exclude": "^7.0.2",
-    "brace-expansion": "^5.0.8"
+    "dpdm": {
+      "glob": "^14.0.4",
+      "minimatch": "^11.0.5"
+    },
+    "typescript-eslint": {
+      "minimatch": "^11.0.5"
+    }
   },
   "main": "./lib/cjs/index.cjs",
   "module": "./lib/esm/index.js",
