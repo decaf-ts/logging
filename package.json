@@ -121,6 +121,9 @@
     "winston": "^3.17.0"
   },
   "overrides": {
+    "eslint": {
+      "minimatch": "^11.0.5"
+    },
     "dpdm": {
       "glob": "^14.0.4",
       "minimatch": "^11.0.5"
