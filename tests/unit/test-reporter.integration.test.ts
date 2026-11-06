@@ -1,7 +1,7 @@
-import { TestReporter } from "@decaf-ts/utils/tests";
+import { TestReporter } from "@decaf-ts/for-testing";
 import { Logging, LogLevel, MiniLogger } from "../../src";
 
-describe("TestReporter integration via @decaf-ts/utils/tests export", () => {
+describe("TestReporter integration via @decaf-ts/for-testing export", () => {
   it("reports logging payloads without tsconfig path aliases", async () => {
     const reporter = new TestReporter("logging-test-reporter");
 
