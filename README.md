@@ -22,10 +22,9 @@ Decaf’s logging toolkit keeps one fast MiniLogger at the core while exposing a
 ![GitHub language count](https://img.shields.io/github/languages/count/decaf-ts/logging?style=plastic)
 ![GitHub top language](https://img.shields.io/github/languages/top/decaf-ts/logging?style=plastic)
 
-[![Build & Test](https://github.com/decaf-ts/logging/actions/workflows/nodejs-build-prod.yaml/badge.svg)](https://github.com/decaf-ts/logging/actions/workflows/nodejs-build-prod.yaml)
+[![Build & Test](https://github.com/decaf-ts/logging/actions/workflows/jest-coverage.yaml/badge.svg?event=pull_request)](https://github.com/decaf-ts/logging/actions/workflows/jest-coverage.yaml)
 [![CodeQL](https://github.com/decaf-ts/logging/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/decaf-ts/logging/actions/workflows/codeql-analysis.yml)[![Snyk Analysis](https://github.com/decaf-ts/logging/actions/workflows/snyk-analysis.yaml/badge.svg)](https://github.com/decaf-ts/logging/actions/workflows/snyk-analysis.yaml)
-[![Pages builder](https://github.com/decaf-ts/logging/actions/workflows/pages.yaml/badge.svg)](https://github.com/decaf-ts/logging/actions/workflows/pages.yaml)
-[![.github/workflows/release-on-tag.yaml](https://github.com/decaf-ts/logging/actions/workflows/release-on-tag.yaml/badge.svg?event=release)](https://github.com/decaf-ts/logging/actions/workflows/release-on-tag.yaml)
+[![Release](https://github.com/decaf-ts/logging/actions/workflows/release-on-merge-pr.yml/badge.svg?event=pull_request)](https://github.com/decaf-ts/logging/actions/workflows/release-on-merge-pr.yml)
 
 ![Open Issues](https://img.shields.io/github/issues/decaf-ts/logging.svg)
 ![Closed Issues](https://img.shields.io/github/issues-closed/decaf-ts/logging.svg)
@@ -42,8 +41,8 @@ Decaf’s logging toolkit keeps one fast MiniLogger at the core while exposing a
 ![Stars](https://img.shields.io/github/stars/decaf-ts/logging.svg)
 ![Watchers](https://img.shields.io/github/watchers/decaf-ts/logging.svg)
 
-![Node Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbadges%2Fshields%2Fmaster%2Fpackage.json&label=Node&query=$.engines.node&colorB=blue)
-![NPM Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbadges%2Fshields%2Fmaster%2Fpackage.json&label=NPM&query=$.engines.npm&colorB=purple)
+![Node Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdecaf-ts%2Flogging%2Fmaster%2Fpackage.json&label=Node&query=$.engines.node&colorB=blue)
+![NPM Version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdecaf-ts%2Flogging%2Fmaster%2Fpackage.json&label=NPM&query=$.engines.npm&colorB=purple)
 
 Documentation available [here](https://decaf-ts.github.io/logging/)
 
